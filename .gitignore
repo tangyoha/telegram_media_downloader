@@ -1,0 +1,54 @@
+.idea/
+*.pyc
+*.pid
+*.cfg
+*.db
+*.env
+.DS_Store
+.cache/
+.mypy_cache/
+.coverage
+settings.json
+
+# Distribution / packaging
+.Python
+.pytest_cache
+.python-version
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+logs/
+parts/
+sdist/
+share/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# virtualenv
+.venv
+venv/
+ENV/
+bin/
+include/
+pip-selfcheck.json
+
+
+#Telegram Sessions
+*.session
+*.session-journal
+
+#Downloaded documents
+documents/
