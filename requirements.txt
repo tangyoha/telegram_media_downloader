@@ -1,0 +1,2 @@
+Pyrogram==0.15.1
+PyYAML==5.1.1
