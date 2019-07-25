@@ -49,7 +49,7 @@ The very first step requires you to obtain a valid Telegram API key (API id/hash
 **Getting chat id:**
 1. Open https://web.telegram.org
 2. Now go to the chat/channel and you will see the URL as something like
-	- `https://web.telegram.org/#/im?p=u777000_6153771045853` here `u777000_6153771045853` is the chat id.
+	- `https://web.telegram.org/#/im?p=u853521067_2449618633394` here `853521067` is the chat id.
 	- `https://web.telegram.org/#/im?p=@somename` here `somename` is the chat id.
 
 ```yaml
