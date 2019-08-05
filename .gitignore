@@ -52,3 +52,8 @@ pip-selfcheck.json
 
 #Downloaded documents
 documents/
+audio/
+document/
+photo/
+voice/
+video/
