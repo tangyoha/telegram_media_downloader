@@ -17,10 +17,7 @@ A meta of last read/downloaded message is stored in the config file so that in s
 |Download file types|  document|
 
 ### ToDo:
-Add download support for
- - Photos
- - Videos
- - Audio files
+- Add support for multiple channels/chats.
 
 ### Installation
 
@@ -57,12 +54,20 @@ api_hash: your_api_hash
 api_id: your_api_id
 chat_id: telegram_chat_id
 last_read_message_id: 0
+media_types:
+- audio
+- photo
+- video
+- document
+- voice
 ```
 
 - api_hash  - The api_hash you got from telegram apps
 - api_id - The api_id you got from telegram apps
 - chat_id -  The id of the chat/channel you want to download media. Which you get from the above-mentioned steps.
 - last_read_message_id - If it is the first time you are going to read the channel let it be `0` or if you have already used this script to download media it will have some numbers which are auto-updated after the scripts successful execution. Don't change it.
+- media_types - Type of media to download, yopu can update what type of media you want to download it can be only one or all the available types.
+
 ## Execution
 ```sh
 $ python3 media_downloader.py
