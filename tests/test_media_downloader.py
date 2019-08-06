@@ -85,7 +85,7 @@ class MockClient:
 
     def download_media(self, *args, **kwargs):
         assert "AwADBQADbwAD2oTRVeHe5eXRFftfAg", args[0]
-        assert "/root/project/voice/voice_2019-07-25T16:53:50.ogg", kwargs[
+        assert "/root/project/voice/voice_2019-07-25T14:53:50.ogg", kwargs[
             "file_name"
         ]
         return kwargs["file_name"]
@@ -108,7 +108,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         self.assertEqual(
             (
                 "AwADBQADbwAD2oTRVeHe5eXRFftfAg",
-                "/root/project/voice/voice_2019-07-25T16:53:50.ogg",
+                "/root/project/voice/voice_2019-07-25T14:53:50.ogg",
             ),
             result,
         )
