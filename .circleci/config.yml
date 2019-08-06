@@ -1,0 +1,54 @@
+version: 2
+
+jobs:
+  test-3.6:
+    docker:
+      - image: circleci/python:3.6.5
+        environment:
+          CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
+          CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
+          LOG_DIR: ${CIRCLE_ARTIFACTS}/testresults/
+    steps:
+      - checkout
+      - run:
+          name: Get setuptools
+          shell: /bin/bash
+          command: sudo pip install --upgrade pip setuptools codecov
+      - run:
+          name: Run test
+          shell: /bin/bash
+          command: |
+            sudo make -e test
+            codecov
+      - store_artifacts:
+          path: /tmp/circleci-artifacts
+
+  test-3.7:
+    docker:
+      - image: circleci/python:3.7.3
+        environment:
+          CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
+          CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
+          LOG_DIR: ${CIRCLE_ARTIFACTS}/testresults/
+    steps:
+      - checkout
+      - run:
+          name: Get setuptools
+          shell: /bin/bash
+          command: sudo pip install --upgrade pip setuptools codecov
+      - run:
+          name: Run test
+          shell: /bin/bash
+          command: |
+            sudo make -e test
+            codecov
+      - store_artifacts:
+          path: /tmp/circleci-artifacts
+
+
+workflows:
+  version: 2
+  tests:
+    jobs:
+      - test-3.6
+      - test-3.7
