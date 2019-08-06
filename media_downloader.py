@@ -38,7 +38,7 @@ def _get_media_meta(media_obj: object, _type: str) -> Tuple[str, str]:
             THIS_DIR,
             _type,
             "voice_{}.{}".format(
-                dt.fromtimestamp(media_obj.date).isoformat(), file_format
+                dt.utcfromtimestamp(media_obj.date).isoformat(), file_format
             ),
         )
     elif _type == "photo":
