@@ -1,10 +1,11 @@
+"""Downloads media from telegram."""
 import os
 import logging
 from typing import List, Tuple
 from datetime import datetime as dt
 
 import yaml
-from pyrogram import Client
+import pyrogram
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -16,7 +17,9 @@ config = yaml.safe_load(f)
 f.close()
 
 
-def _get_media_meta(media_obj: object, _type: str) -> Tuple[str, str]:
+def _get_media_meta(
+    media_obj: pyrogram.client.types.messages_and_media, _type: str
+) -> Tuple[str, str]:
     """Extract file name and file id.
 
     Parameters
@@ -42,14 +45,14 @@ def _get_media_meta(media_obj: object, _type: str) -> Tuple[str, str]:
             ),
         )
     elif _type == "photo":
-        file_name: str = os.path.join(THIS_DIR, _type, "")
+        file_name = os.path.join(THIS_DIR, _type, "")
     else:
-        file_name: str = os.path.join(THIS_DIR, _type, media_obj.file_name)
+        file_name = os.path.join(THIS_DIR, _type, media_obj.file_name)
     return file_id, file_name
 
 
 def download_media(
-    client: Client,
+    client: pyrogram.client.client.Client,
     chat_id: str,
     last_read_message_id: int,
     media_types: List[str],
@@ -112,7 +115,7 @@ def update_config(config: dict):
 
 def begin_import():
     """Skeleton fucntion that creates client and import, write config"""
-    client = Client(
+    client = pyrogram.Client(
         "media_downloader",
         api_id=config["api_id"],
         api_hash=config["api_hash"],

@@ -200,7 +200,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
     @mock.patch("media_downloader.config", new=MOCK_CONF)
     @mock.patch("media_downloader.update_config", autospec=True)
     @mock.patch("media_downloader.download_media", return_value=21)
-    @mock.patch("media_downloader.Client", autospec=True)
+    @mock.patch("media_downloader.pyrogram.Client", autospec=True)
     def test_begin_import(self, mock_client, mock_download, mock_conf):
         begin_import()
         mock_client.assert_called_with(

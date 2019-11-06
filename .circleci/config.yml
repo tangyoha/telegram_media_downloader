@@ -15,6 +15,18 @@ jobs:
           shell: /bin/bash
           command: sudo pip install --upgrade pip setuptools codecov
       - run:
+          name: Install dependencies
+          shell: /bin/bash
+          command: sudo make deps
+      - run:
+          name: Static Type Check - Mypy
+          shell: /bin/bash
+          command: sudo make static_type_check
+      - run:
+          name: Code Check - Pylint
+          shell: /bin/bash
+          command: sudo make pylint
+      - run:
           name: Run test
           shell: /bin/bash
           command: |
@@ -36,6 +48,18 @@ jobs:
           name: Get setuptools
           shell: /bin/bash
           command: sudo pip install --upgrade pip setuptools codecov
+      - run:
+          name: Install dependencies
+          shell: /bin/bash
+          command: sudo make deps
+      - run:
+          name: Static Type Check - Mypy
+          shell: /bin/bash
+          command: sudo make static_type_check
+      - run:
+          name: Code Check - Pylint
+          shell: /bin/bash
+          command: sudo make pylint
       - run:
           name: Run test
           shell: /bin/bash

@@ -9,7 +9,13 @@ install:
 	pip install --upgrade pip setuptools
 	pip install -r requirements.txt 
 
-test: deps
+static_type_check:
+	mypy media_downloader.py --ignore-missing-imports
+
+pylint:
+	pylint media_downloader.py -r y
+
+test:
 	py.test --cov media_downloader --doctest-modules \
 		--cov-report term-missing \
 		--cov-report html:${TEST_ARTIFACTS} \
