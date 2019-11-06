@@ -15,7 +15,7 @@ A meta of last read/downloaded message is stored in the config file so that in s
 ### Support:
 | Category | Support |
 |--|--|
-|Language | `Python 3.4 ` and above|
+|Language | `Python 3.6 ` and above|
 |Download file types|  document|
 
 ### ToDo:
