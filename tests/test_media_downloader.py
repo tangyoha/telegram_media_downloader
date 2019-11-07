@@ -37,32 +37,32 @@ class MockMessage:
 
 class MockAudio:
     def __init__(self, **kwargs):
-        self.file_id = kwargs["file_id"]
+        self.file_ref = kwargs["file_ref"]
         self.file_name = kwargs["file_name"]
 
 
 class MockDocument:
     def __init__(self, **kwargs):
-        self.file_id = kwargs["file_id"]
+        self.file_ref = kwargs["file_ref"]
         self.file_name = kwargs["file_name"]
 
 
 class MockPhoto:
     def __init__(self, **kwargs):
-        self.file_id = kwargs["file_id"]
+        self.file_ref = kwargs["file_ref"]
         self.date = kwargs["date"]
 
 
 class MockVoice:
     def __init__(self, **kwargs):
-        self.file_id = kwargs["file_id"]
+        self.file_ref = kwargs["file_ref"]
         self.mime_type = kwargs["mime_type"]
         self.date = kwargs["date"]
 
 
 class MockVideo:
     def __init__(self, **kwargs):
-        self.file_id = kwargs["file_id"]
+        self.file_ref = kwargs["file_ref"]
         self.file_name = kwargs["file_name"]
 
 
@@ -76,7 +76,7 @@ class MockClient:
                 id=1213,
                 media=True,
                 voice=MockVoice(
-                    file_id="AwADBQADbwAD2oTRVeHe5eXRFftfAg",
+                    file_ref="AwADBQADbwAD2oTRVeHe5eXRFftfAg",
                     mime_type="audio/ogg",
                     date=1564066430,
                 ),
@@ -99,7 +99,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=1,
             media=True,
             voice=MockVoice(
-                file_id="AwADBQADbwAD2oTRVeHe5eXRFftfAg",
+                file_ref="AwADBQADbwAD2oTRVeHe5eXRFftfAg",
                 mime_type="audio/ogg",
                 date=1564066430,
             ),
@@ -118,7 +118,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=2,
             media=True,
             photo=MockPhoto(
-                file_id="AgADBQAD5KkxG_FPQValJzQsJPyzhHcC", date=1565015712
+                file_ref="AgADBQAD5KkxG_FPQValJzQsJPyzhHcC", date=1565015712
             ),
         )
         result = _get_media_meta(message.photo, "photo")
@@ -132,7 +132,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=3,
             media=True,
             document=MockDocument(
-                file_id="AQADAgADq7LfMgAEIdy5DwAE4w4AAwI",
+                file_ref="AQADAgADq7LfMgAEIdy5DwAE4w4AAwI",
                 file_name="sample_document.pdf",
             ),
         )
@@ -150,7 +150,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=4,
             media=True,
             audio=MockAudio(
-                file_id="AQADAgADq7LfMgAEIdy5DwAE5Q4AAgEC",
+                file_ref="AQADAgADq7LfMgAEIdy5DwAE5Q4AAgEC",
                 file_name="sample_audio.mp3",
             ),
         )
@@ -168,7 +168,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=5,
             media=True,
             video=MockVideo(
-                file_id="CQADBQADeQIAAlL60FUCNMBdK8OjlAI",
+                file_ref="CQADBQADeQIAAlL60FUCNMBdK8OjlAI",
                 file_name="sample_video.mp4",
             ),
         )
