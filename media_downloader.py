@@ -32,9 +32,9 @@ def _get_media_meta(
     Returns
     -------
     tuple
-        file_id, file_name
+        file_ref, file_name
     """
-    file_id: str = media_obj.file_id
+    file_ref: str = media_obj.file_ref
     if _type == "voice":
         file_format: str = media_obj.mime_type.split("/")[-1]
         file_name: str = os.path.join(
@@ -48,7 +48,7 @@ def _get_media_meta(
         file_name = os.path.join(THIS_DIR, _type, "")
     else:
         file_name = os.path.join(THIS_DIR, _type, media_obj.file_name)
-    return file_id, file_name
+    return file_ref, file_name
 
 
 def download_media(
@@ -80,24 +80,24 @@ def download_media(
     Returns
     -------
     integer
-        file_id, file_name
+        last_message_id
     """
     messages = client.iter_history(
         chat_id, offset_id=last_read_message_id, reverse=True
     )
-    last_id: int = 0
+    last_message_id: int = 0
     for message in messages:
         if message.media:
             for _type in media_types:
                 _media = getattr(message, _type, None)
                 if _media:
-                    file_id, file_name = _get_media_meta(_media, _type)
+                    file_ref, file_name = _get_media_meta(_media, _type)
                     download_path = client.download_media(
-                        file_id, file_name=file_name
+                        message, file_ref=file_ref, file_name=file_name
                     )
                     logger.info("Media downloaded - %s", download_path)
-        last_id = message.message_id
-    return last_id
+        last_message_id = message.message_id
+    return last_message_id
 
 
 def update_config(config: dict):
