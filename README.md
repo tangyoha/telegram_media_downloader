@@ -16,7 +16,7 @@ A meta of last read/downloaded message is stored in the config file so that in s
 | Category | Support |
 |--|--|
 |Language | `Python 3.6 ` and above|
-|Download file types|  document|
+|Download media types|  audio, document, photo, video, voice|
 
 ### ToDo:
 - Add support for multiple channels/chats.
@@ -58,9 +58,9 @@ chat_id: telegram_chat_id
 last_read_message_id: 0
 media_types:
 - audio
+- document
 - photo
 - video
-- document
 - voice
 ```
 
@@ -74,4 +74,12 @@ media_types:
 ```sh
 $ python3 media_downloader.py
 ```
-All the documents will be stored inside a direcotry named `documents/` in the same path as the pythin script.
+All the downloaded media will be stored inside  respective direcotry named  in the same path as the python script.
+
+| Media type | Download directory |
+|--|--|
+| audio | path/to/project/audio |
+| document | path/to/project/document |
+| photo | path/to/project/photo |
+| video | path/to/project/video |
+| voice | path/to/project/voice |
