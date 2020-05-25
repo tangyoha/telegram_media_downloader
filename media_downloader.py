@@ -4,9 +4,9 @@ import logging
 from typing import List, Tuple
 from datetime import datetime as dt
 
+import asyncio
 import yaml
 import pyrogram
-import asyncio
 
 
 logging.basicConfig(level=logging.INFO)
