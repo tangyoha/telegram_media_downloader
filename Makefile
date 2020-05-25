@@ -8,6 +8,7 @@ deps: install
 install:
 	pip install --upgrade pip setuptools
 	pip install -r requirements.txt 
+	pip install https://github.com/pyrogram/pyrogram/archive/asyncio.zip
 
 static_type_check:
 	mypy media_downloader.py --ignore-missing-imports
