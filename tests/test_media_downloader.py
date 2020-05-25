@@ -6,12 +6,14 @@ import unittest
 
 import mock
 import pytest
+import asyncio
 
 from media_downloader import (
     _get_media_meta,
     download_media,
     update_config,
     begin_import,
+    process_messages,
 )
 
 MOCK_DIR = "/root/project"
@@ -66,12 +68,49 @@ class MockVideo:
         self.file_name = kwargs["file_name"]
 
 
+async def async_get_media_meta(message_media, _type):
+    result = await _get_media_meta(message_media, _type)
+    return result
+
+
+async def async_download_media(client, message, media_types):
+    result = await download_media(client, message, media_types)
+    return result
+
+
+async def async_begin_import(conf):
+    result = await begin_import(conf)
+    return result
+
+
+async def mock_process_message(*args, **kwargs):
+    return 5
+
+
+async def async_process_messages(
+    client, chat_id, last_read_message_id, media_types
+):
+    result = await process_messages(
+        client, chat_id, last_read_message_id, media_types
+    )
+    return result
+
+
 class MockClient:
     def __init__(self, *args, **kwargs):
         pass
 
-    def iter_history(self, *args, **kwargs):
-        return [
+    def __aiter__(self):
+        return self
+
+    async def start(self):
+        pass
+
+    async def stop(self):
+        pass
+
+    async def iter_history(self, *args, **kwargs):
+        items = [
             MockMessage(
                 id=1213,
                 media=True,
@@ -80,10 +119,15 @@ class MockClient:
                     mime_type="audio/ogg",
                     date=1564066430,
                 ),
-            )
+            ),
+            MockMessage(id=1214, media=False, text="test message 1",),
+            MockMessage(id=1215, media=False, text="test message 2",),
+            MockMessage(id=1216, media=False, text="test message 3",),
         ]
+        for item in items:
+            yield item
 
-    def download_media(self, *args, **kwargs):
+    async def download_media(self, *args, **kwargs):
         assert "AwADBQADbwAD2oTRVeHe5eXRFftfAg", args[0]
         assert "/root/project/voice/voice_2019-07-25T14:53:50.ogg", kwargs[
             "file_name"
@@ -92,6 +136,13 @@ class MockClient:
 
 
 class MediaDownloaderTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.loop = asyncio.get_event_loop()
+
+    # def setUp(self):
+    #     self.loop = asyncio.get_event_loop()
+
     @mock.patch("media_downloader.THIS_DIR", new=MOCK_DIR)
     def test_get_media_meta(self):
         # Test Voice notes
@@ -104,7 +155,10 @@ class MediaDownloaderTestCase(unittest.TestCase):
                 date=1564066430,
             ),
         )
-        result = _get_media_meta(message.voice, "voice")
+        result = self.loop.run_until_complete(
+            async_get_media_meta(message.voice, "voice")
+        )
+
         self.assertEqual(
             (
                 "AwADBQADbwAD2oTRVeHe5eXRFftfAg",
@@ -121,7 +175,9 @@ class MediaDownloaderTestCase(unittest.TestCase):
                 file_ref="AgADBQAD5KkxG_FPQValJzQsJPyzhHcC", date=1565015712
             ),
         )
-        result = _get_media_meta(message.photo, "photo")
+        result = self.loop.run_until_complete(
+            async_get_media_meta(message.photo, "photo")
+        )
         self.assertEqual(
             ("AgADBQAD5KkxG_FPQValJzQsJPyzhHcC", "/root/project/photo/"),
             result,
@@ -136,7 +192,9 @@ class MediaDownloaderTestCase(unittest.TestCase):
                 file_name="sample_document.pdf",
             ),
         )
-        result = _get_media_meta(message.document, "document")
+        result = self.loop.run_until_complete(
+            async_get_media_meta(message.document, "document")
+        )
         self.assertEqual(
             (
                 "AQADAgADq7LfMgAEIdy5DwAE4w4AAwI",
@@ -154,7 +212,9 @@ class MediaDownloaderTestCase(unittest.TestCase):
                 file_name="sample_audio.mp3",
             ),
         )
-        result = _get_media_meta(message.audio, "audio")
+        result = self.loop.run_until_complete(
+            async_get_media_meta(message.audio, "audio")
+        )
         self.assertEqual(
             (
                 "AQADAgADq7LfMgAEIdy5DwAE5Q4AAgEC",
@@ -172,7 +232,9 @@ class MediaDownloaderTestCase(unittest.TestCase):
                 file_name="sample_video.mp4",
             ),
         )
-        result = _get_media_meta(message.video, "video")
+        result = self.loop.run_until_complete(
+            async_get_media_meta(message.video, "video")
+        )
         self.assertEqual(
             (
                 "CQADBQADeQIAAlL60FUCNMBdK8OjlAI",
@@ -184,8 +246,18 @@ class MediaDownloaderTestCase(unittest.TestCase):
     @mock.patch("media_downloader.THIS_DIR", new=MOCK_DIR)
     def test_download_media(self):
         client = MockClient()
-        result = download_media(client, "8654123", "1200", ["voice", "photo"])
-        self.assertEqual(1213, result)
+        message = MockMessage(
+            id=5,
+            media=True,
+            video=MockVideo(
+                file_ref="CQADBQADeQIAAlL60FUCNMBdK8OjlAI",
+                file_name="sample_video.mp4",
+            ),
+        )
+        result = self.loop.run_until_complete(
+            async_download_media(client, message, ["video", "photo"])
+        )
+        self.assertEqual(5, result)
 
     @mock.patch("__main__.__builtins__.open", new_callable=mock.mock_open)
     @mock.patch("media_downloader.yaml", autospec=True)
@@ -197,18 +269,23 @@ class MediaDownloaderTestCase(unittest.TestCase):
             conf, mock.ANY, default_flow_style=False
         )
 
-    @mock.patch("media_downloader.config", new=MOCK_CONF)
-    @mock.patch("media_downloader.update_config", autospec=True)
-    @mock.patch("media_downloader.download_media", return_value=21)
-    @mock.patch("media_downloader.pyrogram.Client", autospec=True)
-    def test_begin_import(self, mock_client, mock_download, mock_conf):
-        begin_import()
-        mock_client.assert_called_with(
-            "media_downloader", api_id=123, api_hash="hasw5Tgawsuj67"
-        )
-        mock_download.assert_called_with(
-            mock.ANY, 8654123, 0, ["audio", "voice"]
-        )
+    @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
+    @mock.patch("media_downloader.process_messages", new=mock_process_message)
+    def test_begin_import(self):
+        result = self.loop.run_until_complete(async_begin_import(MOCK_CONF))
         conf = copy.deepcopy(MOCK_CONF)
-        conf["last_read_message_id"] = 22
-        mock_conf.assert_called_with(conf)
+        conf["last_read_message_id"] = 6
+        self.assertDictEqual(result, conf)
+
+    def test_process_message(self):
+        client = MockClient()
+        result = self.loop.run_until_complete(
+            async_process_messages(
+                client, "8654123", "1200", ["voice", "photo"]
+            )
+        )
+        self.assertEqual(result, 1216)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.loop.close()
