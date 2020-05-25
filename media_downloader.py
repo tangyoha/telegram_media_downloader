@@ -55,7 +55,7 @@ async def _get_media_meta(
                 dt.utcfromtimestamp(media_obj.date).isoformat(), file_format
             ),
         )
-    elif _type == "photo":
+    elif _type in ["photo", "video"]:
         file_name = os.path.join(THIS_DIR, _type, "")
     else:
         file_name = os.path.join(THIS_DIR, _type, media_obj.file_name)
