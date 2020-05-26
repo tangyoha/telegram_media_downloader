@@ -65,7 +65,6 @@ class MockVoice:
 class MockVideo:
     def __init__(self, **kwargs):
         self.file_ref = kwargs["file_ref"]
-        self.file_name = kwargs["file_name"]
 
 
 async def async_get_media_meta(message_media, _type):
@@ -139,9 +138,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.loop = asyncio.get_event_loop()
-
-    # def setUp(self):
-    #     self.loop = asyncio.get_event_loop()
 
     @mock.patch("media_downloader.THIS_DIR", new=MOCK_DIR)
     def test_get_media_meta(self):
@@ -227,19 +223,13 @@ class MediaDownloaderTestCase(unittest.TestCase):
         message = MockMessage(
             id=5,
             media=True,
-            video=MockVideo(
-                file_ref="CQADBQADeQIAAlL60FUCNMBdK8OjlAI",
-                file_name="sample_video.mp4",
-            ),
+            video=MockVideo(file_ref="CQADBQADeQIAAlL60FUCNMBdK8OjlAI"),
         )
         result = self.loop.run_until_complete(
             async_get_media_meta(message.video, "video")
         )
         self.assertEqual(
-            (
-                "CQADBQADeQIAAlL60FUCNMBdK8OjlAI",
-                "/root/project/video/sample_video.mp4",
-            ),
+            ("CQADBQADeQIAAlL60FUCNMBdK8OjlAI", "/root/project/video/",),
             result,
         )
 
