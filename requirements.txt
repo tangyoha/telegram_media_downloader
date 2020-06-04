@@ -1,3 +1,3 @@
--f https://github.com/pyrogram/pyrogram/archive/asyncio.zip#egg=Pyrogram==0.17.1-async
+git+https://github.com/pyrogram/pyrogram@asyncio-dev
 PyYAML==5.1.1
 TgCrypto==1.2.0
