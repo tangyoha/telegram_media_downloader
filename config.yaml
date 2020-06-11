@@ -8,3 +8,10 @@ media_types:
 - video
 - document
 - voice
+file_formats:
+  audio:
+  - all
+  document:
+  - all
+  video:
+  - all
