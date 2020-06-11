@@ -23,6 +23,7 @@ MOCK_CONF = {
     "last_read_message_id": 0,
     "chat_id": 8654123,
     "media_types": ["audio", "voice"],
+    "file_formats": {"audio": ["all"], "voice": ["all"]},
 }
 
 
@@ -41,12 +42,14 @@ class MockAudio:
     def __init__(self, **kwargs):
         self.file_ref = kwargs["file_ref"]
         self.file_name = kwargs["file_name"]
+        self.mime_type = kwargs["mime_type"]
 
 
 class MockDocument:
     def __init__(self, **kwargs):
         self.file_ref = kwargs["file_ref"]
         self.file_name = kwargs["file_name"]
+        self.mime_type = kwargs["mime_type"]
 
 
 class MockPhoto:
@@ -65,6 +68,7 @@ class MockVoice:
 class MockVideo:
     def __init__(self, **kwargs):
         self.file_ref = kwargs["file_ref"]
+        self.mime_type = kwargs["mime_type"]
 
 
 async def async_get_media_meta(message_media, _type):
@@ -72,8 +76,8 @@ async def async_get_media_meta(message_media, _type):
     return result
 
 
-async def async_download_media(client, message, media_types):
-    result = await download_media(client, message, media_types)
+async def async_download_media(client, message, media_types, file_formats):
+    result = await download_media(client, message, media_types, file_formats)
     return result
 
 
@@ -87,10 +91,10 @@ async def mock_process_message(*args, **kwargs):
 
 
 async def async_process_messages(
-    client, chat_id, last_read_message_id, media_types
+    client, chat_id, last_read_message_id, media_types, file_formats
 ):
     result = await process_messages(
-        client, chat_id, last_read_message_id, media_types
+        client, chat_id, last_read_message_id, media_types, file_formats
     )
     return result
 
@@ -159,6 +163,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             (
                 "AwADBQADbwAD2oTRVeHe5eXRFftfAg",
                 "/root/project/voice/voice_2019-07-25T14:53:50.ogg",
+                "ogg",
             ),
             result,
         )
@@ -175,7 +180,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             async_get_media_meta(message.photo, "photo")
         )
         self.assertEqual(
-            ("AgADBQAD5KkxG_FPQValJzQsJPyzhHcC", "/root/project/photo/"),
+            ("AgADBQAD5KkxG_FPQValJzQsJPyzhHcC", "/root/project/photo/", None),
             result,
         )
 
@@ -186,6 +191,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             document=MockDocument(
                 file_ref="AQADAgADq7LfMgAEIdy5DwAE4w4AAwI",
                 file_name="sample_document.pdf",
+                mime_type="application/pdf",
             ),
         )
         result = self.loop.run_until_complete(
@@ -195,6 +201,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             (
                 "AQADAgADq7LfMgAEIdy5DwAE4w4AAwI",
                 "/root/project/document/sample_document.pdf",
+                "pdf",
             ),
             result,
         )
@@ -206,6 +213,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             audio=MockAudio(
                 file_ref="AQADAgADq7LfMgAEIdy5DwAE5Q4AAgEC",
                 file_name="sample_audio.mp3",
+                mime_type="audio/mp3",
             ),
         )
         result = self.loop.run_until_complete(
@@ -215,6 +223,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             (
                 "AQADAgADq7LfMgAEIdy5DwAE5Q4AAgEC",
                 "/root/project/audio/sample_audio.mp3",
+                "mp3",
             ),
             result,
         )
@@ -223,13 +232,16 @@ class MediaDownloaderTestCase(unittest.TestCase):
         message = MockMessage(
             id=5,
             media=True,
-            video=MockVideo(file_ref="CQADBQADeQIAAlL60FUCNMBdK8OjlAI"),
+            video=MockVideo(
+                file_ref="CQADBQADeQIAAlL60FUCNMBdK8OjlAI",
+                mime_type="video/mp4",
+            ),
         )
         result = self.loop.run_until_complete(
             async_get_media_meta(message.video, "video")
         )
         self.assertEqual(
-            ("CQADBQADeQIAAlL60FUCNMBdK8OjlAI", "/root/project/video/",),
+            ("CQADBQADeQIAAlL60FUCNMBdK8OjlAI", "/root/project/video/", "mp4"),
             result,
         )
 
@@ -242,12 +254,31 @@ class MediaDownloaderTestCase(unittest.TestCase):
             video=MockVideo(
                 file_ref="CQADBQADeQIAAlL60FUCNMBdK8OjlAI",
                 file_name="sample_video.mp4",
+                mime_type="video/mp4",
             ),
         )
         result = self.loop.run_until_complete(
-            async_download_media(client, message, ["video", "photo"])
+            async_download_media(
+                client, message, ["video", "photo"], {"video": ["mp4"]}
+            )
         )
         self.assertEqual(5, result)
+
+        message_1 = MockMessage(
+            id=6,
+            media=True,
+            video=MockVideo(
+                file_ref="CQADBQADeQIAAlL60FUCNMBdK8OjlAI",
+                file_name="sample_video.mov",
+                mime_type="video/mov",
+            ),
+        )
+        result = self.loop.run_until_complete(
+            async_download_media(
+                client, message_1, ["video", "photo"], {"video": ["all"]}
+            )
+        )
+        self.assertEqual(6, result)
 
     @mock.patch("__main__.__builtins__.open", new_callable=mock.mock_open)
     @mock.patch("media_downloader.yaml", autospec=True)
@@ -271,7 +302,11 @@ class MediaDownloaderTestCase(unittest.TestCase):
         client = MockClient()
         result = self.loop.run_until_complete(
             async_process_messages(
-                client, "8654123", "1200", ["voice", "photo"]
+                client,
+                "8654123",
+                "1200",
+                ["voice", "photo"],
+                {"audio": ["all"], "voice": ["all"]},
             )
         )
         self.assertEqual(result, 1216)

@@ -1,7 +1,7 @@
 """Downloads media from telegram."""
 import os
 import logging
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from datetime import datetime as dt
 
 import asyncio
@@ -30,7 +30,7 @@ def update_config(config: dict):
 
 async def _get_media_meta(
     media_obj: pyrogram.client.types.messages_and_media, _type: str
-) -> Tuple[str, str]:
+) -> Tuple[str, str, Optional[str]]:
     """Extract file name and file id.
 
     Parameters
@@ -43,11 +43,17 @@ async def _get_media_meta(
     Returns
     -------
     tuple
-        file_ref, file_name
+        file_ref, file_name, file_format
     """
     file_ref: str = media_obj.file_ref
+
+    if _type in ["audio", "document", "video"]:
+        file_format: Optional[str] = media_obj.mime_type.split("/")[-1]
+    else:
+        file_format = None
+
     if _type == "voice":
-        file_format: str = media_obj.mime_type.split("/")[-1]
+        file_format = media_obj.mime_type.split("/")[-1]
         file_name: str = os.path.join(
             THIS_DIR,
             _type,
@@ -59,10 +65,15 @@ async def _get_media_meta(
         file_name = os.path.join(THIS_DIR, _type, "")
     else:
         file_name = os.path.join(THIS_DIR, _type, media_obj.file_name)
-    return file_ref, file_name
+    return file_ref, file_name, file_format
 
 
-async def download_media(client, message, media_types):
+async def download_media(
+    client: pyrogram.client.client.Client,
+    message: pyrogram.Message,
+    media_types: List[str],
+    file_formats: dict,
+):
     """Download media from Telegram.
 
     Parameters
@@ -80,21 +91,39 @@ async def download_media(client, message, media_types):
             * photo
             * video
             * voice
+    file_formats: dict
+        Dictionary containing the list of file_formats
+        to be downloaded for `audio`, `document` & `video`
+        media types
 
     Returns
     -------
     integer
         message_id
     """
+
+    def _can_download(_type, file_formats, file_format):
+        if _type in ["audio", "document", "video"]:
+            allowed_formats: list = file_formats[_type]
+            if (
+                not file_format in allowed_formats
+                and allowed_formats[0] != "all"
+            ):
+                return False
+        return True
+
     if message.media:
         for _type in media_types:
             _media = getattr(message, _type, None)
             if _media:
-                file_ref, file_name = await _get_media_meta(_media, _type)
-                download_path = await client.download_media(
-                    message, file_ref=file_ref, file_name=file_name
+                file_ref, file_name, file_format = await _get_media_meta(
+                    _media, _type
                 )
-                logger.info("Media downloaded - %s", download_path)
+                if _can_download(_type, file_formats, file_format):
+                    download_path = await client.download_media(
+                        message, file_ref=file_ref, file_name=file_name
+                    )
+                    logger.info("Media downloaded - %s", download_path)
     return message.message_id
 
 
@@ -103,6 +132,7 @@ async def process_messages(
     chat_id: str,
     last_read_message_id: int,
     media_types: List[str],
+    file_formats: dict,
 ) -> int:
     """Download media from Telegram.
 
@@ -123,7 +153,10 @@ async def process_messages(
             * photo
             * video
             * voice
-
+    file_formats: dict
+        Dictionary containing the list of file_formats
+        to be downloaded for `audio`, `document` & `video`
+        media types
     Returns
     -------
     integer
@@ -131,7 +164,7 @@ async def process_messages(
     """
     message_ids = await asyncio.gather(
         *[
-            download_media(client, message, media_types)
+            download_media(client, message, media_types, file_formats)
             async for message in client.iter_history(
                 chat_id, offset_id=last_read_message_id, reverse=True
             )
@@ -142,7 +175,7 @@ async def process_messages(
     return last_message_id
 
 
-async def begin_import(config):
+async def begin_import(config: dict):
     """Skeleton fucntion that creates client and import, write config"""
     client = pyrogram.Client(
         "media_downloader",
@@ -155,6 +188,7 @@ async def begin_import(config):
         config["chat_id"],
         config["last_read_message_id"],
         config["media_types"],
+        config["file_formats"],
     )
     await client.stop()
     config["last_read_message_id"] = last_read_message_id + 1
