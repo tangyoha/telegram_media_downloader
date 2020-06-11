@@ -1,7 +1,7 @@
 """Downloads media from telegram."""
 import os
 import logging
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from datetime import datetime as dt
 
 import asyncio
@@ -30,7 +30,7 @@ def update_config(config: dict):
 
 async def _get_media_meta(
     media_obj: pyrogram.client.types.messages_and_media, _type: str
-) -> Tuple[str, str]:
+) -> Tuple[str, str, Optional[str]]:
     """Extract file name and file id.
 
     Parameters
@@ -48,7 +48,7 @@ async def _get_media_meta(
     file_ref: str = media_obj.file_ref
 
     if _type in ["audio", "document", "video"]:
-        file_format: str = media_obj.mime_type.split("/")[-1]
+        file_format: Optional[str] = media_obj.mime_type.split("/")[-1]
     else:
         file_format = None
 
