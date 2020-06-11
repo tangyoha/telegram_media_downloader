@@ -62,6 +62,14 @@ media_types:
 - photo
 - video
 - voice
+file_formats:
+  audio:
+  - all
+  document:
+  - pdf
+  - epub
+  video:
+  - mp4
 ```
 
 - api_hash  - The api_hash you got from telegram apps
@@ -69,6 +77,7 @@ media_types:
 - chat_id -  The id of the chat/channel you want to download media. Which you get from the above-mentioned steps.
 - last_read_message_id - If it is the first time you are going to read the channel let it be `0` or if you have already used this script to download media it will have some numbers which are auto-updated after the scripts successful execution. Don't change it.
 - media_types - Type of media to download, you can update which type of media you want to download it can be one or any of the available types.
+- file_formats - File types to download for supported media types which are `audio`, `document` and `video`. Default format is `all`, downloads all files.
 
 ## Execution
 ```sh
