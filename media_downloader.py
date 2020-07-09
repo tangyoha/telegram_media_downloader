@@ -129,8 +129,7 @@ async def download_media(
 
 async def process_messages(
     client: pyrogram.client.client.Client,
-    chat_id: str,
-    last_read_message_id: int,
+    messages: list,
     media_types: List[str],
     file_formats: dict,
 ) -> int:
@@ -140,10 +139,8 @@ async def process_messages(
     ----------
     client: pyrogram.client.client.Client
         Client to interact with Telegram APIs.
-    chat_id: string
-        Id of the chat to download media from.
-    last_read_message_id: integer
-        Id of last message read from the conversational thread.
+    messages: list
+        List of telegram messages.
     media_types: list
         List of strings of media types to be downloaded.
         Ex : `["audio", "photo"]`
@@ -165,13 +162,11 @@ async def process_messages(
     message_ids = await asyncio.gather(
         *[
             download_media(client, message, media_types, file_formats)
-            async for message in client.iter_history(
-                chat_id, offset_id=last_read_message_id, reverse=True
-            )
+            for message in messages
         ]
     )
 
-    last_message_id = max(message_ids, default=last_read_message_id)
+    last_message_id = max(message_ids)
     return last_message_id
 
 
@@ -183,15 +178,37 @@ async def begin_import(config: dict):
         api_hash=config["api_hash"],
     )
     await client.start()
-    last_read_message_id = await process_messages(
-        client,
-        config["chat_id"],
-        config["last_read_message_id"],
-        config["media_types"],
-        config["file_formats"],
+    last_read_message_id: int = config["last_read_message_id"]
+    messages_iter = client.iter_history(
+        config["chat_id"], offset_id=last_read_message_id, reverse=True,
     )
+    pagination_count: int = 0
+    messages_list: list = []
+
+    async for message in messages_iter:
+        if not pagination_count == 100:
+            pagination_count += 1
+            messages_list.append(message)
+        else:
+            last_read_message_id = await process_messages(
+                client,
+                messages_list,
+                config["media_types"],
+                config["file_formats"],
+            )
+            pagination_count = 0
+            messages_list = []
+            messages_list.append(message)
+    if messages_list:
+        last_read_message_id = await process_messages(
+            client,
+            messages_list,
+            config["media_types"],
+            config["file_formats"],
+        )
+
     await client.stop()
-    config["last_read_message_id"] = last_read_message_id + 1
+    config["last_read_message_id"] = last_read_message_id
     return config
 
 
