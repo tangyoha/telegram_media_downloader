@@ -129,7 +129,7 @@ async def download_media(
 
 async def process_messages(
     client: pyrogram.client.client.Client,
-    messages: list,
+    messages: List[pyrogram.Message],
     media_types: List[str],
     file_formats: dict,
 ) -> int:
@@ -170,7 +170,7 @@ async def process_messages(
     return last_message_id
 
 
-async def begin_import(config: dict):
+async def begin_import(config: dict, pagination_limit: int):
     """Skeleton fucntion that creates client and import, write config"""
     client = pyrogram.Client(
         "media_downloader",
@@ -186,7 +186,7 @@ async def begin_import(config: dict):
     messages_list: list = []
 
     async for message in messages_iter:
-        if pagination_count != 100:
+        if pagination_count != pagination_limit:
             pagination_count += 1
             messages_list.append(message)
         else:
@@ -217,6 +217,6 @@ if __name__ == "__main__":
     config = yaml.safe_load(f)
     f.close()
     updated_config = asyncio.get_event_loop().run_until_complete(
-        begin_import(config)
+        begin_import(config, pagination_limit=100)
     )
     update_config(updated_config)

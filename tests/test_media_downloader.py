@@ -81,8 +81,8 @@ async def async_download_media(client, message, media_types, file_formats):
     return result
 
 
-async def async_begin_import(conf):
-    result = await begin_import(conf)
+async def async_begin_import(conf, pagination_limit):
+    result = await begin_import(conf, pagination_limit)
     return result
 
 
@@ -90,9 +90,7 @@ async def mock_process_message(*args, **kwargs):
     return 5
 
 
-async def async_process_messages(
-    client, messages, media_types, file_formats
-):
+async def async_process_messages(client, messages, media_types, file_formats):
     result = await process_messages(
         client, messages, media_types, file_formats
     )
@@ -293,7 +291,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
     @mock.patch("media_downloader.process_messages", new=mock_process_message)
     def test_begin_import(self):
-        result = self.loop.run_until_complete(async_begin_import(MOCK_CONF))
+        result = self.loop.run_until_complete(async_begin_import(MOCK_CONF, 3))
         conf = copy.deepcopy(MOCK_CONF)
         conf["last_read_message_id"] = 5
         self.assertDictEqual(result, conf)
