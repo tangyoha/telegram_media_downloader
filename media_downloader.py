@@ -186,7 +186,7 @@ async def begin_import(config: dict):
     messages_list: list = []
 
     async for message in messages_iter:
-        if not pagination_count == 100:
+        if pagination_count != 100:
             pagination_count += 1
             messages_list.append(message)
         else:
