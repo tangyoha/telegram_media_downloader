@@ -91,10 +91,10 @@ async def mock_process_message(*args, **kwargs):
 
 
 async def async_process_messages(
-    client, chat_id, last_read_message_id, media_types, file_formats
+    client, messages, media_types, file_formats
 ):
     result = await process_messages(
-        client, chat_id, last_read_message_id, media_types, file_formats
+        client, messages, media_types, file_formats
     )
     return result
 
@@ -295,7 +295,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
     def test_begin_import(self):
         result = self.loop.run_until_complete(async_begin_import(MOCK_CONF))
         conf = copy.deepcopy(MOCK_CONF)
-        conf["last_read_message_id"] = 6
+        conf["last_read_message_id"] = 5
         self.assertDictEqual(result, conf)
 
     def test_process_message(self):
@@ -303,8 +303,20 @@ class MediaDownloaderTestCase(unittest.TestCase):
         result = self.loop.run_until_complete(
             async_process_messages(
                 client,
-                "8654123",
-                "1200",
+                [
+                    MockMessage(
+                        id=1213,
+                        media=True,
+                        voice=MockVoice(
+                            file_ref="AwADBQADbwAD2oTRVeHe5eXRFftfAg",
+                            mime_type="audio/ogg",
+                            date=1564066430,
+                        ),
+                    ),
+                    MockMessage(id=1214, media=False, text="test message 1",),
+                    MockMessage(id=1215, media=False, text="test message 2",),
+                    MockMessage(id=1216, media=False, text="test message 3",),
+                ],
                 ["voice", "photo"],
                 {"audio": ["all"], "voice": ["all"]},
             )
