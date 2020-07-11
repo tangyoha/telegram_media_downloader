@@ -18,6 +18,8 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Get setuptools
+      run: pip install --upgrade pip setuptools codecov
     - name: Install dependencies
       run: make deps
     - name: Code Check - Pylint
@@ -25,13 +27,8 @@ jobs:
     - name: Static Type Check - Mypy
       run: make static_type_check
     - name: Test with pytest
-      run: make test
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        file: /tmp/coverage/media-downloader.xml
-        flags: unittests
-        env_vars: OS,PYTHON
-        name: codecov-umbrella
-        fail_ci_if_error: true
+      run: |
+        make -e test
+        codecov
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
