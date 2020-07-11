@@ -2,6 +2,7 @@
 import os
 import copy
 import logging
+import platform
 import unittest
 
 import mock
@@ -16,7 +17,9 @@ from media_downloader import (
     process_messages,
 )
 
-MOCK_DIR = "/root/project"
+MOCK_DIR: str = "/root/project"
+if platform.system() == "Windows":
+    MOCK_DIR = "\\root\\project"
 MOCK_CONF = {
     "api_id": 123,
     "api_hash": "hasw5Tgawsuj67",
@@ -25,6 +28,13 @@ MOCK_CONF = {
     "media_types": ["audio", "voice"],
     "file_formats": {"audio": ["all"], "voice": ["all"]},
 }
+
+
+def platform_generic_path(_path: str) -> str:
+    platform_specific_path: str = _path
+    if platform.system() == "Windows":
+        platform_specific_path = platform_specific_path.replace("/", "\\")
+    return platform_specific_path
 
 
 class MockMessage:
@@ -130,9 +140,9 @@ class MockClient:
 
     async def download_media(self, *args, **kwargs):
         assert "AwADBQADbwAD2oTRVeHe5eXRFftfAg", args[0]
-        assert "/root/project/voice/voice_2019-07-25T14:53:50.ogg", kwargs[
-            "file_name"
-        ]
+        assert platform_generic_path(
+            "/root/project/voice/voice_2019-07-25T14:53:50.ogg"
+        ), kwargs["file_name"]
         return kwargs["file_name"]
 
 
@@ -160,7 +170,9 @@ class MediaDownloaderTestCase(unittest.TestCase):
         self.assertEqual(
             (
                 "AwADBQADbwAD2oTRVeHe5eXRFftfAg",
-                "/root/project/voice/voice_2019-07-25T14:53:50.ogg",
+                platform_generic_path(
+                    "/root/project/voice/voice_2019-07-25T14:53:50.ogg"
+                ),
                 "ogg",
             ),
             result,
@@ -178,7 +190,11 @@ class MediaDownloaderTestCase(unittest.TestCase):
             async_get_media_meta(message.photo, "photo")
         )
         self.assertEqual(
-            ("AgADBQAD5KkxG_FPQValJzQsJPyzhHcC", "/root/project/photo/", None),
+            (
+                "AgADBQAD5KkxG_FPQValJzQsJPyzhHcC",
+                platform_generic_path("/root/project/photo/"),
+                None,
+            ),
             result,
         )
 
@@ -198,7 +214,9 @@ class MediaDownloaderTestCase(unittest.TestCase):
         self.assertEqual(
             (
                 "AQADAgADq7LfMgAEIdy5DwAE4w4AAwI",
-                "/root/project/document/sample_document.pdf",
+                platform_generic_path(
+                    "/root/project/document/sample_document.pdf"
+                ),
                 "pdf",
             ),
             result,
@@ -220,7 +238,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         self.assertEqual(
             (
                 "AQADAgADq7LfMgAEIdy5DwAE5Q4AAgEC",
-                "/root/project/audio/sample_audio.mp3",
+                platform_generic_path("/root/project/audio/sample_audio.mp3"),
                 "mp3",
             ),
             result,
@@ -239,7 +257,11 @@ class MediaDownloaderTestCase(unittest.TestCase):
             async_get_media_meta(message.video, "video")
         )
         self.assertEqual(
-            ("CQADBQADeQIAAlL60FUCNMBdK8OjlAI", "/root/project/video/", "mp4"),
+            (
+                "CQADBQADeQIAAlL60FUCNMBdK8OjlAI",
+                platform_generic_path("/root/project/video/"),
+                "mp4",
+            ),
             result,
         )
 
