@@ -2,6 +2,7 @@
 import os
 import copy
 import logging
+import platform
 import unittest
 
 import mock
@@ -16,7 +17,9 @@ from media_downloader import (
     process_messages,
 )
 
-MOCK_DIR = "/root/project"
+MOCK_DIR: str = "/root/project"
+if platform.system() == "Windows":
+    MOCK_DIR = "\\root\\project"
 MOCK_CONF = {
     "api_id": 123,
     "api_hash": "hasw5Tgawsuj67",
@@ -27,8 +30,11 @@ MOCK_CONF = {
 }
 
 
-def platform_generic_path(path: str) -> str:
-    return os.path.join("/", *path.split("/"))
+def platform_generic_path(_path: str) -> str:
+    platform_specific_path: str = _path
+    if platform.system() == "Windows":
+        platform_specific_path = platform_specific_path.replace("/", "\\")
+    return platform_specific_path
 
 
 class MockMessage:
