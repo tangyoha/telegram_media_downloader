@@ -7,7 +7,7 @@
 <a href="https://github.com/Dineshkarthik/telegram_media_downloader/blob/master/LICENSE"><img alt="License: MIT" src="https://black.readthedocs.io/en/stable/_static/license.svg"></a>
 <a href="https://github.com/python/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 </p>
-![Unittest]()
+
 ### Overview:
 Download all media files from a conversation or a channel that you are a part of from telegram.
 A meta of last read/downloaded message is stored in the config file so that in such a way it won't download the same media file again.
