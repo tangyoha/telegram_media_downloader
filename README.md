@@ -50,6 +50,7 @@ The very first step requires you to obtain a valid Telegram API key (API id/hash
 2. Now go to the chat/channel and you will see the URL as something like
 	- `https://web.telegram.org/#/im?p=u853521067_2449618633394` here `853521067` is the chat id.
 	- `https://web.telegram.org/#/im?p=@somename` here `somename` is the chat id.
+	- `https://web.telegram.org/#/im?p=s1301254321_6925449697188775560` here take `1301254321` and add `-100` to the start of the id => `-1001301254321`.
 
 ```yaml
 api_hash: your_api_hash
