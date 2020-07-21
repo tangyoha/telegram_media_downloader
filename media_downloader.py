@@ -29,6 +29,22 @@ def update_config(config: dict):
     logger.info("Updated last read message_id to config file")
 
 
+def _can_download(
+    _type: str, file_formats: dict, file_format: Optional[str]
+) -> bool:
+    """Check if the given file format can be downloaded"""
+    if _type in ["audio", "document", "video"]:
+        allowed_formats: list = file_formats[_type]
+        if not file_format in allowed_formats and allowed_formats[0] != "all":
+            return False
+    return True
+
+
+def _is_exist(file_path: str) -> bool:
+    """Check if a file exists and it is not a directory"""
+    return not os.path.isdir(file_path) and os.path.exists(file_path)
+
+
 async def _get_media_meta(
     media_obj: pyrogram.client.types.messages_and_media, _type: str
 ) -> Tuple[str, str, Optional[str]]:
@@ -102,20 +118,6 @@ async def download_media(
     integer
         message_id
     """
-
-    def _can_download(_type, file_formats, file_format):
-        if _type in ["audio", "document", "video"]:
-            allowed_formats: list = file_formats[_type]
-            if (
-                not file_format in allowed_formats
-                and allowed_formats[0] != "all"
-            ):
-                return False
-        return True
-
-    def _is_exist(file_path: str) -> bool:
-        return not os.path.isdir(file_name) and os.path.exists(file_name)
-
     if message.media:
         for _type in media_types:
             _media = getattr(message, _type, None)
