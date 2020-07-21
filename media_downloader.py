@@ -8,6 +8,7 @@ import asyncio
 import pyrogram
 import yaml
 
+from utils.file_management import get_next_name, manage_duplicate_file
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -112,6 +113,9 @@ async def download_media(
                 return False
         return True
 
+    def _is_exist(file_path: str) -> bool:
+        return not os.path.isdir(file_name) and os.path.exists(file_name)
+
     if message.media:
         for _type in media_types:
             _media = getattr(message, _type, None)
@@ -120,9 +124,16 @@ async def download_media(
                     _media, _type
                 )
                 if _can_download(_type, file_formats, file_format):
-                    download_path = await client.download_media(
-                        message, file_ref=file_ref, file_name=file_name
-                    )
+                    if _is_exist(file_name):
+                        file_name = get_next_name(file_name)
+                        download_path = await client.download_media(
+                            message, file_ref=file_ref, file_name=file_name
+                        )
+                        download_path = manage_duplicate_file(download_path)
+                    else:
+                        download_path = await client.download_media(
+                            message, file_ref=file_ref, file_name=file_name
+                        )
                     logger.info("Media downloaded - %s", download_path)
     return message.message_id
 
