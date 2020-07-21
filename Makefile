@@ -11,13 +11,14 @@ install:
 	pip install https://github.com/pyrogram/pyrogram/archive/asyncio.zip
 
 static_type_check:
-	mypy media_downloader.py --ignore-missing-imports
+	mypy media_downloader.py utils --ignore-missing-imports
 
 pylint:
-	pylint media_downloader.py -r y
+	pylint media_downloader.py utils -r y
 
 test:
 	py.test --cov media_downloader --doctest-modules \
+		--cov utils \
 		--cov-report term-missing \
 		--cov-report html:${TEST_ARTIFACTS} \
 		--junit-xml=${TEST_ARTIFACTS}/media-downloader.xml \

@@ -1,3 +1,4 @@
+"""Utility functions to handle downloaded files."""
 import glob
 import os
 import pathlib
@@ -5,6 +6,7 @@ from hashlib import md5
 
 
 def get_next_name(file_path: str) -> str:
+    """Returns the next available name to download file."""
     posix_path = pathlib.Path(file_path)
     counter: int = 1
     new_file_name: str = "{0}/{1}-copy{2}{3}"
@@ -26,6 +28,12 @@ def get_next_name(file_path: str) -> str:
 
 
 def manage_duplicate_file(file_path: str):
+    """
+    Check if a file is duplicate.
+
+    Compare the md5 of files with copy name pattern
+    and remove if the md5 hash is same.
+    """
     posix_path = pathlib.Path(file_path)
     file_base_name: str = "".join(posix_path.stem.split("-copy")[0:-1])
     name_pattern: str = f"{posix_path.parent}/{file_base_name}*"
