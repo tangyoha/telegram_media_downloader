@@ -8,6 +8,7 @@ import asyncio
 import pyrogram
 import yaml
 
+from utils.file_management import get_next_name, manage_duplicate_file
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,6 +27,22 @@ def update_config(config: dict):
     with open("config.yaml", "w") as yaml_file:
         yaml.dump(config, yaml_file, default_flow_style=False)
     logger.info("Updated last read message_id to config file")
+
+
+def _can_download(
+    _type: str, file_formats: dict, file_format: Optional[str]
+) -> bool:
+    """Check if the given file format can be downloaded"""
+    if _type in ["audio", "document", "video"]:
+        allowed_formats: list = file_formats[_type]
+        if not file_format in allowed_formats and allowed_formats[0] != "all":
+            return False
+    return True
+
+
+def _is_exist(file_path: str) -> bool:
+    """Check if a file exists and it is not a directory"""
+    return not os.path.isdir(file_path) and os.path.exists(file_path)
 
 
 async def _get_media_meta(
@@ -101,17 +118,6 @@ async def download_media(
     integer
         message_id
     """
-
-    def _can_download(_type, file_formats, file_format):
-        if _type in ["audio", "document", "video"]:
-            allowed_formats: list = file_formats[_type]
-            if (
-                not file_format in allowed_formats
-                and allowed_formats[0] != "all"
-            ):
-                return False
-        return True
-
     if message.media:
         for _type in media_types:
             _media = getattr(message, _type, None)
@@ -120,9 +126,16 @@ async def download_media(
                     _media, _type
                 )
                 if _can_download(_type, file_formats, file_format):
-                    download_path = await client.download_media(
-                        message, file_ref=file_ref, file_name=file_name
-                    )
+                    if _is_exist(file_name):
+                        file_name = get_next_name(file_name)
+                        download_path = await client.download_media(
+                            message, file_ref=file_ref, file_name=file_name
+                        )
+                        download_path = manage_duplicate_file(download_path)
+                    else:
+                        download_path = await client.download_media(
+                            message, file_ref=file_ref, file_name=file_name
+                        )
                     logger.info("Media downloaded - %s", download_path)
     return message.message_id
 

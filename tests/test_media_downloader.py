@@ -11,6 +11,8 @@ import asyncio
 
 from media_downloader import (
     _get_media_meta,
+    _can_download,
+    _is_exist,
     download_media,
     update_config,
     begin_import,
@@ -35,6 +37,10 @@ def platform_generic_path(_path: str) -> str:
     if platform.system() == "Windows":
         platform_specific_path = platform_specific_path.replace("/", "\\")
     return platform_specific_path
+
+
+def mock_manage_duplicate_file(file_path: str) -> str:
+    return file_path
 
 
 class MockMessage:
@@ -330,7 +336,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
                         voice=MockVoice(
                             file_ref="AwADBQADbwAD2oTRVeHe5eXRFftfAg",
                             mime_type="audio/ogg",
-                            date=1564066430,
+                            date=1564066340,
                         ),
                     ),
                     MockMessage(id=1214, media=False, text="test message 1",),
@@ -342,6 +348,67 @@ class MediaDownloaderTestCase(unittest.TestCase):
             )
         )
         self.assertEqual(result, 1216)
+
+    @mock.patch("media_downloader._is_exist", return_value=True)
+    @mock.patch(
+        "media_downloader.manage_duplicate_file",
+        new=mock_manage_duplicate_file,
+    )
+    def test_process_message_when_file_exists(self, mock_is_exist):
+        client = MockClient()
+        result = self.loop.run_until_complete(
+            async_process_messages(
+                client,
+                [
+                    MockMessage(
+                        id=1213,
+                        media=True,
+                        voice=MockVoice(
+                            file_ref="AwADBQADbwAD2oTRVeHe5eXRFftfAg",
+                            mime_type="audio/ogg",
+                            date=1564066340,
+                        ),
+                    ),
+                    MockMessage(id=1214, media=False, text="test message 1",),
+                    MockMessage(id=1215, media=False, text="test message 2",),
+                    MockMessage(id=1216, media=False, text="test message 3",),
+                ],
+                ["voice", "photo"],
+                {"audio": ["all"], "voice": ["all"]},
+            )
+        )
+        self.assertEqual(result, 1216)
+
+    def test_can_download(self):
+        file_formats = {
+            "audio": ["mp3"],
+            "video": ["mp4"],
+            "document": ["all"],
+        }
+        result = _can_download("audio", file_formats, "mp3")
+        self.assertEqual(result, True)
+
+        result1 = _can_download("audio", file_formats, "ogg")
+        self.assertEqual(result1, False)
+
+        result2 = _can_download("document", file_formats, "pdf")
+        self.assertEqual(result2, True)
+
+        result3 = _can_download("document", file_formats, "epub")
+        self.assertEqual(result3, True)
+    
+    def test_is_exist(self):
+        this_dir = os.path.dirname(os.path.abspath(__file__))
+        result = _is_exist(os.path.join(this_dir, "__init__.py"))
+        self.assertEqual(result, True)
+
+        result1 = _is_exist(os.path.join(this_dir, "init.py"))
+        self.assertEqual(result1, False)
+
+        result2 = _is_exist(this_dir)
+        self.assertEqual(result2, False)
+
+
 
     @classmethod
     def tearDownClass(cls):
