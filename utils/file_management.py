@@ -36,4 +36,5 @@ def manage_duplicate_file(file_path: str):
         old_file_md5: str = md5(open(old_file_path, "rb").read()).hexdigest()
         if current_file_md5 == old_file_md5:
             os.remove(file_path)
-            break
+            return old_file_path
+    return file_path
