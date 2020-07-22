@@ -9,7 +9,7 @@ def get_next_name(file_path: str) -> str:
     """Returns the next available name to download file."""
     posix_path = pathlib.Path(file_path)
     counter: int = 1
-    new_file_name: str = "{0}/{1}-copy{2}{3}"
+    new_file_name: str = os.path.join("{0}", "{1}-copy{2}{3}")
     while os.path.isfile(
         new_file_name.format(
             posix_path.parent,
