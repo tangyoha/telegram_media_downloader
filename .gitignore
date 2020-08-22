@@ -33,6 +33,7 @@ wheels/
 .installed.cfg
 *.egg
 
+
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb
@@ -44,7 +45,7 @@ ENV/
 bin/
 include/
 pip-selfcheck.json
-
+lib64
 
 #Telegram Sessions
 *.session
