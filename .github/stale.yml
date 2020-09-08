@@ -5,6 +5,7 @@ daysUntilClose: 7
 # Issues with these labels will never be considered stale
 exemptLabels:
   - enhancement
+  - feature_request
   - help wanted
   - good first issue
 # Comment to post when marking an issue as stale. Set to `false` to disable
