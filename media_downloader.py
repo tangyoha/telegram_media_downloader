@@ -46,13 +46,13 @@ def _is_exist(file_path: str) -> bool:
 
 
 async def _get_media_meta(
-    media_obj: pyrogram.client.types.messages_and_media, _type: str
+    media_obj: pyrogram.types.messages_and_media, _type: str
 ) -> Tuple[str, str, Optional[str]]:
     """Extract file name and file id.
 
     Parameters
     ----------
-    media_obj: pyrogram.client.types.messages_and_media
+    media_obj: pyrogram.types.messages_and_media
         Media object to be extracted.
     _type: string
         Type of media object.
@@ -86,8 +86,8 @@ async def _get_media_meta(
 
 
 async def download_media(
-    client: pyrogram.client.client.Client,
-    message: pyrogram.Message,
+    client: pyrogram.client.Client,
+    message: pyrogram.types.Message,
     media_types: List[str],
     file_formats: dict,
 ):
@@ -95,9 +95,9 @@ async def download_media(
 
     Parameters
     ----------
-    client: pyrogram.client.client.Client
+    client: pyrogram.client.Client
         Client to interact with Telegram APIs.
-    message: pyrogram.Message
+    message: pyrogram.types.Message
         Message object retrived from telegram.
     media_types: list
         List of strings of media types to be downloaded.
@@ -141,8 +141,8 @@ async def download_media(
 
 
 async def process_messages(
-    client: pyrogram.client.client.Client,
-    messages: List[pyrogram.Message],
+    client: pyrogram.client.Client,
+    messages: List[pyrogram.types.Message],
     media_types: List[str],
     file_formats: dict,
 ) -> int:
@@ -150,7 +150,7 @@ async def process_messages(
 
     Parameters
     ----------
-    client: pyrogram.client.client.Client
+    client: pyrogram.client.Client
         Client to interact with Telegram APIs.
     messages: list
         List of telegram messages.
@@ -193,7 +193,9 @@ async def begin_import(config: dict, pagination_limit: int):
     await client.start()
     last_read_message_id: int = config["last_read_message_id"]
     messages_iter = client.iter_history(
-        config["chat_id"], offset_id=last_read_message_id, reverse=True,
+        config["chat_id"],
+        offset_id=last_read_message_id,
+        reverse=True,
     )
     pagination_count: int = 0
     messages_list: list = []
