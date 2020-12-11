@@ -93,3 +93,17 @@ All the downloaded media will be stored inside  respective direcotry named  in t
 | photo | path/to/project/photo |
 | video | path/to/project/video |
 | voice | path/to/project/voice |
+
+## Proxy
+`Socks5` proxy is supported in this project currently. To use it, simply create a `config.ini` file in the path of this project, and edit it with your proxy server info as follow:
+
+```ini
+[proxy]
+enabled = True
+hostname = 127.0.0.1
+port = 1080
+username =
+password =
+```
+
+Then the proxy will automatically be enabled.
