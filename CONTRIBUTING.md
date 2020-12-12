@@ -59,7 +59,9 @@ If you never created a pull request before, welcome [Here is a great tutorial](h
 
 
 ### Coding Standards
+
 #### Python style
+
 Please follow these coding standards when writing code for inclusion in telegram-media-downloader.
 
 Telegram-media-downloader  follows the [PEP8](https://www.python.org/dev/peps/pep-0008/) standard and uses [Black](https://black.readthedocs.io/en/stable/) and [Pylint](https://pylint.pycqa.org/en/latest/) to ensure a consistent code format throughout the project.
@@ -78,6 +80,7 @@ make style_check
 ```
 
 #### Type hints
+
 Telegram-media-downloader strongly encourages the use of  [**PEP 484**](https://www.python.org/dev/peps/pep-0484)  style type hints. New development should contain type hints and pull requests to annotate existing code are accepted as well!
 
 Types imports should follow the  `from  typing  import  ...`  convention. So rather than
@@ -103,12 +106,14 @@ maybe_primes: List[Optional[int]] = []
 ```
 
 #### Validating type hints
+
 telegram-media-downloader uses  [mypy](http://mypy-lang.org/)  to statically analyze the code base and type hints. After making any change you can ensure your type hints are correct by running
 ```sh
 make static_type_check
 ```
 
 #### Docstrings and standards
+
 A Python docstring is a string used to document a Python module, class, function or method, so programmers can understand what it does without having to read the details of the implementation.
 
 The next example gives an idea of what a docstring looks like:
@@ -149,6 +154,45 @@ def add(num1: int, num2: int) -> int:
     return num1 + num2
 ```
 Some standards regarding docstrings exist, which make them easier to read, and allow them be easily exported to other formats such as html or pdf.
+
+### Commit Message
+
+telegram-media-downloader uses a convention for commit message prefixes and layout. Here are some common prefixes along with general guidelines for when to use them:
+```
+<prefix>: <subject>
+<-- OPTIONAL -->
+<BLANK LINE>
+<body>
+```
+
+#### Prefix:
+
+Must be one of the following:
+-  **add**: Adding a new file
+-   **ci**: Changes to CI configuration files and scripts (example: files inside `.github` folder)
+-   **clean**: Code cleanup
+-   **docs**: Additions/updates to documentation
+-   **enh**: Enhancement, new functionality
+-   **fix**: Bug fix
+-   **perf**: A code change that improves performance
+-   **refactor**: A code change that neither fixes a bug nor adds a feature
+-   **style**: Changes that do not affect the meaning of the code (white-space, formatting, etc)
+-   **test**: Additions/updates to tests
+-   **type**: Type annotations
+    
+#### Subject:
+
+Please reference the relevant GitHub issues in your commit message using  #1234. 
+-  a subject line with  `<  80`  chars.
+-  summary in present tense.
+-  not capitalized.
+-  no period at the end.
+
+#### Commit Message Body
+
+Just as in the summary, use the imperative, present tense.
+
+Explain the motivation for the change in the commit message body. This commit message should explain  _why_  you are making the change. You can include a comparison of the previous behavior with the new behavior in order to illustrate the impact of the change.
 
 ### Code of Conduct
 
