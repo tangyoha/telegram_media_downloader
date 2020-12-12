@@ -107,3 +107,13 @@ password =
 ```
 
 Then the proxy will automatically be enabled.
+
+## Contributing
+### Contributing Guidelines
+Read through our [contributing guidelines](https://github.com/Dineshkarthik/telegram_media_downloader/blob/master/CONTRIBUTING.md) to learn about our submission process, coding rules and more.
+
+### Want to Help?
+Want to file a bug, contribute some code, or improve documentation? Excellent! Read up on our guidelines for [contributing](https://github.com/Dineshkarthik/telegram_media_downloader/blob/master/CONTRIBUTING.md).
+
+### Code of Conduct
+Help us keep Angular open and inclusive. Please read and follow our [Code of Conduct](https://github.com/Dineshkarthik/telegram_media_downloader/blob/master/CODE_OF_CONDUCT.md).
