@@ -17,7 +17,8 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def update_config(config: dict):
-    """Update exisitng configuration file.
+    """
+    Update exisitng configuration file.
 
     Parameters
     ----------
