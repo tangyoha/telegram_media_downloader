@@ -1,6 +1,6 @@
 TEST_ARTIFACTS ?= /tmp/coverage
 
-.PHONY: install dev_install static_type_check pylint style_check test 
+.PHONY: install dev_install static_type_check pylint style_check test
 
 install:
 	pip install --upgrade pip setuptools
