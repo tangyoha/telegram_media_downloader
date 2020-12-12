@@ -6,7 +6,20 @@ from hashlib import md5
 
 
 def get_next_name(file_path: str) -> str:
-    """Returns the next available name to download file."""
+    """
+    Get next available name to download file.
+
+    Parameters
+    ----------
+    file_path: str
+        Absolute path of the file for which next available name to
+        be generated.
+
+    Returns
+    -------
+    str
+        Absolute path of the next available name for the file.
+    """
     posix_path = pathlib.Path(file_path)
     counter: int = 1
     new_file_name: str = os.path.join("{0}", "{1}-copy{2}{3}")
@@ -33,6 +46,17 @@ def manage_duplicate_file(file_path: str):
 
     Compare the md5 of files with copy name pattern
     and remove if the md5 hash is same.
+
+    Parameters
+    ----------
+    file_path: str
+        Absolute path of the file for which duplicates needs to
+        be managed.
+
+    Returns
+    -------
+    str
+        Absolute path of the duplicate managed file.
     """
     posix_path = pathlib.Path(file_path)
     file_base_name: str = "".join(posix_path.stem.split("-copy")[0:-1])

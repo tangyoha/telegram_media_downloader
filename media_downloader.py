@@ -21,7 +21,7 @@ def update_config(config: dict):
 
     Parameters
     ----------
-    config: dictionary
+    config: dict
         Configuraiton to be written into config file.
     """
     with open("config.yaml", "w") as yaml_file:
@@ -32,7 +32,25 @@ def update_config(config: dict):
 def _can_download(
     _type: str, file_formats: dict, file_format: Optional[str]
 ) -> bool:
-    """Check if the given file format can be downloaded"""
+    """
+    Check if the given file format can be downloaded.
+
+    Parameters
+    ----------
+    _type: str
+        Type of media object.
+    file_formats: dict
+        Dictionary containing the list of file_formats
+        to be downloaded for `audio`, `document` & `video`
+        media types
+    file_format: str
+        Format of the current file to be downloaded.
+
+    Returns
+    -------
+    bool
+        True if the file format can be downloaded else False.
+    """
     if _type in ["audio", "document", "video"]:
         allowed_formats: list = file_formats[_type]
         if not file_format in allowed_formats and allowed_formats[0] != "all":
@@ -41,20 +59,33 @@ def _can_download(
 
 
 def _is_exist(file_path: str) -> bool:
-    """Check if a file exists and it is not a directory"""
+    """
+    Check if a file exists and it is not a directory.
+
+    Parameters
+    ----------
+    file_path: str
+        Absolute path of the file to be checked.
+
+    Returns
+    -------
+    bool
+        True if the file exists else False.
+    """
     return not os.path.isdir(file_path) and os.path.exists(file_path)
 
 
 async def _get_media_meta(
     media_obj: pyrogram.types.messages_and_media, _type: str
 ) -> Tuple[str, str, Optional[str]]:
-    """Extract file name and file id.
+    """
+    Extract file name and file id.
 
     Parameters
     ----------
     media_obj: pyrogram.types.messages_and_media
         Media object to be extracted.
-    _type: string
+    _type: str
         Type of media object.
 
     Returns
@@ -91,7 +122,8 @@ async def download_media(
     media_types: List[str],
     file_formats: dict,
 ):
-    """Download media from Telegram.
+    """
+    Download media from Telegram.
 
     Parameters
     ----------
@@ -111,12 +143,12 @@ async def download_media(
     file_formats: dict
         Dictionary containing the list of file_formats
         to be downloaded for `audio`, `document` & `video`
-        media types
+        media types.
 
     Returns
     -------
-    integer
-        message_id
+    int
+        Current message id.
     """
     if message.media:
         for _type in media_types:
@@ -146,7 +178,8 @@ async def process_messages(
     media_types: List[str],
     file_formats: dict,
 ) -> int:
-    """Download media from Telegram.
+    """
+    Download media from Telegram.
 
     Parameters
     ----------
@@ -166,11 +199,12 @@ async def process_messages(
     file_formats: dict
         Dictionary containing the list of file_formats
         to be downloaded for `audio`, `document` & `video`
-        media types
+        media types.
+
     Returns
     -------
-    integer
-        last_message_id
+    int
+        Max value of list of message ids.
     """
     message_ids = await asyncio.gather(
         *[
@@ -183,8 +217,26 @@ async def process_messages(
     return last_message_id
 
 
-async def begin_import(config: dict, pagination_limit: int):
-    """Skeleton fucntion that creates client and import, write config"""
+async def begin_import(config: dict, pagination_limit: int) -> dict:
+    """
+    Create pyrogram client and initiate download.
+
+    The pyrogram client is created using the ``api_id``, ``api_hash``
+    from the config and iter throught message offset on the
+    ``last_message_id`` and the requested file_formats.
+
+    Parameters
+    ----------
+    config: dict
+        Dict containing the config to create pyrogram client.
+    pagination_limit: int
+        Number of message to download asynchronously as a batch.
+
+    Returns
+    -------
+    dict
+        Updated configuraiton to be written into config file.
+    """
     client = pyrogram.Client(
         "media_downloader",
         api_id=config["api_id"],
