@@ -151,10 +151,14 @@ async def download_media(
     int
         Current message id.
     """
-    if message.media:
-        for _type in media_types:
-            _media = getattr(message, _type, None)
-            if _media:
+    for _ in range(3):
+        try:
+            if message.media is None:
+                return message.message_id
+            for _type in media_types:
+                _media = getattr(message, _type, None)
+                if _media is None:
+                    continue
                 file_ref, file_name, file_format = await _get_media_meta(
                     _media, _type
                 )
@@ -170,6 +174,20 @@ async def download_media(
                             message, file_ref=file_ref, file_name=file_name
                         )
                     logger.info("Media downloaded - %s", download_path)
+        except pyrogram.errors.exceptions.bad_request_400.BadRequest:
+            logger.warning("Message[%d]: file reference expired, refetching...",
+                message.message_id,
+            )
+            message = await client.get_messages(
+                chat_id=message.chat.id,
+                message_ids=message.message_id,
+            )
+        else:
+            break
+    else:
+        logger.error("Message[%d]: file reference expired for 3 times, skiped.",
+            message.message_id,
+        )
     return message.message_id
 
 
