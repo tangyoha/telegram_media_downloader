@@ -11,9 +11,10 @@ import yaml
 from utils.file_management import get_next_name, manage_duplicate_file
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("media_downloader")
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+FAILED_IDS: list = []
 
 
 def update_config(config: dict):
@@ -126,6 +127,9 @@ async def download_media(
     """
     Download media from Telegram.
 
+    Each of the files to download are retried 3 times with a
+    delay of 5 seconds each.
+
     Parameters
     ----------
     client: pyrogram.client.Client
@@ -151,7 +155,7 @@ async def download_media(
     int
         Current message id.
     """
-    for _ in range(3):
+    for retry in range(3):
         try:
             if message.media is None:
                 return message.message_id
@@ -173,21 +177,48 @@ async def download_media(
                         download_path = await client.download_media(
                             message, file_ref=file_ref, file_name=file_name
                         )
-                    logger.info("Media downloaded - %s", download_path)
+                    if download_path:
+                        logger.info("Media downloaded - %s", download_path)
+            break
         except pyrogram.errors.exceptions.bad_request_400.BadRequest:
-            logger.warning("Message[%d]: file reference expired, refetching...",
+            logger.warning(
+                "Message[%d]: file reference expired, refetching...",
                 message.message_id,
             )
             message = await client.get_messages(
                 chat_id=message.chat.id,
                 message_ids=message.message_id,
             )
-        else:
+            if retry == 2:
+                # pylint: disable = C0301
+                logger.error(
+                    "Message[%d]: file reference expired for 3 retries, download skipped.",
+                    message.message_id,
+                )
+                FAILED_IDS.append(message.message_id)
+        except TypeError:
+            # pylint: disable = C0301
+            logger.warning(
+                "Timeout Error occured when downloading Message[%d], retrying after 5 seconds",
+                message.message_id,
+            )
+            await asyncio.sleep(5)
+            if retry == 2:
+                logger.error(
+                    "Message[%d]: Timing out after 3 reties, download skipped.",
+                    message.message_id,
+                )
+                FAILED_IDS.append(message.message_id)
+        except Exception as e:
+            # pylint: disable = C0301
+            logger.error(
+                "Message[%d]: could not be downloaded due to following exception:\n[%s].",
+                message.message_id,
+                e,
+                exc_info=True,
+            )
+            FAILED_IDS.append(message.message_id)
             break
-    else:
-        logger.error("Message[%d]: file reference expired for 3 times, skiped.",
-            message.message_id,
-        )
     return message.message_id
 
 
@@ -300,11 +331,27 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
     return config
 
 
-if __name__ == "__main__":
+def main():
+    """Main function of the downloader."""
     f = open(os.path.join(THIS_DIR, "config.yaml"))
     config = yaml.safe_load(f)
     f.close()
     updated_config = asyncio.get_event_loop().run_until_complete(
         begin_import(config, pagination_limit=100)
     )
+    updated_config["ids_to_retry"] = list(
+        set(updated_config["ids_to_retry"] + FAILED_IDS)
+    )
+    if FAILED_IDS:
+        logger.info(
+            "Downloading of %d files failed. "
+            "Failed message ids are to config file.\n"
+            "Functionality to download failed downloads will be added "
+            "in the next version of `Telegram-media-downloader`",
+            len(set(FAILED_IDS)),
+        )
     update_config(updated_config)
+
+
+if __name__ == "__main__":
+    main()
