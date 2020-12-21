@@ -119,39 +119,39 @@ A Python docstring is a string used to document a Python module, class, function
 The next example gives an idea of what a docstring looks like:
 ```py
 def add(num1: int, num2: int) -> int:
-    """
-    Add up two integer numbers.
+   """
+   Add up two integer numbers.
 
-    This function simply wraps the ``+`` operator, and does not
-    do anything interesting, except for illustrating what
-    the docstring of a very simple function looks like.
+   This function simply wraps the ``+`` operator, and does not
+   do anything interesting, except for illustrating what
+   the docstring of a very simple function looks like.
 
-    Parameters
-    ----------
-    num1 : int
-	    First number to add.
-    num2 : int
-	    Second number to add.
+   Parameters
+   ----------
+   num1: int
+      First number to add.
+   num2: int
+      Second number to add.
 
-    Returns
-    -------
-    int
-	    The sum of ``num1`` and ``num2``.
+   Returns
+   -------
+   int
+      The sum of ``num1`` and ``num2``.
 
-    See Also
-    --------
-    subtract : Subtract one integer from another.
+   See Also
+   --------
+   subtract : Subtract one integer from another.
 
-    Examples
-    --------
-    >>> add(2, 2)
-    4
-    >>> add(25, 0)
-    25
-    >>> add(10, -10)
-    0
-    """
-    return num1 + num2
+   Examples
+   --------
+   >>> add(2, 2)
+   4
+   >>> add(25, 0)
+   25
+   >>> add(10, -10)
+   0
+   """
+   return num1 + num2
 ```
 Some standards regarding docstrings exist, which make them easier to read, and allow them be easily exported to other formats such as html or pdf.
 
@@ -169,16 +169,16 @@ telegram-media-downloader uses a convention for commit message prefixes and layo
 
 Must be one of the following:
 -  **add**: Adding a new file
--   **ci**: Changes to CI configuration files and scripts (example: files inside `.github` folder)
--   **clean**: Code cleanup
--   **docs**: Additions/updates to documentation
--   **enh**: Enhancement, new functionality
--   **fix**: Bug fix
--   **perf**: A code change that improves performance
--   **refactor**: A code change that neither fixes a bug nor adds a feature
--   **style**: Changes that do not affect the meaning of the code (white-space, formatting, etc)
--   **test**: Additions/updates to tests
--   **type**: Type annotations
+-  **ci**: Changes to CI configuration files and scripts (example: files inside `.github` folder)
+-  **clean**: Code cleanup
+-  **docs**: Additions/updates to documentation
+-  **enh**: Enhancement, new functionality
+-  **fix**: Bug fix
+-  **perf**: A code change that improves performance
+-  **refactor**: A code change that neither fixes a bug nor adds a feature
+-  **style**: Changes that do not affect the meaning of the code (white-space, formatting, etc)
+-  **test**: Additions/updates to tests
+-  **type**: Type annotations
     
 #### Subject:
 
