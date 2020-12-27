@@ -62,7 +62,8 @@ def manage_duplicate_file(file_path: str):
     file_base_name: str = "".join(posix_path.stem.split("-copy")[0:-1])
     name_pattern: str = f"{posix_path.parent}/{file_base_name}*"
     old_files: list = glob.glob(name_pattern)
-    old_files.remove(file_path)
+    if file_path in old_files:
+        old_files.remove(file_path)
     current_file_md5: str = md5(open(file_path, "rb").read()).hexdigest()
     for old_file_path in old_files:
         old_file_md5: str = md5(open(old_file_path, "rb").read()).hexdigest()
