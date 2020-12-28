@@ -59,7 +59,7 @@ def manage_duplicate_file(file_path: str):
         Absolute path of the duplicate managed file.
     """
     posix_path = pathlib.Path(file_path)
-    file_base_name: str = "".join(posix_path.stem.split("-copy")[0:-1])
+    file_base_name: str = "".join(posix_path.stem.split("-copy")[0])
     name_pattern: str = f"{posix_path.parent}/{file_base_name}*"
     # Reason for using `str.translate()`
     # https://stackoverflow.com/q/22055500/6730439
