@@ -59,9 +59,13 @@ def manage_duplicate_file(file_path: str):
         Absolute path of the duplicate managed file.
     """
     posix_path = pathlib.Path(file_path)
-    file_base_name: str = "".join(posix_path.stem.split("-copy")[0:-1])
+    file_base_name: str = "".join(posix_path.stem.split("-copy")[0])
     name_pattern: str = f"{posix_path.parent}/{file_base_name}*"
-    old_files: list = glob.glob(name_pattern)
+    # Reason for using `str.translate()`
+    # https://stackoverflow.com/q/22055500/6730439
+    old_files: list = glob.glob(
+        name_pattern.translate({ord("["): "[[]", ord("]"): "[]]"})
+    )
     if file_path in old_files:
         old_files.remove(file_path)
     current_file_md5: str = md5(open(file_path, "rb").read()).hexdigest()
