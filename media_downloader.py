@@ -9,8 +9,13 @@ import pyrogram
 import yaml
 
 from utils.file_management import get_next_name, manage_duplicate_file
+from utils.log import LogFilter
+from utils.meta import print_meta
+
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("pyrogram.session.session").addFilter(LogFilter())
+logging.getLogger("pyrogram.client").addFilter(LogFilter())
 logger = logging.getLogger("media_downloader")
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -292,6 +297,7 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
         api_id=config["api_id"],
         api_hash=config["api_hash"],
     )
+    pyrogram.session.Session.notice_displayed = True
     await client.start()
     last_read_message_id: int = config["last_read_message_id"]
     messages_iter = client.iter_history(
@@ -354,4 +360,5 @@ def main():
 
 
 if __name__ == "__main__":
+    print_meta(logger)
     main()
