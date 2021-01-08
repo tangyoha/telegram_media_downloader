@@ -29,6 +29,7 @@ MOCK_CONF = {
     "api_hash": "hasw5Tgawsuj67",
     "last_read_message_id": 0,
     "chat_id": 8654123,
+    "ids_to_retry": [],
     "media_types": ["audio", "voice"],
     "file_formats": {"audio": ["all"], "voice": ["all"]},
 }
@@ -100,7 +101,7 @@ class MockEventLoop:
         pass
 
     def run_until_complete(self, *args, **kwargs):
-        return {"api_id": 1, "api_hash": "asdf", "ids_to_retry": [1]}
+        return {"api_id": 1, "api_hash": "asdf", "ids_to_retry": [1, 2, 3]}
 
 
 class MockAsync:
@@ -474,16 +475,21 @@ class MediaDownloaderTestCase(unittest.TestCase):
     @mock.patch("__main__.__builtins__.open", new_callable=mock.mock_open)
     @mock.patch("media_downloader.yaml", autospec=True)
     def test_update_config(self, mock_yaml, mock_open):
-        conf = {"api_id": 123, "api_hash": "hasw5Tgawsuj67"}
+        conf = {
+            "api_id": 123,
+            "api_hash": "hasw5Tgawsuj67",
+            "ids_to_retry": [],
+        }
         update_config(conf)
         mock_open.assert_called_with("config.yaml", "w")
         mock_yaml.dump.assert_called_with(
             conf, mock.ANY, default_flow_style=False
         )
 
+    @mock.patch("media_downloader.update_config")
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
     @mock.patch("media_downloader.process_messages", new=mock_process_message)
-    def test_begin_import(self):
+    def test_begin_import(self, mock_update_config):
         result = self.loop.run_until_complete(async_begin_import(MOCK_CONF, 3))
         conf = copy.deepcopy(MOCK_CONF)
         conf["last_read_message_id"] = 5
