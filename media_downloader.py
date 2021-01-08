@@ -31,6 +31,7 @@ def update_config(config: dict):
     config: dict
         Configuraiton to be written into config file.
     """
+    config["ids_to_retry"] = list(set(config["ids_to_retry"] + FAILED_IDS))
     with open("config.yaml", "w") as yaml_file:
         yaml.dump(config, yaml_file, default_flow_style=False)
     logger.info("Updated last read message_id to config file")
@@ -345,14 +346,11 @@ def main():
     updated_config = asyncio.get_event_loop().run_until_complete(
         begin_import(config, pagination_limit=100)
     )
-    updated_config["ids_to_retry"] = list(
-        set(updated_config["ids_to_retry"] + FAILED_IDS)
-    )
     if FAILED_IDS:
         logger.info(
             "Downloading of %d files failed. "
-            "Failed message ids are to config file.\n"
-            "Functionality to download failed downloads will be added "
+            "Failed message ids are added to config file.\n"
+            "Functionality to re-download failed downloads will be added "
             "in the next version of `Telegram-media-downloader`",
             len(set(FAILED_IDS)),
         )
