@@ -34,7 +34,7 @@ setup(
     ],
     project_urls={
         "Tracker": "https://github.com/Dineshkarthik/telegram_media_downloader/issues",
-        "Community": "https://t.me/tmdannouncements",
+        "Community": "https://t.me/tgmdnews",
         "Source": "https://github.com/Dineshkarthik/telegram_media_downloader",
     },
     python_requires=">=3.6",

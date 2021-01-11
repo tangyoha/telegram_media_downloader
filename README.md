@@ -8,6 +8,16 @@
 <a href="https://github.com/python/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 </p>
 
+<h3 align="center">
+  <a href="https://github.com/Dineshkarthik/telegram_media_downloader/discussions/categories/ideas">Feature request</a>
+  <span> · </span>
+  <a href="https://github.com/Dineshkarthik/telegram_media_downloader/issues">Report a bug</a>
+  <span> · </span>
+  Support: <a href="https://github.com/Dineshkarthik/telegram_media_downloader/discussions">Discussions</a>
+  <span> & </span>
+  <a href="https://t.me/tgmdnews">Telegram Community</a>
+</h3>
+
 ### Overview:
 Download all media files from a conversation or a channel that you are a part of from telegram.
 A meta of last read/downloaded message is stored in the config file so that in such a way it won't download the same media file again.
@@ -118,4 +128,4 @@ Read through our [contributing guidelines](https://github.com/Dineshkarthik/tele
 Want to file a bug, contribute some code, or improve documentation? Excellent! Read up on our guidelines for [contributing](https://github.com/Dineshkarthik/telegram_media_downloader/blob/master/CONTRIBUTING.md).
 
 ### Code of Conduct
-Help us keep Teleggram Media Downloader open and inclusive. Please read and follow our [Code of Conduct](https://github.com/Dineshkarthik/telegram_media_downloader/blob/master/CODE_OF_CONDUCT.md).
+Help us keep Telegram Media Downloader open and inclusive. Please read and follow our [Code of Conduct](https://github.com/Dineshkarthik/telegram_media_downloader/blob/master/CODE_OF_CONDUCT.md).
