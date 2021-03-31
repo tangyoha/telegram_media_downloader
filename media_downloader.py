@@ -85,7 +85,7 @@ def _is_exist(file_path: str) -> bool:
 
 async def _get_media_meta(
     media_obj: pyrogram.types.messages_and_media, _type: str
-) -> Tuple[str, str, Optional[str]]:
+) -> Tuple[str, Optional[str]]:
     """
     Extract file name and file id.
 
@@ -99,10 +99,8 @@ async def _get_media_meta(
     Returns
     -------
     tuple
-        file_ref, file_name, file_format
+        file_name, file_format
     """
-    file_ref: str = media_obj.file_ref
-
     if _type in ["audio", "document", "video"]:
         file_format: Optional[str] = media_obj.mime_type.split("/")[-1]
     else:
@@ -121,7 +119,7 @@ async def _get_media_meta(
         file_name = os.path.join(
             THIS_DIR, _type, getattr(media_obj, "file_name", None) or ""
         )
-    return file_ref, file_name, file_format
+    return file_name, file_format
 
 
 async def download_media(
@@ -169,19 +167,17 @@ async def download_media(
                 _media = getattr(message, _type, None)
                 if _media is None:
                     continue
-                file_ref, file_name, file_format = await _get_media_meta(
-                    _media, _type
-                )
+                file_name, file_format = await _get_media_meta(_media, _type)
                 if _can_download(_type, file_formats, file_format):
                     if _is_exist(file_name):
                         file_name = get_next_name(file_name)
                         download_path = await client.download_media(
-                            message, file_ref=file_ref, file_name=file_name
+                            message, file_name=file_name
                         )
                         download_path = manage_duplicate_file(download_path)
                     else:
                         download_path = await client.download_media(
-                            message, file_ref=file_ref, file_name=file_name
+                            message, file_name=file_name
                         )
                     if download_path:
                         logger.info("Media downloaded - %s", download_path)
