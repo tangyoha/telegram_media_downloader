@@ -65,34 +65,29 @@ class MockMessage:
 
 class MockAudio:
     def __init__(self, **kwargs):
-        self.file_ref = kwargs["file_ref"]
         self.file_name = kwargs["file_name"]
         self.mime_type = kwargs["mime_type"]
 
 
 class MockDocument:
     def __init__(self, **kwargs):
-        self.file_ref = kwargs["file_ref"]
         self.file_name = kwargs["file_name"]
         self.mime_type = kwargs["mime_type"]
 
 
 class MockPhoto:
     def __init__(self, **kwargs):
-        self.file_ref = kwargs["file_ref"]
         self.date = kwargs["date"]
 
 
 class MockVoice:
     def __init__(self, **kwargs):
-        self.file_ref = kwargs["file_ref"]
         self.mime_type = kwargs["mime_type"]
         self.date = kwargs["date"]
 
 
 class MockVideo:
     def __init__(self, **kwargs):
-        self.file_ref = kwargs["file_ref"]
         self.mime_type = kwargs["mime_type"]
 
 
@@ -157,7 +152,6 @@ class MockClient:
                 id=1213,
                 media=True,
                 voice=MockVoice(
-                    file_ref="AwADBQADbwAD2oTRVeHe5eXRFftfAg",
                     mime_type="audio/ogg",
                     date=1564066430,
                 ),
@@ -188,7 +182,6 @@ class MockClient:
                 media=True,
                 chat_id=123456,
                 video=MockVideo(
-                    file_ref="DwAD94854dd3d5eBe322f4a4DEf22872",
                     file_name="sample_video.mov",
                     mime_type="video/mov",
                 ),
@@ -199,7 +192,6 @@ class MockClient:
                 media=True,
                 chat_id=234567,
                 video=MockVideo(
-                    file_ref="QNzmM3Ww2c00sXhWr4ZJwNT77qaxxP19",
                     file_name="sample_video.mov",
                     mime_type="video/mov",
                 ),
@@ -207,15 +199,12 @@ class MockClient:
         return message
 
     async def download_media(self, *args, **kwargs):
-        assert "AwADBQADbwAD2oTRVeHe5eXRFftfAg", kwargs[0]
-        assert platform_generic_path(
-            "/root/project/voice/voice_2019-07-25T14:53:50.ogg"
-        ), kwargs["file_name"]
-        if kwargs["file_ref"] == "QNzmM3Ww2c00sXhWr4ZJwNT77qaxxP19":
+        mock_message = args[0]
+        if mock_message.message_id in [7, 8]:
             raise pyrogram.errors.exceptions.bad_request_400.BadRequest
-        elif kwargs["file_ref"] == "LGmJOmVpbHbrtmDdzKQx5omdZNq7QNJp":
+        elif mock_message.message_id == 9:
             raise pyrogram.errors.exceptions.unauthorized_401.Unauthorized
-        elif kwargs["file_ref"] == "sJp5vGa02p1p9bkpU1tVx3OkH2x8cxHK":
+        elif mock_message.message_id == 11:
             raise TypeError
         return kwargs["file_name"]
 
@@ -232,7 +221,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=1,
             media=True,
             voice=MockVoice(
-                file_ref="AwADBQADbwAD2oTRVeHe5eXRFftfAg",
                 mime_type="audio/ogg",
                 date=1564066430,
             ),
@@ -243,7 +231,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
 
         self.assertEqual(
             (
-                "AwADBQADbwAD2oTRVeHe5eXRFftfAg",
                 platform_generic_path(
                     "/root/project/voice/voice_2019-07-25T14:53:50.ogg"
                 ),
@@ -256,16 +243,13 @@ class MediaDownloaderTestCase(unittest.TestCase):
         message = MockMessage(
             id=2,
             media=True,
-            photo=MockPhoto(
-                file_ref="AgADBQAD5KkxG_FPQValJzQsJPyzhHcC", date=1565015712
-            ),
+            photo=MockPhoto(date=1565015712),
         )
         result = self.loop.run_until_complete(
             async_get_media_meta(message.photo, "photo")
         )
         self.assertEqual(
             (
-                "AgADBQAD5KkxG_FPQValJzQsJPyzhHcC",
                 platform_generic_path("/root/project/photo/"),
                 None,
             ),
@@ -277,7 +261,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=3,
             media=True,
             document=MockDocument(
-                file_ref="AQADAgADq7LfMgAEIdy5DwAE4w4AAwI",
                 file_name="sample_document.pdf",
                 mime_type="application/pdf",
             ),
@@ -287,7 +270,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                "AQADAgADq7LfMgAEIdy5DwAE4w4AAwI",
                 platform_generic_path(
                     "/root/project/document/sample_document.pdf"
                 ),
@@ -301,7 +283,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=4,
             media=True,
             audio=MockAudio(
-                file_ref="AQADAgADq7LfMgAEIdy5DwAE5Q4AAgEC",
                 file_name="sample_audio.mp3",
                 mime_type="audio/mp3",
             ),
@@ -311,7 +292,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                "AQADAgADq7LfMgAEIdy5DwAE5Q4AAgEC",
                 platform_generic_path("/root/project/audio/sample_audio.mp3"),
                 "mp3",
             ),
@@ -323,7 +303,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=5,
             media=True,
             video=MockVideo(
-                file_ref="CQADBQADeQIAAlL60FUCNMBdK8OjlAI",
                 mime_type="video/mp4",
             ),
         )
@@ -332,7 +311,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                "CQADBQADeQIAAlL60FUCNMBdK8OjlAI",
                 platform_generic_path("/root/project/video/"),
                 "mp4",
             ),
@@ -348,7 +326,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=5,
             media=True,
             video=MockVideo(
-                file_ref="CQADBQADeQIAAlL60FUCNMBdK8OjlAI",
                 file_name="sample_video.mp4",
                 mime_type="video/mp4",
             ),
@@ -364,7 +341,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=6,
             media=True,
             video=MockVideo(
-                file_ref="CQADBQADeQIAAlL60FUCNMBdK8OjlAI",
                 file_name="sample_video.mov",
                 mime_type="video/mov",
             ),
@@ -381,7 +357,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=7,
             media=True,
             video=MockVideo(
-                file_ref="QNzmM3Ww2c00sXhWr4ZJwNT77qaxxP19",
                 file_name="sample_video.mov",
                 mime_type="video/mov",
             ),
@@ -401,7 +376,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=8,
             media=True,
             video=MockVideo(
-                file_ref="QNzmM3Ww2c00sXhWr4ZJwNT77qaxxP19",
                 file_name="sample_video.mov",
                 mime_type="video/mov",
             ),
@@ -422,7 +396,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=9,
             media=True,
             video=MockVideo(
-                file_ref="LGmJOmVpbHbrtmDdzKQx5omdZNq7QNJp",
                 file_name="sample_video.mov",
                 mime_type="video/mov",
             ),
@@ -457,7 +430,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
             id=11,
             media=True,
             video=MockVideo(
-                file_ref="sJp5vGa02p1p9bkpU1tVx3OkH2x8cxHK",
                 file_name="sample_video.mov",
                 mime_type="video/mov",
             ),
@@ -505,7 +477,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
                         id=1213,
                         media=True,
                         voice=MockVoice(
-                            file_ref="AwADBQADbwAD2oTRVeHe5eXRFftfAg",
                             mime_type="audio/ogg",
                             date=1564066340,
                         ),
@@ -547,7 +518,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
                         id=1213,
                         media=True,
                         voice=MockVoice(
-                            file_ref="AwADBQADbwAD2oTRVeHe5eXRFftfAg",
                             mime_type="audio/ogg",
                             date=1564066340,
                         ),
