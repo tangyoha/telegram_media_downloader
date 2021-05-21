@@ -48,6 +48,8 @@ $ pip3 install -r requirements.txt
 
 ## Configuration 
 
+All the configurations are  passed to the Telegram Media Downloader via `config.yaml` file.
+
 **Getting your API Keys:**
 The very first step requires you to obtain a valid Telegram API key (API id/hash pair):
 1.  Visit  [https://my.telegram.org/apps](https://my.telegram.org/apps)  and log in with your Telegram Account.
@@ -61,6 +63,8 @@ The very first step requires you to obtain a valid Telegram API key (API id/hash
 	- `https://web.telegram.org/#/im?p=u853521067_2449618633394` here `853521067` is the chat id.
 	- `https://web.telegram.org/#/im?p=@somename` here `somename` is the chat id.
 	- `https://web.telegram.org/#/im?p=s1301254321_6925449697188775560` here take `1301254321` and add `-100` to the start of the id => `-1001301254321`.
+	- `https://web.telegram.org/#/im?p=c1301254321_6925449697188775560` here take `1301254321` and add `-100` to the start of the id => `-1001301254321`.
+
 
 ```yaml
 api_hash: your_api_hash
