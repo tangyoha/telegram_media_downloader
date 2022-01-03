@@ -58,6 +58,7 @@ def manage_duplicate_file(file_path: str):
     str
         Absolute path of the duplicate managed file.
     """
+    # pylint: disable = R1732
     posix_path = pathlib.Path(file_path)
     file_base_name: str = "".join(posix_path.stem.split("-copy")[0])
     name_pattern: str = f"{posix_path.parent}/{file_base_name}*"
