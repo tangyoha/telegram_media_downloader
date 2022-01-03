@@ -8,8 +8,9 @@ class LogFilter(logging.Filter):
 
     Ignore logs from specific functions.
     """
+
     # pylint: disable = W0221
-    def filter(self, log_record):
-        if log_record.funcName == "send" or log_record.funcName == "get_file":
+    def filter(self, record):
+        if record.funcName in ("send", "get_file"):
             return False
         return True

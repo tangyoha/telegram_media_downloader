@@ -108,6 +108,7 @@ async def _get_media_meta(
 
     if _type == "voice":
         file_format = media_obj.mime_type.split("/")[-1]
+        # pylint: disable = C0209
         file_name: str = os.path.join(
             THIS_DIR,
             _type,
@@ -336,9 +337,8 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
 
 def main():
     """Main function of the downloader."""
-    f = open(os.path.join(THIS_DIR, "config.yaml"))
-    config = yaml.safe_load(f)
-    f.close()
+    with open(os.path.join(THIS_DIR, "config.yaml")) as f:
+        config = yaml.safe_load(f)
     updated_config = asyncio.get_event_loop().run_until_complete(
         begin_import(config, pagination_limit=100)
     )
