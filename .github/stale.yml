@@ -10,8 +10,13 @@ exemptLabels:
   - good first issue
   - dependencies
   - bug
+# Label to use when marking as stale
+staleLabel: stale
 # Comment to post when marking an issue as stale. Set to `false` to disable
 markComment: >
   This issue has been automatically marked as stale because it has not had
-  recent activity in the past 60 days. It will be closed if no further activity
+  recent activity in the past 45 days. It will be closed if no further activity
   occurs in the next 7 days. Thank you for your contributions.
+
+# Limit to only `issues`
+only: issues
