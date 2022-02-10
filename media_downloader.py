@@ -1,13 +1,13 @@
 """Downloads media from telegram."""
 import os
 import logging
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 from datetime import datetime as dt
 
 import asyncio
 import pyrogram
 import yaml
-
+from pyrogram.types import Audio, Document, Photo, Video, Voice
 from utils.file_management import get_next_name, manage_duplicate_file
 from utils.log import LogFilter
 from utils.meta import print_meta
@@ -84,36 +84,37 @@ def _is_exist(file_path: str) -> bool:
 
 
 async def _get_media_meta(
-    media_obj: pyrogram.types.messages_and_media, _type: str
+    media_obj: Union[Audio, Document, Photo, Video, Voice], _type: str
 ) -> Tuple[str, Optional[str]]:
-    """
-    Extract file name and file id.
+    """Extract file name and file id from media object.
 
     Parameters
     ----------
-    media_obj: pyrogram.types.messages_and_media
+    media_obj: Union[Audio, Document, Photo, Video, Voice]
         Media object to be extracted.
     _type: str
         Type of media object.
 
     Returns
     -------
-    tuple
+    Tuple[str, Optional[str]]
         file_name, file_format
     """
     if _type in ["audio", "document", "video"]:
-        file_format: Optional[str] = media_obj.mime_type.split("/")[-1]
+        # pylint: disable = C0301
+        file_format: Optional[str] = media_obj.mime_type.split("/")[-1]  # type: ignore
     else:
         file_format = None
 
     if _type == "voice":
-        file_format = media_obj.mime_type.split("/")[-1]
         # pylint: disable = C0209
+        file_format = media_obj.mime_type.split("/")[-1]  # type: ignore
         file_name: str = os.path.join(
             THIS_DIR,
             _type,
             "voice_{}.{}".format(
-                dt.utcfromtimestamp(media_obj.date).isoformat(), file_format
+                dt.utcfromtimestamp(media_obj.date).isoformat(),  # type: ignore
+                file_format,
             ),
         )
     else:
@@ -175,7 +176,8 @@ async def download_media(
                         download_path = await client.download_media(
                             message, file_name=file_name
                         )
-                        download_path = manage_duplicate_file(download_path)
+                        # pylint: disable = C0301
+                        download_path = manage_duplicate_file(download_path)  # type: ignore
                     else:
                         download_path = await client.download_media(
                             message, file_name=file_name
@@ -188,8 +190,8 @@ async def download_media(
                 "Message[%d]: file reference expired, refetching...",
                 message.message_id,
             )
-            message = await client.get_messages(
-                chat_id=message.chat.id,
+            message = await client.get_messages( # type: ignore
+                chat_id=message.chat.id,  # type: ignore
                 message_ids=message.message_id,
             )
             if retry == 2:
@@ -295,7 +297,6 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
         api_id=config["api_id"],
         api_hash=config["api_hash"],
     )
-    pyrogram.session.Session.notice_displayed = True
     await client.start()
     last_read_message_id: int = config["last_read_message_id"]
     messages_iter = client.iter_history(
@@ -306,7 +307,7 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
     pagination_count: int = 0
     messages_list: list = []
 
-    async for message in messages_iter:
+    async for message in messages_iter:  # type: ignore
         if pagination_count != pagination_limit:
             pagination_count += 1
             messages_list.append(message)
