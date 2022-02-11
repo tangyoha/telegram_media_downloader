@@ -1,17 +1,17 @@
 """Downloads media from telegram."""
-import os
-import logging
-from typing import List, Tuple, Optional, Union
-from datetime import datetime as dt
-
 import asyncio
+import logging
+import os
+from datetime import datetime as dt
+from typing import List, Optional, Tuple, Union
+
 import pyrogram
 import yaml
-from pyrogram.types import Audio, Document, Photo, Video, Voice
+from pyrogram.types import Audio, Document, Photo, Video, VideoNote, Voice
+
 from utils.file_management import get_next_name, manage_duplicate_file
 from utils.log import LogFilter
 from utils.meta import print_meta
-
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("pyrogram.session.session").addFilter(LogFilter())
@@ -84,13 +84,14 @@ def _is_exist(file_path: str) -> bool:
 
 
 async def _get_media_meta(
-    media_obj: Union[Audio, Document, Photo, Video, Voice], _type: str
+    media_obj: Union[Audio, Document, Photo, Video, VideoNote, Voice],
+    _type: str,
 ) -> Tuple[str, Optional[str]]:
     """Extract file name and file id from media object.
 
     Parameters
     ----------
-    media_obj: Union[Audio, Document, Photo, Video, Voice]
+    media_obj: Union[Audio, Document, Photo, Video, VideoNote, Voice]
         Media object to be extracted.
     _type: str
         Type of media object.
@@ -106,13 +107,14 @@ async def _get_media_meta(
     else:
         file_format = None
 
-    if _type == "voice":
+    if _type in ["voice", "video_note"]:
         # pylint: disable = C0209
         file_format = media_obj.mime_type.split("/")[-1]  # type: ignore
         file_name: str = os.path.join(
             THIS_DIR,
             _type,
-            "voice_{}.{}".format(
+            "{}_{}.{}".format(
+                _type,
                 dt.utcfromtimestamp(media_obj.date).isoformat(),  # type: ignore
                 file_format,
             ),
@@ -190,7 +192,7 @@ async def download_media(
                 "Message[%d]: file reference expired, refetching...",
                 message.message_id,
             )
-            message = await client.get_messages( # type: ignore
+            message = await client.get_messages(  # type: ignore
                 chat_id=message.chat.id,  # type: ignore
                 message_ids=message.message_id,
             )

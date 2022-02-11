@@ -9,6 +9,7 @@ media_types:
 - video
 - document
 - voice
+- video_note
 file_formats:
   audio:
   - all
@@ -16,4 +17,3 @@ file_formats:
   - all
   video:
   - all
-  
