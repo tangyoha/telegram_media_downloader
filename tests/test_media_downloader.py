@@ -60,6 +60,7 @@ class MockMessage:
         self.photo = kwargs.get("photo", None)
         self.video = kwargs.get("video", None)
         self.voice = kwargs.get("voice", None)
+        self.video_note = kwargs.get("video_note", None)
         self.chat = Chat(kwargs.get("chat_id", None))
 
 
@@ -89,6 +90,12 @@ class MockVoice:
 class MockVideo:
     def __init__(self, **kwargs):
         self.mime_type = kwargs["mime_type"]
+
+
+class MockVideoNote:
+    def __init__(self, **kwargs):
+        self.mime_type = kwargs["mime_type"]
+        self.date = kwargs["date"]
 
 
 class MockEventLoop:
@@ -312,6 +319,28 @@ class MediaDownloaderTestCase(unittest.TestCase):
         self.assertEqual(
             (
                 platform_generic_path("/root/project/video/"),
+                "mp4",
+            ),
+            result,
+        )
+
+        # Test VideoNote
+        message = MockMessage(
+            id=6,
+            media=True,
+            video_note=MockVideoNote(
+                mime_type="video/mp4",
+                date=1564066430,
+            ),
+        )
+        result = self.loop.run_until_complete(
+            async_get_media_meta(message.video_note, "video_note")
+        )
+        self.assertEqual(
+            (
+                platform_generic_path(
+                    "/root/project/video_note/video_note_2019-07-25T14:53:50.mp4"
+                ),
                 "mp4",
             ),
             result,
