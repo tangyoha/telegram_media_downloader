@@ -106,13 +106,14 @@ async def _get_media_meta(
     else:
         file_format = None
 
-    if _type == "voice":
+    if _type in ["voice", "video_note"]:
         # pylint: disable = C0209
         file_format = media_obj.mime_type.split("/")[-1]  # type: ignore
         file_name: str = os.path.join(
             THIS_DIR,
             _type,
-            "voice_{}.{}".format(
+            "{}_{}.{}".format(
+                _type,
                 dt.utcfromtimestamp(media_obj.date).isoformat(),  # type: ignore
                 file_format,
             ),
