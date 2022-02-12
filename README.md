@@ -120,6 +120,7 @@ All the downloaded media will be stored inside  respective direcotry named  in t
 | photo | path/to/project/photo |
 | video | path/to/project/video |
 | voice | path/to/project/voice |
+| voice_note | path/to/project/voice_note |
 
 ## Proxy
 `Socks5` proxy is supported in this project currently. To use it, simply create a `config.ini` file in the path of this project, and edit it with your proxy server info as follow:
