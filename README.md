@@ -26,7 +26,7 @@ A meta of last read/downloaded message is stored in the config file so that in s
 | Category | Support |
 |--|--|
 |Language | `Python 3.6 ` and above|
-|Download media types|  audio, document, photo, video, voice|
+|Download media types|  audio, document, photo, video, video_note, voice|
 
 ### ToDo:
 - Add support for multiple channels/chats.
