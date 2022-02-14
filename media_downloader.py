@@ -13,6 +13,7 @@ from rich.logging import RichHandler
 from utils.file_management import get_next_name, manage_duplicate_file
 from utils.log import LogFilter
 from utils.meta import print_meta
+from utils.updates import check_for_updates
 
 logging.basicConfig(
     level=logging.INFO,
@@ -360,6 +361,7 @@ def main():
             len(set(FAILED_IDS)),
         )
     update_config(updated_config)
+    check_for_updates()
 
 
 if __name__ == "__main__":
