@@ -8,12 +8,18 @@ from typing import List, Optional, Tuple, Union
 import pyrogram
 import yaml
 from pyrogram.types import Audio, Document, Photo, Video, VideoNote, Voice
+from rich.logging import RichHandler
 
 from utils.file_management import get_next_name, manage_duplicate_file
 from utils.log import LogFilter
 from utils.meta import print_meta
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler()],
+)
 logging.getLogger("pyrogram.session.session").addFilter(LogFilter())
 logging.getLogger("pyrogram.client").addFilter(LogFilter())
 logger = logging.getLogger("media_downloader")
