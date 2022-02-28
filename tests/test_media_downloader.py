@@ -29,7 +29,7 @@ MOCK_CONF = {
     "api_hash": "hasw5Tgawsuj67",
     "last_read_message_id": 0,
     "chat_id": 8654123,
-    "ids_to_retry": [],
+    "ids_to_retry": [1],
     "media_types": ["audio", "voice"],
     "file_formats": {"audio": ["all"], "voice": ["all"]},
 }
@@ -203,6 +203,18 @@ class MockClient:
                     mime_type="video/mov",
                 ),
             )
+        elif kwargs["message_ids"] == [1]:
+            message = [
+                MockMessage(
+                    id=1,
+                    media=True,
+                    chat_id=234568,
+                    video=MockVideo(
+                        file_name="sample_video.mov",
+                        mime_type="video/mov",
+                    ),
+                )
+            ]
         return message
 
     async def download_media(self, *args, **kwargs):
