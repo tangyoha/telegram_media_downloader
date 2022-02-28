@@ -32,12 +32,12 @@ DOWNLOADED_IDS: list = []
 
 def update_config(config: dict):
     """
-    Update exisitng configuration file.
+    Update existing configuration file.
 
     Parameters
     ----------
     config: dict
-        Configuraiton to be written into config file.
+        Configuration to be written into config file.
     """
     config["ids_to_retry"] = (
         list(set(config["ids_to_retry"]) - set(DOWNLOADED_IDS)) + FAILED_IDS
@@ -153,7 +153,7 @@ async def download_media(
     client: pyrogram.client.Client
         Client to interact with Telegram APIs.
     message: pyrogram.types.Message
-        Message object retrived from telegram.
+        Message object retrieved from telegram.
     media_types: list
         List of strings of media types to be downloaded.
         Ex : `["audio", "photo"]`
@@ -217,7 +217,7 @@ async def download_media(
         except TypeError:
             # pylint: disable = C0301
             logger.warning(
-                "Timeout Error occured when downloading Message[%d], retrying after 5 seconds",
+                "Timeout Error occurred when downloading Message[%d], retrying after 5 seconds",
                 message.message_id,
             )
             await asyncio.sleep(5)
@@ -290,7 +290,7 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
     Create pyrogram client and initiate download.
 
     The pyrogram client is created using the ``api_id``, ``api_hash``
-    from the config and iter throught message offset on the
+    from the config and iter through message offset on the
     ``last_message_id`` and the requested file_formats.
 
     Parameters
@@ -303,7 +303,7 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
     Returns
     -------
     dict
-        Updated configuraiton to be written into config file.
+        Updated configuration to be written into config file.
     """
     client = pyrogram.Client(
         "media_downloader",
