@@ -321,7 +321,7 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
     pagination_count: int = 0
     if config["ids_to_retry"]:
         logger.info("Downloading files failed during last run...")
-        skipped_messages: list = await client.get_messages(
+        skipped_messages: list = await client.get_messages(  # type: ignore
             chat_id=config["chat_id"], message_ids=config["ids_to_retry"]
         )
         for message in skipped_messages:
