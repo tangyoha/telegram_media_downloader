@@ -27,18 +27,21 @@ logger = logging.getLogger("media_downloader")
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FAILED_IDS: list = []
+DOWNLOADED_IDS: list = []
 
 
 def update_config(config: dict):
     """
-    Update exisitng configuration file.
+    Update existing configuration file.
 
     Parameters
     ----------
     config: dict
-        Configuraiton to be written into config file.
+        Configuration to be written into config file.
     """
-    config["ids_to_retry"] = list(set(config["ids_to_retry"] + FAILED_IDS))
+    config["ids_to_retry"] = (
+        list(set(config["ids_to_retry"]) - set(DOWNLOADED_IDS)) + FAILED_IDS
+    )
     with open("config.yaml", "w") as yaml_file:
         yaml.dump(config, yaml_file, default_flow_style=False)
     logger.info("Updated last read message_id to config file")
@@ -150,7 +153,7 @@ async def download_media(
     client: pyrogram.client.Client
         Client to interact with Telegram APIs.
     message: pyrogram.types.Message
-        Message object retrived from telegram.
+        Message object retrieved from telegram.
     media_types: list
         List of strings of media types to be downloaded.
         Ex : `["audio", "photo"]`
@@ -193,6 +196,7 @@ async def download_media(
                         )
                     if download_path:
                         logger.info("Media downloaded - %s", download_path)
+                    DOWNLOADED_IDS.append(message.message_id)
             break
         except pyrogram.errors.exceptions.bad_request_400.BadRequest:
             logger.warning(
@@ -213,7 +217,7 @@ async def download_media(
         except TypeError:
             # pylint: disable = C0301
             logger.warning(
-                "Timeout Error occured when downloading Message[%d], retrying after 5 seconds",
+                "Timeout Error occurred when downloading Message[%d], retrying after 5 seconds",
                 message.message_id,
             )
             await asyncio.sleep(5)
@@ -286,7 +290,7 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
     Create pyrogram client and initiate download.
 
     The pyrogram client is created using the ``api_id``, ``api_hash``
-    from the config and iter throught message offset on the
+    from the config and iter through message offset on the
     ``last_message_id`` and the requested file_formats.
 
     Parameters
@@ -299,7 +303,7 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
     Returns
     -------
     dict
-        Updated configuraiton to be written into config file.
+        Updated configuration to be written into config file.
     """
     client = pyrogram.Client(
         "media_downloader",
@@ -313,8 +317,16 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
         offset_id=last_read_message_id,
         reverse=True,
     )
-    pagination_count: int = 0
     messages_list: list = []
+    pagination_count: int = 0
+    if config["ids_to_retry"]:
+        logger.info("Downloading files failed during last run...")
+        skipped_messages: list = await client.get_messages(  # type: ignore
+            chat_id=config["chat_id"], message_ids=config["ids_to_retry"]
+        )
+        for message in skipped_messages:
+            pagination_count += 1
+            messages_list.append(message)
 
     async for message in messages_iter:  # type: ignore
         if pagination_count != pagination_limit:
@@ -356,8 +368,7 @@ def main():
         logger.info(
             "Downloading of %d files failed. "
             "Failed message ids are added to config file.\n"
-            "Functionality to re-download failed downloads will be added "
-            "in the next version of `Telegram-media-downloader`",
+            "These files will be downloaded on the next run.",
             len(set(FAILED_IDS)),
         )
     update_config(updated_config)
