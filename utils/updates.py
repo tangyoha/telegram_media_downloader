@@ -13,6 +13,7 @@ def check_for_updates() -> None:
 
     Using Github API checks for new release and prints information of new release if available.
     """
+    console = Console()
     try:
         headers: dict = {
             "Content-Type": "application/json",
@@ -28,11 +29,12 @@ def check_for_updates() -> None:
         latest_release: dict = json.loads(res.read().decode("utf-8"))
         if f"v{__version__}" != latest_release["tag_name"]:
             update_message: str = (
-                f"## New versionof Telegram-Media-Downloader is available - {latest_release['name']}\n"
+                f"## New version of Telegram-Media-Downloader is available - {latest_release['name']}\n"
                 f"You are using an outdated version v{__version__} please pull in the changes using `git pull` or download the latest release.\n\n"
                 f"Find more details about the latest release here - {latest_release['html_url']}"
             )
-            console = Console()
             console.print(Markdown(update_message))
-    except Exception:
-        pass
+    except Exception as e:
+        console.log(
+            f"Following error occured when checking for updates\n{e.__class__}, {e}"
+        )
