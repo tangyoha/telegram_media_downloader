@@ -26,7 +26,10 @@ class FakeHTTPSResponse:
         self.status = status
 
     def read(self):
-        return b'{"name":"v0.0.0 2022-03-02","tag_name":"v0.0.0", "html_url":"https://github.com/Dineshkarthik/telegram_media_downloader/releases/tag/v0.0.0"}'
+        if self.status == 200:
+            return b'{"name":"v0.0.0 2022-03-02","tag_name":"v0.0.0", "html_url":"https://github.com/Dineshkarthik/telegram_media_downloader/releases/tag/v0.0.0"}'
+        else:
+            return b"{error}"
 
 
 class UpdatesTestCase(unittest.TestCase):
@@ -42,9 +45,22 @@ class UpdatesTestCase(unittest.TestCase):
         name: str = "v0.0.0 2022-03-02"
         html_url: str = "https://github.com/Dineshkarthik/telegram_media_downloader/releases/tag/v0.0.0"
         expected_message: str = (
-            f"## New versionof Telegram-Media-Downloader is available - {name}\n"
+            f"## New version of Telegram-Media-Downloader is available - {name}\n"
             "You are using an outdated version v0.0.1 please pull in the changes using `git pull` or download the latest release.\n\n"
             f"Find more details about the latest release here - {html_url}"
         )
         mock_markdown.assert_called_with(expected_message)
         mock_console.return_value.print.assert_called_once()
+
+    @mock.patch(
+        "utils.updates.http.client.HTTPSConnection",
+        new=mock.MagicMock(return_value=FakeHTTPSConnection(500)),
+    )
+    @mock.patch("utils.updates.Console")
+    def test_exception(self, mock_console):
+        check_for_updates()
+        exception_message: str = (
+            "Following error occured when checking for updates\n"
+            "<class 'json.decoder.JSONDecodeError'>, Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+        )
+        mock_console.return_value.log.assert_called_with(exception_message)
