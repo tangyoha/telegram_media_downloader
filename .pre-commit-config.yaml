@@ -28,8 +28,11 @@ repos:
         name: mypy
         entry: mypy
         types: [python]
-        args: [--no-strict-optional, --ignore-missing-imports]
--   repo: local
+        args: [--ignore-missing-imports]
+        files: utils/|media_downloader.py
+        exclude: tests/
+-   repo: https://github.com/pycqa/pylint
+    rev: v2.14.5
     hooks:
     -   id: pylint
         name: pylint
@@ -41,3 +44,5 @@ repos:
           "-sn", # Don't display the score
           "--rcfile=pylintrc" # Link to your config file
         ]
+        files: utils/|media_downloader.py
+        exclude: tests/

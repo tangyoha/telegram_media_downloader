@@ -179,10 +179,10 @@ Must be one of the following:
 -  **style**: Changes that do not affect the meaning of the code (white-space, formatting, etc)
 -  **test**: Additions/updates to tests
 -  **type**: Type annotations
-    
+
 #### Subject:
 
-Please reference the relevant GitHub issues in your commit message using  #1234. 
+Please reference the relevant GitHub issues in your commit message using  #1234.
 -  a subject line with  `<  80`  chars.
 -  summary in present tense.
 -  not capitalized.

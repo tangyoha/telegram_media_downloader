@@ -39,21 +39,21 @@ $ git clone https://github.com/Dineshkarthik/telegram_media_downloader.git
 $ cd telegram_media_downloader
 $ make install
 ```
-For Windows which doesn't have `make` inbuilt 
+For Windows which doesn't have `make` inbuilt
 ```sh
 $ git clone https://github.com/Dineshkarthik/telegram_media_downloader.git
 $ cd telegram_media_downloader
 $ pip3 install -r requirements.txt
 ```
 
-## Configuration 
+## Configuration
 
 All the configurations are  passed to the Telegram Media Downloader via `config.yaml` file.
 
 **Getting your API Keys:**
 The very first step requires you to obtain a valid Telegram API key (API id/hash pair):
 1.  Visit  [https://my.telegram.org/apps](https://my.telegram.org/apps)  and log in with your Telegram Account.
-2.  Fill out the form to register a new Telegram application. 
+2.  Fill out the form to register a new Telegram application.
 3.  Done! The API key consists of two parts:  **api_id**  and  **api_hash**.
 
 

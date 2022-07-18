@@ -4,7 +4,7 @@ TEST_ARTIFACTS ?= /tmp/coverage
 
 install:
 	python3 -m pip install --upgrade pip setuptools
-	python3 -m pip install -r requirements.txt 
+	python3 -m pip install -r requirements.txt
 
 dev_install: install
 	python3 -m pip install -r dev-requirements.txt
@@ -23,4 +23,4 @@ test:
 		--cov-report term-missing \
 		--cov-report html:${TEST_ARTIFACTS} \
 		--junit-xml=${TEST_ARTIFACTS}/media-downloader.xml \
-		tests/ 
+		tests/
