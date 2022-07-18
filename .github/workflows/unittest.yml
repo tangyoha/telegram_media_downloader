@@ -3,8 +3,12 @@ name: Unittest
 on:
   push:
     branches: [ master ]
+    paths-ignore:
+      - 'README.md'
   pull_request:
     branches: [ master ]
+    paths-ignore:
+      - 'README.md'
 
 jobs:
   build:
@@ -30,10 +34,6 @@ jobs:
       run: pip install --upgrade --user pip setuptools codecov
     - name: Install dependencies
       run: make dev_install
-    - name: Code Check - Pylint
-      run: make pylint
-    - name: Static Type Check - Mypy
-      run: make static_type_check
     - name: Test with pytest
       run: |
         make -e test
