@@ -1,4 +1,4 @@
-Pyrogram==1.4.12
+Pyrogram==2.0.33
 PyYAML==6.0
 rich==12.1.0
 TgCrypto==1.2.3
