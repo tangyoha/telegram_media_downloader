@@ -22,7 +22,7 @@ repos:
         types: [python]
         args: ["--profile", "black", "--filter-files"]
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: V0.961
+    rev: v0.961
     hooks:
     -   id: mypy
         name: mypy
