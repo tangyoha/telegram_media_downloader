@@ -1,24 +1,24 @@
 """Unittest module for media downloader."""
-import os
+import asyncio
 import copy
 import logging
+import os
 import platform
 import unittest
 
-import asyncio
 import mock
 import pyrogram
 import pytest
 
 from media_downloader import (
-    _get_media_meta,
     _can_download,
+    _get_media_meta,
     _is_exist,
-    download_media,
-    update_config,
     begin_import,
-    process_messages,
+    download_media,
     main,
+    process_messages,
+    update_config,
 )
 
 MOCK_DIR: str = "/root/project"

@@ -281,7 +281,7 @@ async def process_messages(
         ]
     )
 
-    last_message_id = max(message_ids)
+    last_message_id: int = max(message_ids)
     return last_message_id
 
 

@@ -15,8 +15,12 @@ class FileManagementTestCase(unittest.TestCase):
     def setUp(self):
         self.this_dir = os.path.dirname(os.path.abspath(__file__))
         self.test_file = os.path.join(self.this_dir, "file-test.txt")
-        self.test_file_copy_1 = os.path.join(self.this_dir, "file-test-copy1.txt")
-        self.test_file_copy_2 = os.path.join(self.this_dir, "file-test-copy2.txt")
+        self.test_file_copy_1 = os.path.join(
+            self.this_dir, "file-test-copy1.txt"
+        )
+        self.test_file_copy_2 = os.path.join(
+            self.this_dir, "file-test-copy2.txt"
+        )
         f = open(self.test_file, "w+")
         f.write("dummy file")
         f.close()
@@ -27,7 +31,7 @@ class FileManagementTestCase(unittest.TestCase):
         result = get_next_name(self.test_file)
         excepted_result = os.path.join(self.this_dir, "file-test-copy3.txt")
         self.assertEqual(result, excepted_result)
-    
+
     def test_manage_duplicate_file(self):
         result = manage_duplicate_file(self.test_file_copy_2)
         self.assertEqual(result, self.test_file_copy_1)
