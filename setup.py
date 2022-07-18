@@ -12,7 +12,7 @@ setup(
     download_url="https://github.com/Dineshkarthik/telegram_media_downloader/releases/latest",
     py_modules=["media_downloader"],
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Environment :: Console",
         "Operating System :: OS Independent",
         "Intended Audience :: Developers",
@@ -22,10 +22,11 @@ setup(
         "Natural Language :: English",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Topic :: Internet",
         "Topic :: Communications",
         "Topic :: Communications :: Chat",
@@ -37,5 +38,5 @@ setup(
         "Community": "https://t.me/tgmdnews",
         "Source": "https://github.com/Dineshkarthik/telegram_media_downloader",
     },
-    python_requires=">=3.6",
+    python_requires="~=3.7",
 )
