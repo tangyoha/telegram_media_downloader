@@ -53,7 +53,7 @@ class Chat:
 
 class MockMessage:
     def __init__(self, **kwargs):
-        self.message_id = kwargs.get("id")
+        self.id = kwargs.get("id")
         self.media = kwargs.get("media")
         self.audio = kwargs.get("audio", None)
         self.document = kwargs.get("document", None)
@@ -153,7 +153,7 @@ class MockClient:
     async def stop(self):
         pass
 
-    async def iter_history(self, *args, **kwargs):
+    async def get_chat_history(self, *args, **kwargs):
         items = [
             MockMessage(
                 id=1213,
@@ -219,11 +219,11 @@ class MockClient:
 
     async def download_media(self, *args, **kwargs):
         mock_message = args[0]
-        if mock_message.message_id in [7, 8]:
+        if mock_message.id in [7, 8]:
             raise pyrogram.errors.exceptions.bad_request_400.BadRequest
-        elif mock_message.message_id == 9:
+        elif mock_message.id == 9:
             raise pyrogram.errors.exceptions.unauthorized_401.Unauthorized
-        elif mock_message.message_id == 11:
+        elif mock_message.id == 11:
             raise TypeError
         return kwargs["file_name"]
 
