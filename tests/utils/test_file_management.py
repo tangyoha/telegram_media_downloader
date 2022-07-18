@@ -15,12 +15,8 @@ class FileManagementTestCase(unittest.TestCase):
     def setUp(self):
         self.this_dir = os.path.dirname(os.path.abspath(__file__))
         self.test_file = os.path.join(self.this_dir, "file-test.txt")
-        self.test_file_copy_1 = os.path.join(
-            self.this_dir, "file-test-copy1.txt"
-        )
-        self.test_file_copy_2 = os.path.join(
-            self.this_dir, "file-test-copy2.txt"
-        )
+        self.test_file_copy_1 = os.path.join(self.this_dir, "file-test-copy1.txt")
+        self.test_file_copy_2 = os.path.join(self.this_dir, "file-test-copy2.txt")
         f = open(self.test_file, "w+")
         f.write("dummy file")
         f.close()

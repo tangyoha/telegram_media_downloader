@@ -134,9 +134,7 @@ async def mock_process_message(*args, **kwargs):
 
 
 async def async_process_messages(client, messages, media_types, file_formats):
-    result = await process_messages(
-        client, messages, media_types, file_formats
-    )
+    result = await process_messages(client, messages, media_types, file_formats)
     return result
 
 
@@ -289,9 +287,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path(
-                    "/root/project/document/sample_document.pdf"
-                ),
+                platform_generic_path("/root/project/document/sample_document.pdf"),
                 "pdf",
             ),
             result,
@@ -495,9 +491,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         }
         update_config(conf)
         mock_open.assert_called_with("config.yaml", "w")
-        mock_yaml.dump.assert_called_with(
-            conf, mock.ANY, default_flow_style=False
-        )
+        mock_yaml.dump.assert_called_with(conf, mock.ANY, default_flow_style=False)
 
     @mock.patch("media_downloader.update_config")
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)

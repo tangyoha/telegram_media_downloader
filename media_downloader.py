@@ -47,9 +47,7 @@ def update_config(config: dict):
     logger.info("Updated last read message_id to config file")
 
 
-def _can_download(
-    _type: str, file_formats: dict, file_format: Optional[str]
-) -> bool:
+def _can_download(_type: str, file_formats: dict, file_format: Optional[str]) -> bool:
     """
     Check if the given file format can be downloaded.
 
