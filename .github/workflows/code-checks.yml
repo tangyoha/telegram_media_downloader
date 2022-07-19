@@ -1,0 +1,24 @@
+name: Code Quality
+
+on:
+  pull_request:
+    branches: [ master ]
+    paths-ignore:
+      - 'README.md'
+  push:
+    branches: [ master ]
+    paths-ignore:
+      - 'README.md'
+
+jobs:
+  pre-commit:
+    name: Linting
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: make dev_install
+    - uses: pre-commit/action@v3.0.0

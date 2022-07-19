@@ -27,7 +27,7 @@ class FileManagementTestCase(unittest.TestCase):
         result = get_next_name(self.test_file)
         excepted_result = os.path.join(self.this_dir, "file-test-copy3.txt")
         self.assertEqual(result, excepted_result)
-    
+
     def test_manage_duplicate_file(self):
         result = manage_duplicate_file(self.test_file_copy_2)
         self.assertEqual(result, self.test_file_copy_1)

@@ -47,9 +47,7 @@ def update_config(config: dict):
     logger.info("Updated last read message_id to config file")
 
 
-def _can_download(
-    _type: str, file_formats: dict, file_format: Optional[str]
-) -> bool:
+def _can_download(_type: str, file_formats: dict, file_format: Optional[str]) -> bool:
     """
     Check if the given file format can be downloaded.
 
@@ -176,7 +174,7 @@ async def download_media(
     for retry in range(3):
         try:
             if message.media is None:
-                return message.message_id
+                return message.id
             for _type in media_types:
                 _media = getattr(message, _type, None)
                 if _media is None:
@@ -196,48 +194,48 @@ async def download_media(
                         )
                     if download_path:
                         logger.info("Media downloaded - %s", download_path)
-                    DOWNLOADED_IDS.append(message.message_id)
+                    DOWNLOADED_IDS.append(message.id)
             break
         except pyrogram.errors.exceptions.bad_request_400.BadRequest:
             logger.warning(
                 "Message[%d]: file reference expired, refetching...",
-                message.message_id,
+                message.id,
             )
             message = await client.get_messages(  # type: ignore
                 chat_id=message.chat.id,  # type: ignore
-                message_ids=message.message_id,
+                message_ids=message.id,
             )
             if retry == 2:
                 # pylint: disable = C0301
                 logger.error(
                     "Message[%d]: file reference expired for 3 retries, download skipped.",
-                    message.message_id,
+                    message.id,
                 )
-                FAILED_IDS.append(message.message_id)
+                FAILED_IDS.append(message.id)
         except TypeError:
             # pylint: disable = C0301
             logger.warning(
                 "Timeout Error occurred when downloading Message[%d], retrying after 5 seconds",
-                message.message_id,
+                message.id,
             )
             await asyncio.sleep(5)
             if retry == 2:
                 logger.error(
                     "Message[%d]: Timing out after 3 reties, download skipped.",
-                    message.message_id,
+                    message.id,
                 )
-                FAILED_IDS.append(message.message_id)
+                FAILED_IDS.append(message.id)
         except Exception as e:
             # pylint: disable = C0301
             logger.error(
                 "Message[%d]: could not be downloaded due to following exception:\n[%s].",
-                message.message_id,
+                message.id,
                 e,
                 exc_info=True,
             )
-            FAILED_IDS.append(message.message_id)
+            FAILED_IDS.append(message.id)
             break
-    return message.message_id
+    return message.id
 
 
 async def process_messages(
@@ -281,7 +279,7 @@ async def process_messages(
         ]
     )
 
-    last_message_id = max(message_ids)
+    last_message_id: int = max(message_ids)
     return last_message_id
 
 
@@ -312,10 +310,9 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
     )
     await client.start()
     last_read_message_id: int = config["last_read_message_id"]
-    messages_iter = client.iter_history(
+    messages_iter = client.get_chat_history(
         config["chat_id"],
         offset_id=last_read_message_id,
-        reverse=True,
     )
     messages_list: list = []
     pagination_count: int = 0

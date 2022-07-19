@@ -25,7 +25,7 @@ A meta of last read/downloaded message is stored in the config file so that in s
 ### Support:
 | Category | Support |
 |--|--|
-|Language | `Python 3.6 ` and above|
+|Language | `Python 3.7 ` and above|
 |Download media types|  audio, document, photo, video, video_note, voice|
 
 ### ToDo:
@@ -39,21 +39,21 @@ $ git clone https://github.com/Dineshkarthik/telegram_media_downloader.git
 $ cd telegram_media_downloader
 $ make install
 ```
-For Windows which doesn't have `make` inbuilt 
+For Windows which doesn't have `make` inbuilt
 ```sh
 $ git clone https://github.com/Dineshkarthik/telegram_media_downloader.git
 $ cd telegram_media_downloader
 $ pip3 install -r requirements.txt
 ```
 
-## Configuration 
+## Configuration
 
 All the configurations are  passed to the Telegram Media Downloader via `config.yaml` file.
 
 **Getting your API Keys:**
 The very first step requires you to obtain a valid Telegram API key (API id/hash pair):
 1.  Visit  [https://my.telegram.org/apps](https://my.telegram.org/apps)  and log in with your Telegram Account.
-2.  Fill out the form to register a new Telegram application. 
+2.  Fill out the form to register a new Telegram application.
 3.  Done! The API key consists of two parts:  **api_id**  and  **api_hash**.
 
 
@@ -123,18 +123,17 @@ All the downloaded media will be stored inside  respective direcotry named  in t
 | voice_note | path/to/project/voice_note |
 
 ## Proxy
-`Socks5` proxy is supported in this project currently. To use it, simply create a `config.ini` file in the path of this project, and edit it with your proxy server info as follow:
+`socks4, socks5, http` proxies are supported in this project currently. To use it, add the following to the bottom of your `config.yaml` file
 
-```ini
-[proxy]
-enabled = True
-hostname = 127.0.0.1
-port = 1080
-username =
-password =
+```yaml
+proxy:
+  scheme: socks5
+  hostname: 11.22.33.44
+  port: 1234
+  username: your_username
+  password: your_password
 ```
-
-Then the proxy will automatically be enabled.
+If your proxy doesn’t require authorization you can omit username and password. Then the proxy will automatically be enabled.
 
 ## Contributing
 ### Contributing Guidelines

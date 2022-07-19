@@ -7,6 +7,7 @@ from rich.markdown import Markdown
 
 from . import __version__
 
+
 # pylint: disable = C0301
 def check_for_updates() -> None:
     """Checks for new releases.

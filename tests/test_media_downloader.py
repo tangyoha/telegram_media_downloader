@@ -1,24 +1,24 @@
 """Unittest module for media downloader."""
-import os
+import asyncio
 import copy
 import logging
+import os
 import platform
 import unittest
 
-import asyncio
 import mock
 import pyrogram
 import pytest
 
 from media_downloader import (
-    _get_media_meta,
     _can_download,
+    _get_media_meta,
     _is_exist,
-    download_media,
-    update_config,
     begin_import,
-    process_messages,
+    download_media,
     main,
+    process_messages,
+    update_config,
 )
 
 MOCK_DIR: str = "/root/project"
@@ -53,7 +53,7 @@ class Chat:
 
 class MockMessage:
     def __init__(self, **kwargs):
-        self.message_id = kwargs.get("id")
+        self.id = kwargs.get("id")
         self.media = kwargs.get("media")
         self.audio = kwargs.get("audio", None)
         self.document = kwargs.get("document", None)
@@ -134,9 +134,7 @@ async def mock_process_message(*args, **kwargs):
 
 
 async def async_process_messages(client, messages, media_types, file_formats):
-    result = await process_messages(
-        client, messages, media_types, file_formats
-    )
+    result = await process_messages(client, messages, media_types, file_formats)
     return result
 
 
@@ -153,7 +151,7 @@ class MockClient:
     async def stop(self):
         pass
 
-    async def iter_history(self, *args, **kwargs):
+    async def get_chat_history(self, *args, **kwargs):
         items = [
             MockMessage(
                 id=1213,
@@ -219,11 +217,11 @@ class MockClient:
 
     async def download_media(self, *args, **kwargs):
         mock_message = args[0]
-        if mock_message.message_id in [7, 8]:
+        if mock_message.id in [7, 8]:
             raise pyrogram.errors.exceptions.bad_request_400.BadRequest
-        elif mock_message.message_id == 9:
+        elif mock_message.id == 9:
             raise pyrogram.errors.exceptions.unauthorized_401.Unauthorized
-        elif mock_message.message_id == 11:
+        elif mock_message.id == 11:
             raise TypeError
         return kwargs["file_name"]
 
@@ -289,9 +287,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path(
-                    "/root/project/document/sample_document.pdf"
-                ),
+                platform_generic_path("/root/project/document/sample_document.pdf"),
                 "pdf",
             ),
             result,
@@ -495,9 +491,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         }
         update_config(conf)
         mock_open.assert_called_with("config.yaml", "w")
-        mock_yaml.dump.assert_called_with(
-            conf, mock.ANY, default_flow_style=False
-        )
+        mock_yaml.dump.assert_called_with(conf, mock.ANY, default_flow_style=False)
 
     @mock.patch("media_downloader.update_config")
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
