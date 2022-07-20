@@ -1,14 +1,13 @@
 """Unittest module for media downloader."""
 import asyncio
 import copy
-import logging
 import os
 import platform
 import unittest
+from datetime import datetime
 
 import mock
 import pyrogram
-import pytest
 
 from media_downloader import (
     _can_download,
@@ -158,7 +157,7 @@ class MockClient:
                 media=True,
                 voice=MockVoice(
                     mime_type="audio/ogg",
-                    date=1564066430,
+                    date=datetime(2019, 7, 25, 14, 53, 50),
                 ),
             ),
             MockMessage(
@@ -239,7 +238,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             media=True,
             voice=MockVoice(
                 mime_type="audio/ogg",
-                date=1564066430,
+                date=datetime(2019, 7, 25, 14, 53, 50),
             ),
         )
         result = self.loop.run_until_complete(
@@ -260,7 +259,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         message = MockMessage(
             id=2,
             media=True,
-            photo=MockPhoto(date=1565015712),
+            photo=MockPhoto(date=datetime(2019, 8, 5, 14, 35, 12)),
         )
         result = self.loop.run_until_complete(
             async_get_media_meta(message.photo, "photo")
@@ -338,7 +337,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             media=True,
             video_note=MockVideoNote(
                 mime_type="video/mp4",
-                date=1564066430,
+                date=datetime(2019, 7, 25, 14, 53, 50),
             ),
         )
         result = self.loop.run_until_complete(
@@ -513,7 +512,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
                         media=True,
                         voice=MockVoice(
                             mime_type="audio/ogg",
-                            date=1564066340,
+                            date=datetime(2019, 7, 25, 14, 53, 50),
                         ),
                     ),
                     MockMessage(
@@ -554,7 +553,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
                         media=True,
                         voice=MockVoice(
                             mime_type="audio/ogg",
-                            date=1564066340,
+                            date=datetime(2019, 7, 25, 14, 53, 50),
                         ),
                     ),
                     MockMessage(
