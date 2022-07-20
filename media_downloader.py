@@ -2,7 +2,6 @@
 import asyncio
 import logging
 import os
-from datetime import datetime as dt
 from typing import List, Optional, Tuple, Union
 
 import pyrogram
@@ -123,7 +122,7 @@ async def _get_media_meta(
             _type,
             "{}_{}.{}".format(
                 _type,
-                dt.utcfromtimestamp(media_obj.date).isoformat(),  # type: ignore
+                media_obj.date.isoformat(),  # type: ignore
                 file_format,
             ),
         )
@@ -311,8 +310,7 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
     await client.start()
     last_read_message_id: int = config["last_read_message_id"]
     messages_iter = client.get_chat_history(
-        config["chat_id"],
-        offset_id=last_read_message_id,
+        config["chat_id"], offset_id=last_read_message_id, reverse=True
     )
     messages_list: list = []
     pagination_count: int = 0

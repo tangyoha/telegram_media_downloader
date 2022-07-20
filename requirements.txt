@@ -1,4 +1,4 @@
-Pyrogram==2.0.33
+https://github.com/Dineshkarthik/pyrogram/archive/refs/heads/master.zip
 PyYAML==6.0
 rich==12.5.1
 TgCrypto==1.2.3
