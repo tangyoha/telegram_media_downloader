@@ -6,4 +6,4 @@ pre-commit==2.20.0
 pylint==2.14.5
 pytest==7.0.1
 pytest-cov==3.0.0
-types-PyYAML==6.0.10
+types-PyYAML==6.0.11
