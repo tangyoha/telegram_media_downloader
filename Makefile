@@ -10,16 +10,17 @@ dev_install: install
 	python3 -m pip install -r dev-requirements.txt
 
 static_type_check:
-	mypy media_downloader.py utils --ignore-missing-imports
+	mypy media_downloader.py utils module --ignore-missing-imports
 
 pylint:
-	pylint media_downloader.py utils -r y
+	pylint media_downloader.py utils module -r y
 
 style_check: static_type_check pylint
 
 test:
 	py.test --cov media_downloader --doctest-modules \
 		--cov utils \
+		--cov module \
 		--cov-report term-missing \
 		--cov-report html:${TEST_ARTIFACTS} \
 		--junit-xml=${TEST_ARTIFACTS}/media-downloader.xml \

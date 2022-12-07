@@ -27,7 +27,7 @@ class FakeHTTPSResponse:
 
     def read(self):
         if self.status == 200:
-            return b'{"name":"v0.0.0 2022-03-02","tag_name":"v0.0.0", "html_url":"https://github.com/Dineshkarthik/telegram_media_downloader/releases/tag/v0.0.0"}'
+            return b'{"name":"v0.0.0 2022-03-02","tag_name":"v0.0.0", "html_url":"https://github.com/tangyoha/telegram_media_downloader/releases/tag/v0.0.0"}'
         else:
             return b"{error}"
 
@@ -43,7 +43,9 @@ class UpdatesTestCase(unittest.TestCase):
     def test_update(self, mock_markdown, mock_console):
         check_for_updates()
         name: str = "v0.0.0 2022-03-02"
-        html_url: str = "https://github.com/Dineshkarthik/telegram_media_downloader/releases/tag/v0.0.0"
+        html_url: str = (
+            "https://github.com/tangyoha/telegram_media_downloader/releases/tag/v0.0.0"
+        )
         expected_message: str = (
             f"## New version of Telegram-Media-Downloader is available - {name}\n"
             "You are using an outdated version v0.0.1 please pull in the changes using `git pull` or download the latest release.\n\n"

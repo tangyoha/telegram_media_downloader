@@ -5,9 +5,9 @@ Please take a moment to review this document in order to make the contribution p
 
 ### Where do I go from here?
 
-If you've noticed a bug or have a feature request, [make one](https://github.com/Dineshkarthik/telegram_media_downloader/issues)! It's generally best if you get confirmation of your bug or approval for your feature request this way before starting to code.
+If you've noticed a bug or have a feature request, [make one](https://github.com/tangyoha/telegram_media_downloader/issues)! It's generally best if you get confirmation of your bug or approval for your feature request this way before starting to code.
 
-If you have a general question about telegram-media-downloader, you can ask it on [Discussion](https://github.com/Dineshkarthik/telegram_media_downloader/discussions) under `Q&A`  category and any ideas/suggestions goes under `Ideas` category, the issue tracker is only for bugs and feature requests.
+If you have a general question about telegram-media-downloader, you can ask it on [Discussion](https://github.com/tangyoha/telegram_media_downloader/discussions) under `Q&A`  category and any ideas/suggestions goes under `Ideas` category, the issue tracker is only for bugs and feature requests.
 
 ### Fork & create a branch
 
@@ -66,13 +66,13 @@ Please follow these coding standards when writing code for inclusion in telegram
 
 Telegram-media-downloader  follows the [PEP8](https://www.python.org/dev/peps/pep-0008/) standard and uses [Black](https://black.readthedocs.io/en/stable/) and [Pylint](https://pylint.pycqa.org/en/latest/) to ensure a consistent code format throughout the project.
 
-[Continuous Integration](https://github.com/Dineshkarthik/telegram_media_downloader/actions)  using GitHub Actions will run those tools and report any stylistic errors in your code. Therefore, it is helpful before submitting code to run the check yourself:
+[Continuous Integration](https://github.com/tangyoha/telegram_media_downloader/actions)  using GitHub Actions will run those tools and report any stylistic errors in your code. Therefore, it is helpful before submitting code to run the check yourself:
 ```sh
 black media_downloader.py utils
 ```
 to auto-format your code. Additionally, many editors have plugins that will apply  `black`  as you edit files.
 
-Writing good code is not just about what you write. It is also about  _how_  you write it. During  [Continuous Integration](https://github.com/Dineshkarthik/telegram_media_downloader/actions)  testing, several tools will be run to check your code for stylistic errors. Generating any warnings will cause the test to fail. Thus, good style is a requirement for submitting code to telegram-media-downloader.
+Writing good code is not just about what you write. It is also about  _how_  you write it. During  [Continuous Integration](https://github.com/tangyoha/telegram_media_downloader/actions)  testing, several tools will be run to check your code for stylistic errors. Generating any warnings will cause the test to fail. Thus, good style is a requirement for submitting code to telegram-media-downloader.
 
 This is already added in the repo to help contributors verify their changes before contributing them to the project:
 ```sh
@@ -196,4 +196,4 @@ Explain the motivation for the change in the commit message body. This commit me
 
 ### Code of Conduct
 
-As a contributor, you can help us keep the  community open and inclusive. Please read and follow our  [Code of Conduct](https://github.com/Dineshkarthik/telegram_media_downloader/blob/master/CODE_OF_CONDUCT.md).
+As a contributor, you can help us keep the  community open and inclusive. Please read and follow our  [Code of Conduct](https://github.com/tangyoha/telegram_media_downloader/blob/master/CODE_OF_CONDUCT.md).

@@ -9,7 +9,7 @@ assignees: ''
 
 #### Location of the documentation
 
-[this should provide the location of the documentation, e.g. "CONTRIBUTION.md" or the URL of the documentation, e.g. "https://github.com/Dineshkarthik/telegram_media_downloader/blob/master/CONTRIBUTING.md"]
+[this should provide the location of the documentation, e.g. "CONTRIBUTION.md" or the URL of the documentation, e.g. "https://github.com/tangyoha/telegram_media_downloader/blob/master/CONTRIBUTING.md"]
 
 #### Documentation problem
 

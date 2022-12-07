@@ -5,11 +5,11 @@ from utils import __version__
 setup(
     name="telegram-media-downloader",
     version=__version__,
-    author="Dineshkarthik Raveendran",
-    author_email="hello@dineshkarthik.me",
+    author="tangyoha",
+    author_email="tangyoha@outlook.com",
     description="A simple script to download media from telegram",
-    url="https://github.com/Dineshkarthik/telegram_media_downloader",
-    download_url="https://github.com/Dineshkarthik/telegram_media_downloader/releases/latest",
+    url="https://github.com/tangyoha/telegram_media_downloader",
+    download_url="https://github.com/tangyoha/telegram_media_downloader/releases/latest",
     py_modules=["media_downloader"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
@@ -34,9 +34,9 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     project_urls={
-        "Tracker": "https://github.com/Dineshkarthik/telegram_media_downloader/issues",
+        "Tracker": "https://github.com/tangyoha/telegram_media_downloader/issues",
         "Community": "https://t.me/tgmdnews",
-        "Source": "https://github.com/Dineshkarthik/telegram_media_downloader",
+        "Source": "https://github.com/tangyoha/telegram_media_downloader",
     },
     python_requires="~=3.7",
 )
