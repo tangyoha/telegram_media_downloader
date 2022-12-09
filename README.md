@@ -16,7 +16,7 @@
   <span> · </span>
   Support: <a href="https://github.com/tangyoha/telegram_media_downloader/discussions">Discussions</a>
   <span> & </span>
-  <a href="https://t.me/tgmdnews">Telegram Community</a>
+  <a href="https://t.me/TeegramMediaDownload">Telegram Community</a>
 </h3>
 
 ### Overview
