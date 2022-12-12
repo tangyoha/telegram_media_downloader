@@ -126,7 +126,7 @@ disable_syslog:
 - **file_path_prefix** - 存储文件子文件夹，列表的顺序不定，可以随机组合
   - `chat_title`      - 聊天频道或者群组标题, 如果找不到标题则为配置文件中的`chat_id`
   - `media_datetime`  - 资源的发布时间
-  - `meida_type`      - 资源类型，类型查阅 `media_types`
+  - `media_type`      - 资源类型，类型查阅 `media_types`
 - **disable_syslog** - 您可以选择要禁用的日志类型，请参阅 `logging._nameToLevel`
 
 ## 执行
@@ -142,10 +142,10 @@ python3 media_downloader.py
 file_path_prefix:
   - chat_title
   - media_datetime
-  - meida_type
+  - media_type
 ```
 
-视频下载完整目录为：`save_path`/`chat_title`/`media_datetime`/`meida_type`。
+视频下载完整目录为：`save_path`/`chat_title`/`media_datetime`/`media_type`。
 列表的顺序不定，可以随机组合。
 如果配置为空，则所有文件保存在`save_path`下。
 

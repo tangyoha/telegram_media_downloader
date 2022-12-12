@@ -125,7 +125,7 @@ disable_syslog:
 - **file_path_prefix** - Store file subfolders, the order of the list is not fixed, can be randomly combined.
   - `chat_title`      - channel or group title, it will be chat id if not exist title.
   - `media_datetime`  - media date, also see pyrogram.types.Message.date.strftime("%Y_%m").
-  - `meida_type`      - meida type, also see `media_types`.
+  - `media_type`      - meida type, also see `media_types`.
 - **disable_syslog** - You can choose which types of logs to disable,see `logging._nameToLevel`.
 
 ## Execution
@@ -137,7 +137,7 @@ python3 media_downloader.py
 All downloaded media will be stored at the root of `save_path`.
 The specific location reference is as follows:
 
-The complete directory of video download is: `save_path`/`chat_title`/`media_datetime`/`meida_type`.
+The complete directory of video download is: `save_path`/`chat_title`/`media_datetime`/`media_type`.
 The order of the list is not fixed and can be randomly combined.
 If the configuration is empty, all files are saved under `save_path`.
 

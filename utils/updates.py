@@ -23,12 +23,12 @@ def check_for_updates() -> None:
         conn = http.client.HTTPSConnection("api.github.com")
         conn.request(
             method="GET",
-            url="/repos/Dineshkarthik/telegram_media_downloader/releases/latest",
+            url="/repos/tangyoha/telegram_media_downloader/releases/latest",
             headers=headers,
         )
         res = conn.getresponse()
         latest_release: dict = json.loads(res.read().decode("utf-8"))
-        if f"v{__version__}" != latest_release["tag_name"]:
+        if f"{__version__}" != latest_release["tag_name"]:
             update_message: str = (
                 f"## New version of Telegram-Media-Downloader is available - {latest_release['name']}\n"
                 f"You are using an outdated version v{__version__} please pull in the changes using `git pull` or download the latest release.\n\n"
