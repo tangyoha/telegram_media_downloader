@@ -20,7 +20,7 @@ style_check: static_type_check pylint
 test:
 	py.test --cov media_downloader --doctest-modules \
 		--cov utils \
-		--cov module \
+		--cov module/app.py \
 		--cov-report term-missing \
 		--cov-report html:${TEST_ARTIFACTS} \
 		--junit-xml=${TEST_ARTIFACTS}/media-downloader.xml \

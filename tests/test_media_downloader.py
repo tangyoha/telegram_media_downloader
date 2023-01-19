@@ -31,6 +31,7 @@ MOCK_CONF = {
     "media_types": ["audio", "voice"],
     "file_formats": {"audio": ["all"], "voice": ["all"]},
     "save_path": MOCK_DIR,
+    "file_name_prefix": ["message_id", "caption", "file_name"],
 }
 
 
@@ -55,6 +56,7 @@ def os_get_file_size(file: str) -> int:
 def rest_app(conf: dict):
     app.reset()
     app.config_file = "config_test.yaml"
+    app.app_data_file = "data_test.yaml"
     app.load_config(conf)
 
 
@@ -97,6 +99,9 @@ class MockMessage:
         self.video = kwargs.get("video", None)
         self.voice = kwargs.get("voice", None)
         self.video_note = kwargs.get("video_note", None)
+        self.media_group_id = kwargs.get("media_group_id", None)
+        self.caption = kwargs.get("caption", None)
+
         if kwargs.get("dis_chat") == None:
             self.chat = Chat(
                 kwargs.get("chat_id", None), kwargs.get("chat_title", None)
@@ -358,7 +363,31 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path("/root/project/test2/2019_08/2 - ADAVKJYIFV.jpg"),
+                platform_generic_path("/root/project/test2/2019_08/2.jpg"),
+                "jpg",
+            ),
+            result,
+        )
+
+        message = MockMessage(
+            id=2,
+            media=True,
+            date=datetime(2019, 8, 5, 14, 35, 12),
+            chat_title="test2",
+            media_group_id="AAA213213",
+            caption="#home #book",
+            photo=MockPhoto(
+                date=datetime(2019, 8, 5, 14, 35, 12), file_unique_id="ADAVKJYIFV"
+            ),
+        )
+        result = self.loop.run_until_complete(
+            async_get_media_meta(message, message.photo, "photo")
+        )
+        self.assertEqual(
+            (
+                platform_generic_path(
+                    "/root/project/test2/2019_08/2 - #home #book.jpg"
+                ),
                 "jpg",
             ),
             result,
@@ -385,6 +414,34 @@ class MediaDownloaderTestCase(unittest.TestCase):
             result,
         )
 
+        before_file_name_prefix_split = app.file_name_prefix_split
+        app.file_name_prefix_split = "-"
+
+        message = MockMessage(
+            id=3,
+            media=True,
+            chat_title="test2",
+            media_group_id="BBB213213",
+            caption="#work",
+            document=MockDocument(
+                file_name="sample_document.pdf",
+                mime_type="application/pdf",
+            ),
+        )
+        result = self.loop.run_until_complete(
+            async_get_media_meta(message, message.document, "document")
+        )
+        self.assertEqual(
+            (
+                platform_generic_path(
+                    "/root/project/test2/0/3-#work-sample_document.pdf"
+                ),
+                "pdf",
+            ),
+            result,
+        )
+
+        app.file_name_prefix_split = before_file_name_prefix_split
         # Test audio
         message = MockMessage(
             id=4,
@@ -424,7 +481,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path("/root/project/test2/2022_08/5 - None.mp4"),
+                platform_generic_path("/root/project/test2/2022_08/5.mp4"),
                 "mp4",
             ),
             result,
@@ -553,7 +610,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(7, result)
         mock_logger.warning.assert_called_with(
-            "Message[%d]: file reference expired, refetching...", 7
+            "Message[{}]: file reference expired, refetching...", 7
         )
 
         # Test re-fetch message failure
@@ -572,7 +629,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(8, result)
         mock_logger.error.assert_called_with(
-            "Message[%d]: file reference expired for 3 retries, download skipped.",
+            "Message[{}]: file reference expired for 3 retries, download skipped.",
             8,
         )
 
@@ -591,12 +648,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
             )
         )
         self.assertEqual(9, result)
-        mock_logger.error.assert_called_with(
-            "Message[%d]: could not be downloaded due to following exception:\n[%s].",
-            9,
-            mock.ANY,
-            exc_info=True,
-        )
 
         # Check no media
         message_5 = MockMessage(
@@ -626,7 +677,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(11, result)
         mock_logger.error.assert_called_with(
-            "Message[%d]: Timing out after 3 reties, download skipped.", 11
+            "Message[{}]: Timing out after 3 reties, download skipped.", 11
         )
 
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)

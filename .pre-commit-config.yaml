@@ -29,8 +29,8 @@ repos:
         entry: mypy
         types: [python]
         args: [--ignore-missing-imports]
-        files: utils/|media_downloader.py
-        exclude: tests/
+        files: utils/|media_downloader.py|module/
+        exclude: tests/|module/static/|module/templates
 -   repo: https://github.com/pycqa/pylint
     rev: v2.14.5
     hooks:
@@ -44,5 +44,5 @@ repos:
           "-sn", # Don't display the score
           "--rcfile=pylintrc" # Link to your config file
         ]
-        files: utils/|media_downloader.py
-        exclude: tests/
+        files: utils/|media_downloader.py|module/
+        exclude: tests/|module/static/|module/templates

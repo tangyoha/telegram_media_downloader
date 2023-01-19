@@ -37,5 +37,5 @@ def check_for_updates() -> None:
             console.print(Markdown(update_message))
     except Exception as e:
         console.log(
-            f"Following error occured when checking for updates\n{e.__class__}, {e}"
+            f"Following error occurred when checking for updates\n{e.__class__}, {e}"
         )

@@ -6,6 +6,7 @@
 <a href="https://codecov.io/gh/tangyoha/telegram_media_downloader"><img alt="Coverage Status" src="https://codecov.io/gh/tangyoha/telegram_media_downloader/branch/master/graph/badge.svg"></a>
 <a href="https://github.com/tangyoha/telegram_media_downloader/blob/master/LICENSE"><img alt="License: MIT" src="https://black.readthedocs.io/en/stable/_static/license.svg"></a>
 <a href="https://github.com/python/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+<img alt="Code style: black" src="https://img.shields.io/github/downloads/tangyoha/telegram_media_downloader/total">
 </p>
 
 <h3 align="center">
@@ -23,6 +24,12 @@
 
 从您所属的电报对话或频道下载所有媒体文件。
 最后读取/下载消息的元数据存储在配置文件中，这样它就不会再次下载相同的媒体文件。
+
+### 界面
+
+![web](./screenshot/web_ui.gif)
+
+运行后打开浏览器访问`localhost:5000`
 
 ### 支持
 
@@ -49,6 +56,13 @@ make install
 
 ```sh
 git clone https://github.com/tangyoha/telegram_media_downloader.git
+cd telegram_media_downloader
+pip3 install -r requirements.txt
+```
+
+## 升级安装
+
+```sh
 cd telegram_media_downloader
 pip3 install -r requirements.txt
 ```
@@ -107,12 +121,22 @@ file_formats:
   video:
   - mp4
 save_path: D:\telegram_media_downloader
-group_by_media_type: true
 file_path_prefix:
 - chat_title
 - media_datetime
 disable_syslog:
 - INFO
+upload_drive:
+  enable_upload_file: true
+  remote_dir: drive:/telegram
+  before_upload_file_zip: True
+  after_upload_file_delete: True
+hide_file_name: true
+file_name_prefix:
+- message_id
+- file_name
+file_name_prefix_split: " - "
+max_concurrent_transmissions: 1
 ```
 
 - **api_hash** - 你从电报应用程序获得的 api_hash
@@ -128,6 +152,20 @@ disable_syslog:
   - `media_datetime`  - 资源的发布时间
   - `media_type`      - 资源类型，类型查阅 `media_types`
 - **disable_syslog** - 您可以选择要禁用的日志类型，请参阅 `logging._nameToLevel`
+- **upload_drive** - 您可以将文件上传到云盘
+  - `enable_upload_file` - [必填]启用上传文件，默认为`false`
+  - `remote_dir` - [必填]你上传的地方
+  - `upload_adapter` - [必填]上传文件适配器，可以为`rclone`,`aligo`。如果为`rclone`，则支持rclone所有支持上传的服务器，如果为aligo，则支持上传阿里云盘
+  - `rclone_path`，如果配置`upload_adapter`为`rclone`则为必填，`rclone`的可执行目录，见wiki[如何使用rclone](https://github.com/tangyoha/telegram_media_downloader/wiki#how-to-use-rclone)
+  - `before_upload_file_zip` - 上传前压缩文件，默认为`false`
+  - `after_upload_file_delete` - 上传成功后删除文件，默认为`false`
+- **hide_file_name** - 是否隐藏web界面文件名称，默认`false`
+- **file_name_prefix** - 自定义文件名称,使用和 **file_path_prefix** 一样
+  - `message_id` - 消息id
+  - `file_name` - 文件名称（可能为空）
+  - `caption` - 消息的标题（可能为空）
+- **file_name_prefix_split** - 自定义文件名称分割符号，默认为` - `
+- **max_concurrent_transmissions** - 设置最大并发传输量（上传和下载）。 太高的值可能会导致与网络相关的问题。 默认为 1。
 
 ## 执行
 
@@ -158,8 +196,8 @@ proxy:
   scheme: socks5
   hostname: 127.0.0.1
   port: 1234
-  username: 你的用户名（可选）
-  password: 你的密码（可选）
+  username: 你的用户名（无则删除该行）
+  password: 你的密码（无则删除该行）
 ```
 
 如果您的代理不需要授权，您可以省略用户名和密码。然后代理将自动启用。
@@ -172,7 +210,7 @@ proxy:
 
 ### 想帮忙？
 
-想要提交错误、贡献一些代码或改进文档？出色的！阅读我们的 [贡献] 指南 (./CONTRIBUTING.md)。
+想要提交错误、贡献一些代码或改进文档？出色的！阅读我们的 [贡献指南](./CONTRIBUTING.md)。
 
 ### 行为守则
 

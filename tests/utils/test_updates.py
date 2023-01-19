@@ -62,7 +62,7 @@ class UpdatesTestCase(unittest.TestCase):
     def test_exception(self, mock_console):
         check_for_updates()
         exception_message: str = (
-            "Following error occured when checking for updates\n"
+            "Following error occurred when checking for updates\n"
             "<class 'json.decoder.JSONDecodeError'>, Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
         )
         mock_console.return_value.log.assert_called_with(exception_message)

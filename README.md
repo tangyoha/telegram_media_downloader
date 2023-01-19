@@ -6,6 +6,8 @@
 <a href="https://codecov.io/gh/tangyoha/telegram_media_downloader"><img alt="Coverage Status" src="https://codecov.io/gh/tangyoha/telegram_media_downloader/branch/master/graph/badge.svg"></a>
 <a href="https://github.com/tangyoha/telegram_media_downloader/blob/master/LICENSE"><img alt="License: MIT" src="https://black.readthedocs.io/en/stable/_static/license.svg"></a>
 <a href="https://github.com/python/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+<img alt="Code style: black" src="https://img.shields.io/github/downloads/tangyoha/telegram_media_downloader/total">
+
 </p>
 
 <h3 align="center">
@@ -24,12 +26,18 @@
 Download all media files from a conversation or a channel that you are a part of from telegram.
 A meta of last read/downloaded message is stored in the config file so that in such a way it won't download the same media file again.
 
+### UI
+
+![web](./screenshot/web_ui.gif)
+
+After running, open the browser to visit `localhost:5000`
+
 ### Support
 
-| Category | Support |
-|--|--|
-|Language | `Python 3.7` and above|
-|Download media types|  audio, document, photo, video, video_note, voice|
+| Category             | Support                                          |
+| -------------------- | ------------------------------------------------ |
+| Language             | `Python 3.7` and above                           |
+| Download media types | audio, document, photo, video, video_note, voice |
 
 ### ToDo
 
@@ -49,6 +57,13 @@ For Windows which doesn't have `make` inbuilt
 
 ```sh
 git clone https://github.com/tangyoha/telegram_media_downloader.git
+cd telegram_media_downloader
+pip3 install -r requirements.txt
+```
+
+## Upgrade installation
+
+```sh
 cd telegram_media_downloader
 pip3 install -r requirements.txt
 ```
@@ -91,6 +106,7 @@ api_hash: your_api_hash
 api_id: your_api_id
 chat_id: telegram_chat_id
 last_read_message_id: 0
+# note we remove ids_to_retry to data.yaml
 ids_to_retry: []
 media_types:
 - audio
@@ -112,6 +128,25 @@ file_path_prefix:
 - media_datetime
 disable_syslog:
 - INFO
+upload_drive:
+  # required
+  enable_upload_file: true
+  # required
+  remote_dir: drive:/telegram
+  # required
+  upload_adapter: rclone
+  # option,when config upload_adapter rclone then this config are required
+  rclone_path: D:\rclone\rclone.exe
+  # option
+  before_upload_file_zip: True
+  # option
+  after_upload_file_delete: True
+hide_file_name: true
+file_name_prefix:
+- message_id
+- file_name
+file_name_prefix_split: " - "
+max_concurrent_transmissions: 1
 ```
 
 - **api_hash**  - The api_hash you got from telegram apps
@@ -125,8 +160,22 @@ disable_syslog:
 - **file_path_prefix** - Store file subfolders, the order of the list is not fixed, can be randomly combined.
   - `chat_title`      - channel or group title, it will be chat id if not exist title.
   - `media_datetime`  - media date, also see pyrogram.types.Message.date.strftime("%Y_%m").
-  - `media_type`      - meida type, also see `media_types`.
+  - `media_type`      - media type, also see `media_types`.
 - **disable_syslog** - You can choose which types of logs to disable,see `logging._nameToLevel`.
+- **upload_drive** - You can upload file to cloud drive.
+  - `enable_upload_file` - Enable upload file, default `false`.
+  - `remote_dir` - Where you upload, like `drive_id/drive_name`.
+  - `upload_adapter` - Upload file adapter, which can be `rclone`, `aligo`. If it is `rclone`, it supports all `rclone` servers that support uploading. If it is `aligo`, it supports uploading `Ali cloud disk`.
+  - `rclone_path` - RClone exe path, see wiki[how to use rclone](https://github.com/tangyoha/telegram_media_downloader/wiki#how-to-use-rclone)
+  - `before_upload_file_zip` - Zip file before upload, default `false`.
+  - `after_upload_file_delete` - Delete file after upload success, default `false`.
+- **hide_file_name** - whether to hide the web interface file name, default `false`
+- **file_name_prefix** - custom file name, use the same as **file_path_prefix**
+  - `message_id` - message id
+  - `file_name` - file name (may be empty)
+  - `caption` - the title of the message (may be empty)
+- **file_name_prefix_split** - custom file name prefix symbol, the default is `-`
+- **max_concurrent_transmissions** - Set the maximum amount of concurrent transmissions (uploads & downloads). A value that is too high may result in network related issues. Defaults to 1.
 
 ## Execution
 
@@ -150,8 +199,8 @@ proxy:
   scheme: socks5
   hostname: 127.0.0.1
   port: 1234
-  username: your_username(option)
-  password: your_password(option)
+  username: your_username(delete the line if none)
+  password: your_password(delete the line if none)
 ```
 
 If your proxy doesn’t require authorization you can omit username and password. Then the proxy will automatically be enabled.

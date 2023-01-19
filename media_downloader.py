@@ -3,13 +3,17 @@ import asyncio
 import logging
 import os
 import re
-from typing import Any, List, Optional, Tuple, Union
+import threading
+import time
+from typing import List, Optional, Tuple, Union
 
 import pyrogram
+from loguru import logger
 from pyrogram.types import Audio, Document, Photo, Video, VideoNote, Voice
 from rich.logging import RichHandler
 
 from module.app import Application
+from module.web import get_flask_app, update_download_status
 from utils.log import LogFilter
 from utils.meta import print_meta
 from utils.updates import check_for_updates
@@ -22,47 +26,40 @@ logging.basicConfig(
 )
 
 CONFIG_NAME = "config.yaml"
-app = Application(CONFIG_NAME)
+DATA_FILE_NAME = "data.yaml"
+APPLICATION_NAME = "media_downloader"
+app = Application(CONFIG_NAME, DATA_FILE_NAME, APPLICATION_NAME)
 
-for it in app.disable_syslog:
-    level = logging.getLevelName(it)
-    if level:
-        logging.disable(level)
-
-CUSTOM_LOG = 777
 RETRY_TIME_OUT = 60
 
 logging.getLogger("pyrogram.session.session").addFilter(LogFilter())
 logging.getLogger("pyrogram.client").addFilter(LogFilter())
 
-logger = logging.getLogger("media_downloader")
+logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
 
-def _check_download_finish(media_size: Any, download_path: str, message_id: int):
+def _check_download_finish(media_size: int, download_path: str, message_id: int):
     """Check download task if finish
 
     Parameters
     ----------
-    media_size: Any
+    media_size: int
         The size of the downloaded resource
     download_path: str
         Resource download hold path
     message_id: int
-        Download meesage id
+        Download message id
 
     """
-    if media_size is not None:
-        download_size = os.path.getsize(download_path)
-        if media_size == download_size:
-            logger.log(CUSTOM_LOG, "Media downloaded - %s", download_path)
-            app.downloaded_ids.append(message_id)
-            app.total_download_task += 1
-        else:
-            logger.log(
-                CUSTOM_LOG, "Media downloaded with wrong size - %s", download_path
-            )
-            os.remove(download_path)
-            raise TypeError("Media downloaded with wrong size")
+    download_size = os.path.getsize(download_path)
+    if media_size == download_size:
+        logger.success("Media downloaded - {}", download_path)
+        app.downloaded_ids.append(message_id)
+        app.total_download_task += 1
+    else:
+        logger.error("Media downloaded with wrong size - {}", download_path)
+        os.remove(download_path)
+        raise TypeError("Media downloaded with wrong size")
 
 
 def _validate_title(title: str):
@@ -75,8 +72,8 @@ def _validate_title(title: str):
 
     """
 
-    r_str = r"[\/\\\:\*\?\"\<\>\|\n]"  # '/ \ : * ? " < > |'
-    new_title = re.sub(r_str, "_", title)  # 替换为下划线
+    r_str = r"[\//\:\*\?\"\<\>\|\n]"  # '/ \ : * ? " < > |'
+    new_title = re.sub(r_str, "_", title)
     return new_title
 
 
@@ -149,6 +146,7 @@ async def _get_media_meta(
     else:
         file_format = None
 
+    file_name = None
     dirname = _validate_title(f"{app.chat_id}")
     if message.chat and message.chat.title:
         dirname = _validate_title(f"{message.chat.title}")
@@ -163,7 +161,7 @@ async def _get_media_meta(
         file_format = media_obj.mime_type.split("/")[-1]  # type: ignore
         file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
 
-        file_name: str = os.path.join(
+        file_name = os.path.join(
             file_save_path,
             "{} - {}_{}.{}".format(
                 message.id,
@@ -173,15 +171,23 @@ async def _get_media_meta(
             ),
         )
     else:
-        file_name = f'{getattr(media_obj, "file_name", None)}'
-        if file_name == "None":
+        file_name = getattr(media_obj, "file_name", None)
+        caption = getattr(message, "caption", None)
+        if caption:
+            caption = _validate_title(caption)
+            app.set_caption_name(app.chat_id, message.media_group_id, caption)
+        else:
+            caption = app.get_caption_name(app.chat_id, message.media_group_id)
+
+        gen_file_name = app.get_file_name(message.id, file_name, caption)
+
+        if not file_name:
             if message.photo:
-                file_name = message.photo.file_unique_id
                 file_format = "jpg"
-            file_name = f"{file_name}.{file_format}"
+            gen_file_name = f"{gen_file_name}.{file_format}"
 
         file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
-        file_name = os.path.join(file_save_path, f"{message.id} - {file_name}")
+        file_name = os.path.join(file_save_path, gen_file_name)
     return file_name, file_format
 
 
@@ -222,6 +228,10 @@ async def download_media(
     int
         Current message id.
     """
+    file_name: str = ""
+    task_start_time: float = time.time()
+    ui_file_name = file_name
+
     for retry in range(3):
         try:
             if message.media is None:
@@ -231,6 +241,7 @@ async def download_media(
                 if _media is None:
                     continue
                 file_name, file_format = await _get_media_meta(message, _media, _type)
+
                 if _can_download(_type, file_formats, file_format):
                     if _is_exist(file_name):
                         # TODO: check if the file download complete
@@ -239,27 +250,42 @@ async def download_media(
                         # if media_size is not None and file_size != media_size:
 
                         # FIXME: if exist and not empty file skip
-                        logger.log(
-                            CUSTOM_LOG,
-                            "%s alreay download,download skipped.\n",
+                        logger.info(
+                            "{} already download,download skipped.\n",
                             file_name,
                         )
+
                         break
 
-                    download_path = await client.download_media(
-                        message, file_name=file_name
-                    )
+                    if app.hide_file_name:
+                        ui_file_name = (
+                            os.path.dirname(file_name)
+                            + "/****"
+                            + os.path.splitext(file_name)[-1]
+                        )
 
+                    download_path = await client.download_media(
+                        message,
+                        file_name=file_name,
+                        progress=lambda down_byte, total_byte: update_download_status(
+                            message.id,
+                            down_byte,
+                            total_byte,
+                            ui_file_name,
+                            task_start_time,
+                        ),
+                    )
                     if download_path and isinstance(download_path, str):
-                        media_size = getattr(_media, "file_size")
+                        media_size = getattr(_media, "file_size", 0)
                         # TODO: if not exist file size or media
                         _check_download_finish(media_size, download_path, message.id)
+                        await app.upload_file(file_name)
 
                     app.downloaded_ids.append(message.id)
             break
         except pyrogram.errors.exceptions.bad_request_400.BadRequest:
             logger.warning(
-                "Message[%d]: file reference expired, refetching...",
+                "Message[{}]: file reference expired, refetching...",
                 message.id,
             )
             message = await client.get_messages(  # type: ignore
@@ -269,27 +295,27 @@ async def download_media(
             if retry == 2:
                 # pylint: disable = C0301
                 logger.error(
-                    "Message[%d]: file reference expired for 3 retries, download skipped.",
+                    "Message[{}]: file reference expired for 3 retries, download skipped.",
                     message.id,
                 )
                 app.failed_ids.append(message.id)
         except TypeError:
             # pylint: disable = C0301
             logger.warning(
-                "Timeout Error occurred when downloading Message[%d], retrying after 5 seconds",
+                "Timeout Error occurred when downloading Message[{}], retrying after 5 seconds",
                 message.id,
             )
             await asyncio.sleep(RETRY_TIME_OUT)
             if retry == 2:
                 logger.error(
-                    "Message[%d]: Timing out after 3 reties, download skipped.",
+                    "Message[{}]: Timing out after 3 reties, download skipped.",
                     message.id,
                 )
                 app.failed_ids.append(message.id)
         except Exception as e:
             # pylint: disable = C0301
             logger.error(
-                "Message[%d]: could not be downloaded due to following exception:\n[%s].",
+                "Message[{}]: could not be downloaded due to following exception:\n[{}].",
                 message.id,
                 e,
                 exc_info=True,
@@ -362,6 +388,7 @@ async def begin_import(pagination_limit: int):
         api_id=app.api_id,
         api_hash=app.api_hash,
         proxy=app.proxy,
+        max_concurrent_transmissions=app.max_concurrent_transmissions,
     )
     await client.start()
     print("Successfully started (Press Ctrl+C to stop)")
@@ -373,7 +400,7 @@ async def begin_import(pagination_limit: int):
     messages_list: list = []
     pagination_count: int = 0
     if app.ids_to_retry:
-        logger.log(CUSTOM_LOG, "Downloading files failed during last run...")
+        logger.info("Downloading files failed during last run...")
         skipped_messages: list = await client.get_messages(  # type: ignore
             chat_id=app.chat_id, message_ids=app.ids_to_retry
         )
@@ -392,7 +419,6 @@ async def begin_import(pagination_limit: int):
                 messages_list = []
                 messages_list.append(message)
                 app.last_read_message_id = last_read_message_id
-                app.update_config()
 
     async for message in messages_iter:  # type: ignore
         if pagination_count != pagination_limit and not app.need_skip_message(
@@ -411,7 +437,6 @@ async def begin_import(pagination_limit: int):
             messages_list = []
             messages_list.append(message)
             app.last_read_message_id = last_read_message_id
-            app.update_config()
     if messages_list:
         last_read_message_id = await process_messages(
             client,
@@ -427,30 +452,33 @@ async def begin_import(pagination_limit: int):
 def main():
     """Main function of the downloader."""
     try:
-        asyncio.get_event_loop().run_until_complete(begin_import(pagination_limit=100))
+        app.pre_run()
+        threading.Thread(target=get_flask_app().run, daemon=True).start()
+        asyncio.get_event_loop().run_until_complete(begin_import(pagination_limit=10))
         if app.failed_ids:
-            logger.log(
-                CUSTOM_LOG,
-                "Downloading of %d files failed. "
+            logger.error(
+                "Downloading of {} files failed. "
                 "Failed message ids are added to config file.\n"
                 "These files will be downloaded on the next run.",
                 len(set(app.failed_ids)),
             )
         check_for_updates()
     except KeyboardInterrupt:
-        logger.log(CUSTOM_LOG, "Stopped!")
+        logger.info("Stopped!")
     except Exception as e:
-        logger.exception("%s", e)
+        logger.exception("{}", e)
     finally:
-        logger.log(CUSTOM_LOG, "update config......")
+        logger.info("update config......")
         app.update_config()
 
 
 if __name__ == "__main__":
+    app.pre_run()
     print_meta(logger)
     main()
-    logger.log(
-        CUSTOM_LOG,
-        "Updated last read message_id to config file, total download %s",
+    logger.success(
+        "Updated last read message_id to config file,"
+        "total download {}, total upload file {}",
         app.total_download_task,
+        app.cloud_drive_config.total_upload_success_file_count,
     )
