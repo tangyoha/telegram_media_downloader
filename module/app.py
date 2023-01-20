@@ -82,6 +82,8 @@ class Application:
         self.hide_file_name = False
         self.caption_name_dict: dict = {}
         self.max_concurrent_transmissions: int = 1
+        self.web_host: str = "localhost"
+        self.web_port: int = 5000
 
     def load_config(self, _config: dict) -> bool:
         """load config from str.
@@ -157,10 +159,14 @@ class Application:
                     "upload_adapter"
                 ]
 
-        self.file_name_prefix_split = self.config.get("file_name_prefix_split", " - ")
+        self.file_name_prefix_split = _config.get(
+            "file_name_prefix_split", self.file_name_prefix_split
+        )
+        self.web_host = _config.get("web_host", self.web_host)
+        self.web_port = _config.get("web_port", self.web_port)
 
-        self.max_concurrent_transmissions = self.config.get(
-            "max_concurrent_transmissions", 1
+        self.max_concurrent_transmissions = _config.get(
+            "max_concurrent_transmissions", self.max_concurrent_transmissions
         )
 
         return True

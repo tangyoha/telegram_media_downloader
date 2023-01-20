@@ -453,7 +453,9 @@ def main():
     """Main function of the downloader."""
     try:
         app.pre_run()
-        threading.Thread(target=get_flask_app().run, daemon=True).start()
+        threading.Thread(
+            target=get_flask_app().run, daemon=True, args=(app.web_host, app.web_port)
+        ).start()
         asyncio.get_event_loop().run_until_complete(begin_import(pagination_limit=10))
         if app.failed_ids:
             logger.error(

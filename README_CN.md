@@ -159,13 +159,15 @@ max_concurrent_transmissions: 1
   - `rclone_path`，如果配置`upload_adapter`为`rclone`则为必填，`rclone`的可执行目录，见wiki[如何使用rclone](https://github.com/tangyoha/telegram_media_downloader/wiki#how-to-use-rclone)
   - `before_upload_file_zip` - 上传前压缩文件，默认为`false`
   - `after_upload_file_delete` - 上传成功后删除文件，默认为`false`
-- **hide_file_name** - 是否隐藏web界面文件名称，默认`false`
 - **file_name_prefix** - 自定义文件名称,使用和 **file_path_prefix** 一样
   - `message_id` - 消息id
   - `file_name` - 文件名称（可能为空）
   - `caption` - 消息的标题（可能为空）
 - **file_name_prefix_split** - 自定义文件名称分割符号，默认为` - `
 - **max_concurrent_transmissions** - 设置最大并发传输量（上传和下载）。 太高的值可能会导致与网络相关的问题。 默认为 1。
+- **hide_file_name** - 是否隐藏web界面文件名称，默认`false`
+- **web_host** - web界面地址
+- **web_port** - web界面端口
 
 ## 执行
 

@@ -169,13 +169,15 @@ max_concurrent_transmissions: 1
   - `rclone_path` - RClone exe path, see wiki[how to use rclone](https://github.com/tangyoha/telegram_media_downloader/wiki#how-to-use-rclone)
   - `before_upload_file_zip` - Zip file before upload, default `false`.
   - `after_upload_file_delete` - Delete file after upload success, default `false`.
-- **hide_file_name** - whether to hide the web interface file name, default `false`
 - **file_name_prefix** - custom file name, use the same as **file_path_prefix**
   - `message_id` - message id
   - `file_name` - file name (may be empty)
   - `caption` - the title of the message (may be empty)
 - **file_name_prefix_split** - custom file name prefix symbol, the default is `-`
 - **max_concurrent_transmissions** - Set the maximum amount of concurrent transmissions (uploads & downloads). A value that is too high may result in network related issues. Defaults to 1.
+- **hide_file_name** - whether to hide the web interface file name, default `false`
+- **web_host** - web host
+- **web_port** - web port
 
 ## Execution
 
