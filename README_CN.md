@@ -135,8 +135,10 @@ hide_file_name: true
 file_name_prefix:
 - message_id
 - file_name
-file_name_prefix_split: " - "
+file_name_prefix_split: ' - '
 max_concurrent_transmissions: 1
+web_host: 127.0.0.1
+web_port: 5000
 ```
 
 - **api_hash** - 你从电报应用程序获得的 api_hash
