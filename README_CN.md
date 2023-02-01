@@ -7,6 +7,8 @@
 <a href="https://github.com/tangyoha/telegram_media_downloader/blob/master/LICENSE"><img alt="License: MIT" src="https://black.readthedocs.io/en/stable/_static/license.svg"></a>
 <a href="https://github.com/python/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 <img alt="Code style: black" src="https://img.shields.io/github/downloads/tangyoha/telegram_media_downloader/total">
+<img alt="Code style: black" src="https://img.shields.io/github/v/release/tangyoha/telegram_media_downloader?display_name=tag&include_prereleases">
+</p>
 </p>
 
 <h3 align="center">
@@ -38,9 +40,9 @@
 | 语言         | `Python 3.7` 及以上                      |
 | 下载媒体类型 | 音频、文档、照片、视频、video_note、语音 |
 
-### 待做
+### 版本发布计划
 
-- 添加对多个频道/聊天的支持。
+* [v2.2.0](https://github.com/tangyoha/telegram_media_downloader/issues/28)
 
 ### 安装
 

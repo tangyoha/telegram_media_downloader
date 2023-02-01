@@ -7,7 +7,7 @@
 <a href="https://github.com/tangyoha/telegram_media_downloader/blob/master/LICENSE"><img alt="License: MIT" src="https://black.readthedocs.io/en/stable/_static/license.svg"></a>
 <a href="https://github.com/python/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 <img alt="Code style: black" src="https://img.shields.io/github/downloads/tangyoha/telegram_media_downloader/total">
-
+<img alt="Code style: black" src="https://img.shields.io/github/v/release/tangyoha/telegram_media_downloader?display_name=tag&include_prereleases">
 </p>
 
 <h3 align="center">
@@ -39,9 +39,9 @@ After running, open the browser to visit `localhost:5000`
 | Language             | `Python 3.7` and above                           |
 | Download media types | audio, document, photo, video, video_note, voice |
 
-### ToDo
+### Version release plan
 
-- Add support for multiple channels/chats.
+* [v2.2.0](https://github.com/tangyoha/telegram_media_downloader/issues/28)
 
 ### Installation
 
