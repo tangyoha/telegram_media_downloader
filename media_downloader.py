@@ -30,7 +30,7 @@ DATA_FILE_NAME = "data.yaml"
 APPLICATION_NAME = "media_downloader"
 app = Application(CONFIG_NAME, DATA_FILE_NAME, APPLICATION_NAME)
 
-RETRY_TIME_OUT = 60
+RETRY_TIME_OUT = 5
 
 logging.getLogger("pyrogram.session.session").addFilter(LogFilter())
 logging.getLogger("pyrogram.client").addFilter(LogFilter())
@@ -60,6 +60,24 @@ def _check_download_finish(media_size: int, download_path: str, message_id: int)
         logger.error("Media downloaded with wrong size - {}", download_path)
         os.remove(download_path)
         raise TypeError("Media downloaded with wrong size")
+
+
+def _check_timeout(retry: int, message_id: int):
+    """Check if message download timeout, then add message id into failed_ids
+
+    Parameters
+    ----------
+    retry: int
+        Retry download message times
+
+    message_id: int
+        Try to download message 's id
+
+    """
+    if retry == 2:
+        app.failed_ids.append(message_id)
+        return True
+    return False
 
 
 def _validate_title(title: str):
@@ -173,24 +191,32 @@ async def _get_media_meta(
     else:
         file_name = getattr(media_obj, "file_name", None)
         caption = getattr(message, "caption", None)
+
+        file_name_suffix = ""
+        if not file_name:
+            if message.photo:
+                file_format = "jpg"
+            file_name_suffix = f".{file_format}"
+
         if caption:
             caption = _validate_title(caption)
             app.set_caption_name(app.chat_id, message.media_group_id, caption)
         else:
             caption = app.get_caption_name(app.chat_id, message.media_group_id)
 
-        gen_file_name = app.get_file_name(message.id, file_name, caption)
+        if not file_name and message.photo:
+            file_name = f"{message.photo.file_unique_id}"
 
-        if not file_name:
-            if message.photo:
-                file_format = "jpg"
-            gen_file_name = f"{gen_file_name}.{file_format}"
+        gen_file_name = (
+            app.get_file_name(message.id, file_name, caption) + file_name_suffix
+        )
 
         file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
         file_name = os.path.join(file_save_path, gen_file_name)
     return file_name, file_format
 
 
+# pylint: disable = R0915
 async def download_media(
     client: pyrogram.client.Client,
     message: pyrogram.types.Message,
@@ -228,60 +254,78 @@ async def download_media(
     int
         Current message id.
     """
+    # pylint: disable = R0912
     file_name: str = ""
+    ui_file_name: str = ""
     task_start_time: float = time.time()
-    ui_file_name = file_name
+    media_size = 0
+    _media = None
+    try:
+        if message.media is None:
+            return message.id
+        for _type in media_types:
+            _media = getattr(message, _type, None)
+            if _media is None:
+                continue
+            file_name, file_format = await _get_media_meta(message, _media, _type)
+            media_size = getattr(_media, "file_size", 0)
+
+            if _can_download(_type, file_formats, file_format):
+                if _is_exist(file_name):
+                    # TODO: check if the file download complete
+                    # file_size = os.path.getsize(file_name)
+                    # media_size = getattr(_media, 'file_size')
+                    # if media_size is not None and file_size != media_size:
+
+                    # FIXME: if exist and not empty file skip
+                    logger.info(
+                        "{} already download,download skipped.\n",
+                        file_name,
+                    )
+
+                    return message.id
+
+                ui_file_name = file_name
+                if app.hide_file_name:
+                    ui_file_name = (
+                        os.path.dirname(file_name)
+                        + "/****"
+                        + os.path.splitext(file_name)[-1]
+                    )
+                break
+    except Exception as e:
+        logger.error(
+            "Message[{}]: could not be downloaded due to following exception:\n[{}].",
+            message.id,
+            e,
+            exc_info=True,
+        )
+        app.failed_ids.append(message.id)
+        return message.id
+
+    if _media is None:
+        return message.id
 
     for retry in range(3):
         try:
-            if message.media is None:
-                return message.id
-            for _type in media_types:
-                _media = getattr(message, _type, None)
-                if _media is None:
-                    continue
-                file_name, file_format = await _get_media_meta(message, _media, _type)
+            download_path = await client.download_media(
+                message,
+                file_name=file_name,
+                progress=lambda down_byte, total_byte: update_download_status(
+                    message.id,
+                    down_byte,
+                    total_byte,
+                    ui_file_name,
+                    task_start_time,
+                ),
+            )
 
-                if _can_download(_type, file_formats, file_format):
-                    if _is_exist(file_name):
-                        # TODO: check if the file download complete
-                        # file_size = os.path.getsize(file_name)
-                        # media_size = getattr(_media, 'file_size')
-                        # if media_size is not None and file_size != media_size:
+            if download_path and isinstance(download_path, str):
+                # TODO: if not exist file size or media
+                _check_download_finish(media_size, download_path, message.id)
+                await app.upload_file(file_name)
 
-                        # FIXME: if exist and not empty file skip
-                        logger.info(
-                            "{} already download,download skipped.\n",
-                            file_name,
-                        )
-
-                        break
-
-                    if app.hide_file_name:
-                        ui_file_name = (
-                            os.path.dirname(file_name)
-                            + "/****"
-                            + os.path.splitext(file_name)[-1]
-                        )
-
-                    download_path = await client.download_media(
-                        message,
-                        file_name=file_name,
-                        progress=lambda down_byte, total_byte: update_download_status(
-                            message.id,
-                            down_byte,
-                            total_byte,
-                            ui_file_name,
-                            task_start_time,
-                        ),
-                    )
-                    if download_path and isinstance(download_path, str):
-                        media_size = getattr(_media, "file_size", 0)
-                        # TODO: if not exist file size or media
-                        _check_download_finish(media_size, download_path, message.id)
-                        await app.upload_file(file_name)
-
-                    app.downloaded_ids.append(message.id)
+                app.downloaded_ids.append(message.id)
             break
         except pyrogram.errors.exceptions.bad_request_400.BadRequest:
             logger.warning(
@@ -292,13 +336,16 @@ async def download_media(
                 chat_id=message.chat.id,  # type: ignore
                 message_ids=message.id,
             )
-            if retry == 2:
+            if _check_timeout(retry, message.id):
                 # pylint: disable = C0301
                 logger.error(
                     "Message[{}]: file reference expired for 3 retries, download skipped.",
                     message.id,
                 )
-                app.failed_ids.append(message.id)
+        except pyrogram.errors.exceptions.flood_420.FloodWait as wait_err:
+            await asyncio.sleep(wait_err.value)
+            logger.warning("Message[{}]: FlowWait {}", message.id, wait_err.value)
+            _check_timeout(retry, message.id)
         except TypeError:
             # pylint: disable = C0301
             logger.warning(
@@ -306,12 +353,11 @@ async def download_media(
                 message.id,
             )
             await asyncio.sleep(RETRY_TIME_OUT)
-            if retry == 2:
+            if _check_timeout(retry, message.id):
                 logger.error(
                     "Message[{}]: Timing out after 3 reties, download skipped.",
                     message.id,
                 )
-                app.failed_ids.append(message.id)
         except Exception as e:
             # pylint: disable = C0301
             logger.error(
@@ -474,7 +520,8 @@ def main():
         app.update_config()
 
 
-if __name__ == "__main__":
+def exec_main():
+    """main"""
     app.pre_run()
     print_meta(logger)
     main()
@@ -484,3 +531,7 @@ if __name__ == "__main__":
         app.total_download_task,
         app.cloud_drive_config.total_upload_success_file_count,
     )
+
+
+if __name__ == "__main__":
+    exec_main()

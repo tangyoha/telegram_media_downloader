@@ -84,9 +84,12 @@ class CloudDrive:
     ):
         """Use Rclone upload file"""
         try:
-            remote_dir = drive_config.remote_dir + os.path.dirname(
-                local_file_path
-            ).removeprefix(save_path).replace("\\", "/")
+            remote_dir = (
+                drive_config.remote_dir
+                + "/"
+                + os.path.dirname(local_file_path).replace(save_path, "")
+                + "/"
+            ).replace("\\", "/")
 
             if not drive_config.dir_cache.get(remote_dir):
                 CloudDrive.rclone_mkdir(drive_config, remote_dir)
@@ -134,16 +137,15 @@ class CloudDrive:
         try:
             remote_dir = (
                 drive_config.remote_dir
-                + os.path.dirname(local_file_path)
-                .removeprefix(save_path)
-                .replace("\\", "/")
                 + "/"
-            )
+                + os.path.dirname(local_file_path).replace(save_path, "")
+                + "/"
+            ).replace("\\", "/")
             if not drive_config.dir_cache.get(remote_dir):
                 CloudDrive.aligo_mkdir(drive_config, remote_dir)
-                drive_config.dir_cache[
-                    remote_dir
-                ] = drive_config.aligo.get_folder_by_path(remote_dir).file_id
+                aligo_dir = drive_config.aligo.get_folder_by_path(remote_dir)
+                if aligo_dir:
+                    drive_config.dir_cache[remote_dir] = aligo_dir.file_id
 
             zip_file_path: str = ""
             file_paths = []

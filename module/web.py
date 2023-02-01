@@ -63,15 +63,12 @@ def update_download_status(
 
         download_speed = max(download_speed, 0)
 
-        _download_result[message_id] = {
-            "down_byte": down_byte,
-            "total_size": total_size,
-            "file_name": file_name,
-            "start_time": start_time,
-            "end_time": end_time,
-            "download_speed": download_speed,
-            "each_second_total_download": each_second_total_download,
-        }
+        _download_result[message_id]["down_byte"] = down_byte
+        _download_result[message_id]["end_time"] = end_time
+        _download_result[message_id]["download_speed"] = download_speed
+        _download_result[message_id][
+            "each_second_total_download"
+        ] = each_second_total_download
     else:
         each_second_total_download = down_byte
         _download_result[message_id] = {
@@ -90,6 +87,7 @@ def update_download_status(
         _total_download_speed = int(
             _total_download_size / (cur_time - _last_download_time)
         )
+        _total_download_speed = max(_total_download_speed, 0)
         _total_download_size = 0
         _last_download_time = cur_time
 
@@ -139,7 +137,7 @@ def get_download_list():
             + '" ,"download_progress":"'
         )
         result += (
-            str(round(value["down_byte"] / value["total_size"] * 100, 2))
+            f'{round(value["down_byte"] / value["total_size"] * 100, 1)}'
             + '" ,"download_speed":"'
             + download_speed
             + '" ,"save_path":"'

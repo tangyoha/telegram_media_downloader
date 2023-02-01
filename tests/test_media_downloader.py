@@ -15,6 +15,7 @@ from media_downloader import (
     app,
     begin_import,
     download_media,
+    exec_main,
     main,
     process_messages,
 )
@@ -42,6 +43,8 @@ def os_remove(_: str):
 def is_exist(file: str):
     if os.path.basename(file).find("311 - sucess_exist_down.mp4") != -1:
         return True
+    elif os.path.basename(file).find("422 - exception.mov") != -1:
+        raise Exception
     return False
 
 
@@ -73,6 +76,10 @@ def mock_manage_duplicate_file(file_path: str) -> str:
 
 def raise_keyboard_interrupt():
     raise KeyboardInterrupt
+
+
+def raise_exception():
+    raise Exception
 
 
 class Chat:
@@ -311,6 +318,10 @@ class MockClient:
             raise pyrogram.errors.exceptions.unauthorized_401.Unauthorized
         elif mock_message.id == 11:
             raise TypeError
+        elif mock_message.id == 420:
+            raise pyrogram.errors.exceptions.flood_420.FloodWait(value=420)
+        elif mock_message.id == 421:
+            raise Exception
         return kwargs["file_name"]
 
 
@@ -363,7 +374,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path("/root/project/test2/2019_08/2.jpg"),
+                platform_generic_path("/root/project/test2/2019_08/2 - ADAVKJYIFV.jpg"),
                 "jpg",
             ),
             result,
@@ -386,7 +397,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         self.assertEqual(
             (
                 platform_generic_path(
-                    "/root/project/test2/2019_08/2 - #home #book.jpg"
+                    "/root/project/test2/2019_08/2 - #home #book - ADAVKJYIFV.jpg"
                 ),
                 "jpg",
             ),
@@ -561,6 +572,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
     @mock.patch("media_downloader.asyncio.sleep", return_value=None)
     @mock.patch("media_downloader.logger")
     @mock.patch("media_downloader.RETRY_TIME_OUT", new=1)
+    @mock.patch("media_downloader._is_exist", new=is_exist)
     def test_download_media(self, mock_logger, patched_time_sleep):
 
         client = MockClient()
@@ -679,6 +691,58 @@ class MediaDownloaderTestCase(unittest.TestCase):
         mock_logger.error.assert_called_with(
             "Message[{}]: Timing out after 3 reties, download skipped.", 11
         )
+
+        # Test FloodWait 420
+        message_7 = MockMessage(
+            id=420,
+            media=True,
+            video=MockVideo(
+                file_name="sample_video.mov",
+                mime_type="video/mov",
+            ),
+        )
+        result = self.loop.run_until_complete(
+            async_download_media(
+                client, message_7, ["video", "photo"], {"video": ["all"]}
+            )
+        )
+        self.assertEqual(420, result)
+        mock_logger.warning.assert_called_with("Message[{}]: FlowWait {}", 420, 420)
+        self.assertEqual(app.failed_ids.count(420), 1)
+
+        # Test other Exception
+        message_8 = MockMessage(
+            id=421,
+            media=True,
+            video=MockVideo(
+                file_name="sample_video.mov",
+                mime_type="video/mov",
+            ),
+        )
+        result = self.loop.run_until_complete(
+            async_download_media(
+                client, message_8, ["video", "photo"], {"video": ["all"]}
+            )
+        )
+        self.assertEqual(421, result)
+        self.assertEqual(app.failed_ids.count(421), 1)
+
+        # Test other Exception
+        message_9 = MockMessage(
+            id=422,
+            media=True,
+            video=MockVideo(
+                file_name="422 - exception.mov",
+                mime_type="video/mov",
+            ),
+        )
+        result = self.loop.run_until_complete(
+            async_download_media(
+                client, message_9, ["video", "photo"], {"video": ["all"]}
+            )
+        )
+        self.assertEqual(422, result)
+        self.assertEqual(app.failed_ids.count(422), 1)
 
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
     @mock.patch("media_downloader.process_messages", new=mock_process_message)
@@ -847,6 +911,23 @@ class MediaDownloaderTestCase(unittest.TestCase):
 
         try:
             main()
+        except:
+            pass
+
+        self.assertEqual(app.ids_to_retry, [1, 2, 3, 4])
+
+    @mock.patch("media_downloader.check_for_updates", new=raise_exception)
+    @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
+    @mock.patch("media_downloader.process_messages", new=mock_process_message)
+    @mock.patch("media_downloader.RETRY_TIME_OUT", new=1)
+    @mock.patch("media_downloader.begin_import", new=async_begin_import)
+    def test_other_exception(self):
+        rest_app(MOCK_CONF)
+        app.failed_ids.append(3)
+        app.failed_ids.append(4)
+
+        try:
+            exec_main()
         except:
             pass
 
