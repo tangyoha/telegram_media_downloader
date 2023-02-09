@@ -7,6 +7,7 @@ import time
 from flask import Flask, render_template, request
 
 from utils.format import format_byte
+import utils
 
 log = logging.getLogger("werkzeug")
 log.setLevel(logging.ERROR)
@@ -94,19 +95,23 @@ def update_download_status(
 
 @_flask_app.route("/")
 def index():
-    """index html"""
+    """Index html"""
     return render_template("index.html")
 
 
 @_flask_app.route("/get_download_status")
 def get_download_speed():
-    """get download speed"""
+    """Get download speed"""
     return (
         '{ "download_speed" : "'
         + format_byte(get_total_download_speed())
         + '/s" , "upload_speed" : "0.00 B/s" } '
     )
 
+@_flask_app.route("/get_app_version")
+def get_app_version():
+    """Get telegram_media_downloader version"""
+    return utils.__version__
 
 @_flask_app.route("/get_download_list")
 def get_download_list():
