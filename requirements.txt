@@ -1,4 +1,5 @@
-https://github.com/tangyoha/pyrogram/archive/refs/tags/v2.0.69.zip
+# https://github.com/tangyoha/pyrogram/archive/refs/tags/v2.0.69.zip
+https://github.com/tangyoha/pyrogram/archive/refs/tags/v2.0.97.zip
 PyYAML==6.0
 rich==12.5.1
 TgCrypto==1.2.5
