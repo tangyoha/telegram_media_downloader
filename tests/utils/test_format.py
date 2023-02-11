@@ -36,23 +36,37 @@ class FormatTestCase(unittest.TestCase):
             self.assertEqual(isinstance(e, ValueError), True)
 
     def test_replace_date_time(self):
+        # split by '.'
         self.assertEqual(
             replace_date_time("xxxxx 2020.03.08 xxxxxxxxx"),
             "xxxxx 2020-03-08 00:00:00 xxxxxxxxx",
         )
+
+        # split by '-'
+        self.assertEqual(
+            replace_date_time("xxxxx 2020-03-08 xxxxxxxxxxxx"),
+            "xxxxx 2020-03-08 00:00:00 xxxxxxxxxxxx",
+        )
+
+        # split by '/'
+        self.assertEqual(
+            replace_date_time("xasd as 2020/03/08 21321fszv"),
+            "xasd as 2020-03-08 00:00:00 21321fszv",
+        )
+        
+        # more different date
         self.assertEqual(
             replace_date_time("xxxxx 2020.03.08 2020.03.09 14:51 xxxxxxxxx"),
             "xxxxx 2020-03-08 00:00:00 2020-03-09 14:51:00 xxxxxxxxx",
         )
 
+        # more space
         self.assertEqual(
-            replace_date_time("xxxxx 2020-03-08 xxxxxxxxxxxx"),
-            "xxxxx 2020-03-08 00:00:00 xxxxxxxxxxxx",
+            replace_date_time("xxxxx 2020.03.08 2020.03.09      14:51 xxxxxxxxx"),
+            "xxxxx 2020-03-08 00:00:00 2020-03-09 14:51:00 xxxxxxxxx",
         )
-        self.assertEqual(
-            replace_date_time("xasd as 2020/03/08 21321fszv"),
-            "xasd as 2020-03-08 00:00:00 21321fszv",
-        )
+
+        # more date format
         self.assertEqual(
             replace_date_time("xasd as 2020/03 21321fszv"),
             "xasd as 2020-03-01 00:00:00 21321fszv",
