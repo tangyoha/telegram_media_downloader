@@ -20,6 +20,8 @@ from media_downloader import (
     process_messages,
 )
 
+from .test_common import MockAudio, MockDocument, MockMessage, MockPhoto, MockVideo, MockVideoNote, MockVoice,Chat,Date
+
 MOCK_DIR: str = "/root/project"
 if platform.system() == "Windows":
     MOCK_DIR = "\\root\\project"
@@ -80,100 +82,6 @@ def raise_keyboard_interrupt():
 
 def raise_exception():
     raise Exception
-
-
-class Chat:
-    def __init__(self, chat_id, chat_title):
-        self.id = chat_id
-        self.title = chat_title
-
-
-class Date:
-    def __init__(self, date):
-        self.date = date
-
-    def strftime(self, str) -> str:
-        return ""
-
-
-class MockMessage:
-    def __init__(self, **kwargs):
-        self.id = kwargs.get("id")
-        self.media = kwargs.get("media")
-        self.audio = kwargs.get("audio", None)
-        self.document = kwargs.get("document", None)
-        self.photo = kwargs.get("photo", None)
-        self.video = kwargs.get("video", None)
-        self.voice = kwargs.get("voice", None)
-        self.video_note = kwargs.get("video_note", None)
-        self.media_group_id = kwargs.get("media_group_id", None)
-        self.caption = kwargs.get("caption", None)
-
-        if kwargs.get("dis_chat") == None:
-            self.chat = Chat(
-                kwargs.get("chat_id", None), kwargs.get("chat_title", None)
-            )
-        else:
-            self.chat = None
-        self.date: datetime = None
-        if kwargs.get("date") != None:
-            self.date = kwargs["date"]
-
-
-class MockAudio:
-    def __init__(self, **kwargs):
-        self.file_name = kwargs["file_name"]
-        self.mime_type = kwargs["mime_type"]
-        if kwargs.get("file_size"):
-            self.file_size = kwargs["file_size"]
-        else:
-            self.file_size = 1024
-
-
-class MockDocument:
-    def __init__(self, **kwargs):
-        self.file_name = kwargs["file_name"]
-        self.mime_type = kwargs["mime_type"]
-        if kwargs.get("file_size"):
-            self.file_size = kwargs["file_size"]
-        else:
-            self.file_size = 1024
-
-
-class MockPhoto:
-    def __init__(self, **kwargs):
-        self.date = kwargs["date"]
-        self.file_unique_id = kwargs["file_unique_id"]
-        if kwargs.get("file_size"):
-            self.file_size = kwargs["file_size"]
-        else:
-            self.file_size = 1024
-
-
-class MockVoice:
-    def __init__(self, **kwargs):
-        self.mime_type = kwargs["mime_type"]
-        self.date = kwargs["date"]
-        if kwargs.get("file_size"):
-            self.file_size = kwargs["file_size"]
-        else:
-            self.file_size = 1024
-
-
-class MockVideo:
-    def __init__(self, **kwargs):
-        self.file_name = kwargs.get("file_name")
-        self.mime_type = kwargs["mime_type"]
-        if kwargs.get("file_size"):
-            self.file_size = kwargs["file_size"]
-        else:
-            self.file_size = 1024
-
-
-class MockVideoNote:
-    def __init__(self, **kwargs):
-        self.mime_type = kwargs["mime_type"]
-        self.date = kwargs["date"]
 
 
 class MockEventLoop:
@@ -374,7 +282,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path("/root/project/test2/2019_08/2 - ADAVKJYIFV.jpg"),
+                platform_generic_path(
+                    "/root/project/test2/2019_08/2 - ADAVKJYIFV.jpg"),
                 "jpg",
             ),
             result,
@@ -419,7 +328,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path("/root/project/test2/0/3 - sample_document.pdf"),
+                platform_generic_path(
+                    "/root/project/test2/0/3 - sample_document.pdf"),
                 "pdf",
             ),
             result,
@@ -514,7 +424,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path("/root/project/test2/2022_08/5 - test.mp4"),
+                platform_generic_path(
+                    "/root/project/test2/2022_08/5 - test.mp4"),
                 "mp4",
             ),
             result,
@@ -538,7 +449,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
         print(app.chat_id)
         self.assertEqual(
             (
-                platform_generic_path("/root/project/8654123/2022_08/5 - test.mp4"),
+                platform_generic_path(
+                    "/root/project/8654123/2022_08/5 - test.mp4"),
                 "mp4",
             ),
             result,
@@ -707,7 +619,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
             )
         )
         self.assertEqual(420, result)
-        mock_logger.warning.assert_called_with("Message[{}]: FlowWait {}", 420, 420)
+        mock_logger.warning.assert_called_with(
+            "Message[{}]: FlowWait {}", 420, 420)
         self.assertEqual(app.failed_ids.count(420), 1)
 
         # Test other Exception

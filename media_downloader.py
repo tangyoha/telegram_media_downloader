@@ -16,6 +16,7 @@ from module.app import Application
 from module.web import get_flask_app, update_download_status
 from utils.log import LogFilter
 from utils.meta import print_meta
+from utils.meta_data import MetaData
 from utils.updates import check_for_updates
 
 logging.basicConfig(
@@ -469,11 +470,12 @@ async def begin_import(pagination_limit: int):
                 app.last_read_message_id = last_read_message_id
 
     async for message in messages_iter:  # type: ignore
-        if pagination_count != pagination_limit and not app.need_skip_message(
-            message.id
-        ):
-            pagination_count += 1
-            messages_list.append(message)
+        meta_data = MetaData()
+        meta_data.get_meta_data(message)
+        if pagination_count != pagination_limit:
+            if not app.need_skip_message(str(app.chat_id), message.id, meta_data):
+                pagination_count += 1
+                messages_list.append(message)
         else:
             last_read_message_id = await process_messages(
                 client,

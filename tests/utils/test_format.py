@@ -2,7 +2,7 @@
 import sys
 import unittest
 
-from utils.format import format_byte
+from utils.format import format_byte, replace_date_time
 
 sys.path.append("..")  # Adds higher directory to python modules path.
 
@@ -34,3 +34,34 @@ class FormatTestCase(unittest.TestCase):
             format_byte(-1)
         except Exception as e:
             self.assertEqual(isinstance(e, ValueError), True)
+
+    def test_replace_date_time(self):
+        self.assertEqual(
+            replace_date_time("xxxxx 2020.03.08 xxxxxxxxx"),
+            "xxxxx 2020-03-08 00:00:00 xxxxxxxxx",
+        )
+        self.assertEqual(
+            replace_date_time("xxxxx 2020.03.08 2020.03.09 14:51 xxxxxxxxx"),
+            "xxxxx 2020-03-08 00:00:00 2020-03-09 14:51:00 xxxxxxxxx",
+        )
+
+        self.assertEqual(
+            replace_date_time("xxxxx 2020-03-08 xxxxxxxxxxxx"),
+            "xxxxx 2020-03-08 00:00:00 xxxxxxxxxxxx",
+        )
+        self.assertEqual(
+            replace_date_time("xasd as 2020/03/08 21321fszv"),
+            "xasd as 2020-03-08 00:00:00 21321fszv",
+        )
+        self.assertEqual(
+            replace_date_time("xasd as 2020/03 21321fszv"),
+            "xasd as 2020-03-01 00:00:00 21321fszv",
+        )
+        self.assertEqual(
+            replace_date_time("xasd as 2020-03 21321fszv"),
+            "xasd as 2020-03-01 00:00:00 21321fszv",
+        )
+        self.assertEqual(
+            replace_date_time("xasd as 2020.03 21321fszv"),
+            "xasd as 2020-03-01 00:00:00 21321fszv",
+        )

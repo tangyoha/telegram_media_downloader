@@ -6,8 +6,8 @@ import time
 
 from flask import Flask, render_template, request
 
-from utils.format import format_byte
 import utils
+from utils.format import format_byte
 
 log = logging.getLogger("werkzeug")
 log.setLevel(logging.ERROR)
@@ -108,10 +108,12 @@ def get_download_speed():
         + '/s" , "upload_speed" : "0.00 B/s" } '
     )
 
+
 @_flask_app.route("/get_app_version")
 def get_app_version():
     """Get telegram_media_downloader version"""
     return utils.__version__
+
 
 @_flask_app.route("/get_download_list")
 def get_download_list():

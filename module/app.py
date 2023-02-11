@@ -6,6 +6,9 @@ import yaml
 from loguru import logger
 
 from module.cloud_drive import CloudDrive, CloudDriveConfig
+from utils.filter import Filter
+from utils.format import replace_date_time
+from utils.meta_data import MetaData
 
 # pylint: disable = R0902
 
@@ -37,6 +40,7 @@ class Application:
         self.config_file: str = config_file
         self.app_data_file: str = app_data_file
         self.application_name: str = application_name
+        self.download_filter = Filter()
 
         self.reset()
 
@@ -84,6 +88,7 @@ class Application:
         self.max_concurrent_transmissions: int = 1
         self.web_host: str = "localhost"
         self.web_port: int = 5000
+        self.download_filter_dict: dict = {}
 
     def load_config(self, _config: dict) -> bool:
         """load config from str.
@@ -164,6 +169,15 @@ class Application:
         )
         self.web_host = _config.get("web_host", self.web_host)
         self.web_port = _config.get("web_port", self.web_port)
+
+        self.download_filter_dict = _config.get(
+            "download_filter", self.download_filter_dict
+        )
+
+        for key, value in self.download_filter_dict.items():
+            self.download_filter_dict[key] = replace_date_time(value)
+
+        # TODO: add check if expression exist syntax error
 
         self.max_concurrent_transmissions = _config.get(
             "max_concurrent_transmissions", self.max_concurrent_transmissions
@@ -273,19 +287,34 @@ class Application:
             res = f"{message_id}"
         return res
 
-    def need_skip_message(self, message_id: int) -> bool:
+    def need_skip_message(
+        self, chat_id: str, message_id: int, meta_data: MetaData
+    ) -> bool:
         """if need skip download message.
 
         Parameters
         ----------
+        chat_id: str
+            Config.yaml defined
+
         message_id: int
-            readily to download message id
+            Readily to download message id
+
+        meta_data: MetaData
+            Ready to match filter
 
         Returns
         -------
         bool
         """
-        return self.ids_to_retry_dict.get(message_id) is not None
+        if message_id in self.ids_to_retry_dict:
+            return True
+
+        if chat_id in self.download_filter_dict:
+            self.download_filter.set_meta_data(meta_data)
+            return not self.download_filter.exec(self.download_filter_dict[chat_id])
+
+        return False
 
     def update_config(self, immediate: bool = True):
         """update config
