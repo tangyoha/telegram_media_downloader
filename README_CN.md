@@ -6,7 +6,6 @@
 <a href="https://codecov.io/gh/tangyoha/telegram_media_downloader"><img alt="Coverage Status" src="https://codecov.io/gh/tangyoha/telegram_media_downloader/branch/master/graph/badge.svg"></a>
 <a href="https://github.com/tangyoha/telegram_media_downloader/blob/master/LICENSE"><img alt="License: MIT" src="https://black.readthedocs.io/en/stable/_static/license.svg"></a>
 <a href="https://github.com/python/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<img alt="Code style: black" src="https://img.shields.io/github/downloads/tangyoha/telegram_media_downloader/total">
 </p>
 
 <h3 align="center">
@@ -139,6 +138,8 @@ file_name_prefix_split: ' - '
 max_concurrent_transmissions: 1
 web_host: 127.0.0.1
 web_port: 5000
+download_filter:
+  'telegram_chat_id': message_date >= 2022-12-01 00:00:00 and message_date <= 2023-01-17 00:00:00
 ```
 
 - **api_hash** - 你从电报应用程序获得的 api_hash
@@ -158,7 +159,7 @@ web_port: 5000
   - `enable_upload_file` - [必填]启用上传文件，默认为`false`
   - `remote_dir` - [必填]你上传的地方
   - `upload_adapter` - [必填]上传文件适配器，可以为`rclone`,`aligo`。如果为`rclone`，则支持rclone所有支持上传的服务器，如果为aligo，则支持上传阿里云盘
-  - `rclone_path`，如果配置`upload_adapter`为`rclone`则为必填，`rclone`的可执行目录，见wiki[如何使用rclone](https://github.com/tangyoha/telegram_media_downloader/wiki#how-to-use-rclone)
+  - `rclone_path`，如果配置`upload_adapter`为`rclone`则为必填，`rclone`的可执行目录，查阅 [如何使用rclone](https://github.com/tangyoha/telegram_media_downloader/wiki/Rclone)
   - `before_upload_file_zip` - 上传前压缩文件，默认为`false`
   - `after_upload_file_delete` - 上传成功后删除文件，默认为`false`
 - **file_name_prefix** - 自定义文件名称,使用和 **file_path_prefix** 一样
@@ -170,6 +171,7 @@ web_port: 5000
 - **hide_file_name** - 是否隐藏web界面文件名称，默认`false`
 - **web_host** - web界面地址
 - **web_port** - web界面端口
+- **download_filter** - 下载过滤器, 查阅 [How to use Filter](https://github.com/tangyoha/telegram_media_downloader/wiki/How-to-use-Filter)
 
 ## 执行
 
