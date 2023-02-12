@@ -3,6 +3,7 @@ import sys
 import unittest
 from datetime import datetime
 
+from module.filter import Filter, MetaData
 from tests.test_common import (
     Chat,
     Date,
@@ -14,7 +15,6 @@ from tests.test_common import (
     MockVideoNote,
     MockVoice,
 )
-from utils.filter import Filter, MetaData
 from utils.format import replace_date_time
 
 sys.path.append("..")  # Adds higher directory to python modules path.
