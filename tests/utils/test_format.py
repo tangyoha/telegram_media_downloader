@@ -53,7 +53,7 @@ class FormatTestCase(unittest.TestCase):
             replace_date_time("xasd as 2020/03/08 21321fszv"),
             "xasd as 2020-03-08 00:00:00 21321fszv",
         )
-        
+
         # more different date
         self.assertEqual(
             replace_date_time("xxxxx 2020.03.08 2020.03.09 14:51 xxxxxxxxx"),
