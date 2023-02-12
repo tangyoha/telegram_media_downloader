@@ -299,6 +299,7 @@ class BaseFilter(Parser):
         p[0] = ReString(p[1])
         self._output("RESTRING : " + p[0].re_string)
 
+    # pylint: disable = C0116
     def p_error(self, p):
         if p:
             print(f"Syntax error at '{p.value}'")

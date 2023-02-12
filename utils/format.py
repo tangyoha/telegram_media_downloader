@@ -75,7 +75,7 @@ def get_date_time(text: str, fmt: str) -> SearchDateTimeResult:
 
     """
     res = SearchDateTimeResult()
-    search_text = re.sub("\s+", " ", text)
+    search_text = re.sub(r"\s+", " ", text)
     regex_list = [
         # 2013.8.15 22:46:21
         r"\d{4}[-/\.]{1}\d{1,2}[-/\.]{1}\d{1,2}[ ]{1,}\d{1,2}:\d{1,2}:\d{1,2}",
