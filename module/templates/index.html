@@ -38,7 +38,7 @@
   <div class="layui-footer">
     <div class="layui-row layui-col-space1">
       <div class="layui-col-md2">
-        <p> Telegram Media Downloader <b style="color: #009688;"> V 2.2.0</b> </p>
+        <p>Telegram Media Downloader V <b id="app_version" style="color: #009688;">undefined</b>
       </div>
       <div class="layui-col-md7">
       </div>
@@ -67,6 +67,16 @@
       var $ = layui.$;
       var already_download_list_data = new Array()
       var download_list_table_data = new Array()
+
+      $.ajax({
+        url: "get_app_version"
+        , type: "get"
+        , async: false
+        , dataType: "text"
+        , success: function (result) {
+          $("#app_version").html(result)
+        }
+      });
 
       tableIns = table.render({
         elem: '#download_list'

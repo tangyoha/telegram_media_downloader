@@ -16,6 +16,7 @@ from module.app import Application
 from module.web import get_flask_app, update_download_status
 from utils.log import LogFilter
 from utils.meta import print_meta
+from utils.meta_data import MetaData
 from utils.updates import check_for_updates
 
 logging.basicConfig(
@@ -269,7 +270,6 @@ async def download_media(
                 continue
             file_name, file_format = await _get_media_meta(message, _media, _type)
             media_size = getattr(_media, "file_size", 0)
-
             if _can_download(_type, file_formats, file_format):
                 if _is_exist(file_name):
                     # TODO: check if the file download complete
@@ -325,7 +325,6 @@ async def download_media(
                 _check_download_finish(media_size, download_path, message.id)
                 await app.upload_file(file_name)
 
-                app.downloaded_ids.append(message.id)
             break
         except pyrogram.errors.exceptions.bad_request_400.BadRequest:
             logger.warning(
@@ -434,8 +433,11 @@ async def begin_import(pagination_limit: int):
         api_id=app.api_id,
         api_hash=app.api_hash,
         proxy=app.proxy,
-        max_concurrent_transmissions=app.max_concurrent_transmissions,
     )
+
+    if getattr(client, "max_concurrent_transmissions", None):
+        client.max_concurrent_transmissions = app.max_concurrent_transmissions
+
     await client.start()
     print("Successfully started (Press Ctrl+C to stop)")
 
@@ -467,11 +469,12 @@ async def begin_import(pagination_limit: int):
                 app.last_read_message_id = last_read_message_id
 
     async for message in messages_iter:  # type: ignore
-        if pagination_count != pagination_limit and not app.need_skip_message(
-            message.id
-        ):
-            pagination_count += 1
-            messages_list.append(message)
+        meta_data = MetaData()
+        meta_data.get_meta_data(message)
+        if pagination_count != pagination_limit:
+            if not app.need_skip_message(str(app.chat_id), message.id, meta_data):
+                pagination_count += 1
+                messages_list.append(message)
         else:
             last_read_message_id = await process_messages(
                 client,

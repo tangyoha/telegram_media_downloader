@@ -6,8 +6,8 @@
 <a href="https://codecov.io/gh/tangyoha/telegram_media_downloader"><img alt="Coverage Status" src="https://codecov.io/gh/tangyoha/telegram_media_downloader/branch/master/graph/badge.svg"></a>
 <a href="https://github.com/tangyoha/telegram_media_downloader/blob/master/LICENSE"><img alt="License: MIT" src="https://black.readthedocs.io/en/stable/_static/license.svg"></a>
 <a href="https://github.com/python/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<img alt="Code style: black" src="https://img.shields.io/github/downloads/tangyoha/telegram_media_downloader/total">
-<img alt="Code style: black" src="https://img.shields.io/github/v/release/tangyoha/telegram_media_downloader?display_name=tag&include_prereleases">
+<a href="https://github.com/python/black">
+<img alt="Code style: black" src="https://img.shields.io/github/v/release/tangyoha/telegram_media_downloader?display_name=tag&include_prereleases"></a>
 </p>
 
 <h3 align="center">
@@ -149,6 +149,8 @@ file_name_prefix_split: ' - '
 max_concurrent_transmissions: 1
 web_host: 127.0.0.1
 web_port: 5000
+download_filter:
+  'telegram_chat_id': message_date >= 2022-12-01 00:00:00 and message_date <= 2023-01-17 00:00:00
 ```
 
 - **api_hash**  - The api_hash you got from telegram apps
@@ -160,26 +162,27 @@ web_port: 5000
 - **file_formats** - File types to download for supported media types which are `audio`, `document` and `video`. Default format is `all`, downloads all files.
 - **save_path** - The root directory where you want to store downloaded files.
 - **file_path_prefix** - Store file subfolders, the order of the list is not fixed, can be randomly combined.
-  - `chat_title`      - channel or group title, it will be chat id if not exist title.
-  - `media_datetime`  - media date, also see pyrogram.types.Message.date.strftime("%Y_%m").
-  - `media_type`      - media type, also see `media_types`.
+  - `chat_title`      - Channel or group title, it will be chat id if not exist title.
+  - `media_datetime`  - Media date, also see pyrogram.types.Message.date.strftime("%Y_%m").
+  - `media_type`      - Media type, also see `media_types`.
 - **disable_syslog** - You can choose which types of logs to disable,see `logging._nameToLevel`.
 - **upload_drive** - You can upload file to cloud drive.
   - `enable_upload_file` - Enable upload file, default `false`.
   - `remote_dir` - Where you upload, like `drive_id/drive_name`.
   - `upload_adapter` - Upload file adapter, which can be `rclone`, `aligo`. If it is `rclone`, it supports all `rclone` servers that support uploading. If it is `aligo`, it supports uploading `Ali cloud disk`.
-  - `rclone_path` - RClone exe path, see wiki[how to use rclone](https://github.com/tangyoha/telegram_media_downloader/wiki#how-to-use-rclone)
+  - `rclone_path` - RClone exe path, see [How to use rclone](https://github.com/tangyoha/telegram_media_downloader/wiki/Rclone)
   - `before_upload_file_zip` - Zip file before upload, default `false`.
   - `after_upload_file_delete` - Delete file after upload success, default `false`.
-- **file_name_prefix** - custom file name, use the same as **file_path_prefix**
-  - `message_id` - message id
-  - `file_name` - file name (may be empty)
-  - `caption` - the title of the message (may be empty)
-- **file_name_prefix_split** - custom file name prefix symbol, the default is `-`
+- **file_name_prefix** - Custom file name, use the same as **file_path_prefix**
+  - `message_id` - Message id
+  - `file_name` - File name (may be empty)
+  - `caption` - The title of the message (may be empty)
+- **file_name_prefix_split** - Custom file name prefix symbol, the default is `-`
 - **max_concurrent_transmissions** - Set the maximum amount of concurrent transmissions (uploads & downloads). A value that is too high may result in network related issues. Defaults to 1.
-- **hide_file_name** - whether to hide the web interface file name, default `false`
-- **web_host** - web host
-- **web_port** - web port
+- **hide_file_name** - Whether to hide the web interface file name, default `false`
+- **web_host** - Web host.
+- **web_port** - Web port.
+- **download_filter** - Download filter, see [How to use Filter](https://github.com/tangyoha/telegram_media_downloader/wiki/How-to-use-Filter)
 
 ## Execution
 

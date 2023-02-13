@@ -72,7 +72,7 @@ class CloudDrive:
         Zip local file
         """
 
-        zip_file_name = os.path.basename(local_file_path).split(".")[0] + ".zip"
+        zip_file_name = local_file_path.split(".")[0] + ".zip"
         with ZipFile(zip_file_name, "w") as zip_writer:
             zip_writer.write(local_file_path)
 
@@ -104,8 +104,8 @@ class CloudDrive:
                 file_path = local_file_path
 
             cmd = (
-                f'"{drive_config.rclone_path}" copy "{file_path}"'
-                "{remote_dir}/ --create-empty-src-dirs --ignore-existing --progress"
+                f'"{drive_config.rclone_path}" copy "{file_path}" '
+                f"{remote_dir}/ --create-empty-src-dirs --ignore-existing --progress"
             )
             proc = await asyncio.create_subprocess_shell(
                 cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
