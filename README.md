@@ -41,7 +41,7 @@ After running, open the browser to visit `localhost:5000`
 
 ### Version release plan
 
-* [v2.2.0](https://github.com/tangyoha/telegram_media_downloader/issues/28)
+* [v2.2.0](https://github.com/tangyoha/telegram_media_downloader/issues/2)
 
 ### Installation
 

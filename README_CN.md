@@ -42,7 +42,7 @@
 
 ### 版本发布计划
 
-* [v2.2.0](https://github.com/tangyoha/telegram_media_downloader/issues/28)
+* [v2.2.0](https://github.com/tangyoha/telegram_media_downloader/issues/2)
 
 ### 安装
 
