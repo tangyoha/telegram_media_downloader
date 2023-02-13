@@ -1,7 +1,7 @@
 black==22.6.0
 isort==5.10.1
 mock==4.0.3
-mypy==0.971
+mypy==1.0.0
 pre-commit==2.21.0
 pylint==2.14.5
 pytest==7.2.1
