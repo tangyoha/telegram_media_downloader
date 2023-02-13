@@ -270,7 +270,6 @@ async def download_media(
                 continue
             file_name, file_format = await _get_media_meta(message, _media, _type)
             media_size = getattr(_media, "file_size", 0)
-
             if _can_download(_type, file_formats, file_format):
                 if _is_exist(file_name):
                     # TODO: check if the file download complete
