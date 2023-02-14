@@ -28,7 +28,7 @@ def check_for_updates() -> None:
         )
         res = conn.getresponse()
         latest_release: dict = json.loads(res.read().decode("utf-8"))
-        if f"{__version__}" != latest_release["tag_name"]:
+        if f"v{__version__}" != latest_release["tag_name"]:
             update_message: str = (
                 f"## New version of Telegram-Media-Downloader is available - {latest_release['name']}\n"
                 f"You are using an outdated version v{__version__} please pull in the changes using `git pull` or download the latest release.\n\n"
