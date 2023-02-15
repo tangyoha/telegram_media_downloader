@@ -72,7 +72,7 @@ def rest_app(conf: dict):
     app.reset()
     app.config_file = "config_test.yaml"
     app.app_data_file = "data_test.yaml"
-    app.load_config(conf)
+    app.assign_config(conf)
 
 
 def platform_generic_path(_path: str) -> str:
@@ -845,7 +845,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         app.failed_ids.append(4)
 
         try:
-            exec_main()
+            main()
         except:
             pass
 

@@ -39,7 +39,10 @@ logging.getLogger("pyrogram.client").addFilter(LogFilter())
 logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
 
-def _check_download_finish(media_size: int, download_path: str, message_id: int):
+def _check_download_finish(media_size: int,
+                           download_path: str,
+                           ui_file_name: str,
+                           message_id: int):
     """Check download task if finish
 
     Parameters
@@ -48,17 +51,19 @@ def _check_download_finish(media_size: int, download_path: str, message_id: int)
         The size of the downloaded resource
     download_path: str
         Resource download hold path
+    ui_file_name: str
+        Really show file name
     message_id: int
         Download message id
 
     """
     download_size = os.path.getsize(download_path)
     if media_size == download_size:
-        logger.success("Media downloaded - {}", download_path)
+        logger.success("Media downloaded - {}", ui_file_name)
         app.downloaded_ids.append(message_id)
         app.total_download_task += 1
     else:
-        logger.error("Media downloaded with wrong size - {}", download_path)
+        logger.error("Media downloaded with wrong size - {}", ui_file_name)
         os.remove(download_path)
         raise TypeError("Media downloaded with wrong size")
 
@@ -140,6 +145,7 @@ def _is_exist(file_path: str) -> bool:
     return not os.path.isdir(file_path) and os.path.exists(file_path)
 
 
+# pylint: disable = R0912
 async def _get_media_meta(
     message: pyrogram.types.Message,
     media_obj: Union[Audio, Document, Photo, Video, VideoNote, Voice],
@@ -161,7 +167,8 @@ async def _get_media_meta(
     """
     if _type in ["audio", "document", "video"]:
         # pylint: disable = C0301
-        file_format: Optional[str] = media_obj.mime_type.split("/")[-1]  # type: ignore
+        file_format: Optional[str] = media_obj.mime_type.split(
+            "/")[-1]  # type: ignore
     else:
         file_format = None
 
@@ -178,7 +185,8 @@ async def _get_media_meta(
     if _type in ["voice", "video_note"]:
         # pylint: disable = C0209
         file_format = media_obj.mime_type.split("/")[-1]  # type: ignore
-        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
+        file_save_path = app.get_file_save_path(
+            _type, dirname, datetime_dir_name)
 
         file_name = os.path.join(
             file_save_path,
@@ -193,10 +201,14 @@ async def _get_media_meta(
         file_name = getattr(media_obj, "file_name", None)
         caption = getattr(message, "caption", None)
 
-        file_name_suffix = ""
+        file_name_suffix = ".unknown"
         if not file_name:
             if message.photo:
                 file_format = "jpg"
+        else:
+            file_name = file_name.split(".")[0]
+
+        if file_format:
             file_name_suffix = f".{file_format}"
 
         if caption:
@@ -209,10 +221,12 @@ async def _get_media_meta(
             file_name = f"{message.photo.file_unique_id}"
 
         gen_file_name = (
-            app.get_file_name(message.id, file_name, caption) + file_name_suffix
+            app.get_file_name(message.id, file_name,
+                              caption) + file_name_suffix
         )
 
-        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
+        file_save_path = app.get_file_save_path(
+            _type, dirname, datetime_dir_name)
         file_name = os.path.join(file_save_path, gen_file_name)
     return file_name, file_format
 
@@ -270,6 +284,11 @@ async def download_media(
                 continue
             file_name, file_format = await _get_media_meta(message, _media, _type)
             media_size = getattr(_media, "file_size", 0)
+
+            ui_file_name = file_name
+            if app.hide_file_name:
+                ui_file_name = f"****{os.path.splitext(file_name)[-1]}"
+
             if _can_download(_type, file_formats, file_format):
                 if _is_exist(file_name):
                     # TODO: check if the file download complete
@@ -279,20 +298,13 @@ async def download_media(
 
                     # FIXME: if exist and not empty file skip
                     logger.info(
-                        "{} already download,download skipped.\n",
-                        file_name,
+                        "id={} {} already download,download skipped.\n",
+                        message.id, ui_file_name,
                     )
 
                     return message.id
 
-                ui_file_name = file_name
-                if app.hide_file_name:
-                    ui_file_name = (
-                        os.path.dirname(file_name)
-                        + "/****"
-                        + os.path.splitext(file_name)[-1]
-                    )
-                break
+            break
     except Exception as e:
         logger.error(
             "Message[{}]: could not be downloaded due to following exception:\n[{}].",
@@ -322,7 +334,8 @@ async def download_media(
 
             if download_path and isinstance(download_path, str):
                 # TODO: if not exist file size or media
-                _check_download_finish(media_size, download_path, message.id)
+                _check_download_finish(
+                    media_size, download_path, ui_file_name, message.id)
                 await app.upload_file(file_name)
 
             break
@@ -343,7 +356,8 @@ async def download_media(
                 )
         except pyrogram.errors.exceptions.flood_420.FloodWait as wait_err:
             await asyncio.sleep(wait_err.value)
-            logger.warning("Message[{}]: FlowWait {}", message.id, wait_err.value)
+            logger.warning("Message[{}]: FlowWait {}",
+                           message.id, wait_err.value)
             _check_timeout(retry, message.id)
         except TypeError:
             # pylint: disable = C0301
@@ -525,8 +539,13 @@ def main():
 
 def exec_main():
     """main"""
-    app.pre_run()
     print_meta(logger)
+    try:
+        app.load_config()
+    except Exception as e:
+        logger.error(f"load config error {e}")
+        return
+
     main()
     logger.success(
         "Updated last read message_id to config file,"

@@ -71,6 +71,11 @@ class MetaData:
             "media_height": self.media_height,
             "media_file_name": self.media_file_name,
             "media_duration": self.media_duration,
+            # small
+            "id" : self.message_id,
+            "caption": self.message_caption,
+            "file_size": self.media_file_size,
+            "file_name": self.media_file_name,
         }
 
     def get_meta_data(self, meta_obj):
@@ -78,7 +83,7 @@ class MetaData:
         # message
         self.message_date = getattr(meta_obj, "date", None)
 
-        self.message_caption = getattr(meta_obj, "caption", None)
+        self.message_caption = getattr(meta_obj, "caption", None) or ""
         self.message_id = getattr(meta_obj, "id", None)
 
         for kind in self.AVAILABLE_MEDIA:
@@ -89,7 +94,7 @@ class MetaData:
         else:
             return
 
-        self.media_file_name = getattr(media_obj, "file_name", None)
+        self.media_file_name = getattr(media_obj, "file_name", None) or ""
         self.media_file_size = getattr(media_obj, "file_size", None)
         self.media_width = getattr(media_obj, "width", None)
         self.media_height = getattr(media_obj, "height", None)

@@ -2,7 +2,7 @@
 import sys
 import unittest
 
-from utils.format import format_byte, replace_date_time
+from utils.format import format_byte, get_byte_from_str, replace_date_time
 
 sys.path.append("..")  # Adds higher directory to python modules path.
 
@@ -79,3 +79,27 @@ class FormatTestCase(unittest.TestCase):
             replace_date_time("xasd as 2020.03 21321fszv"),
             "xasd as 2020-03-01 00:00:00 21321fszv",
         )
+
+    def test_get_byte_from_str(self):
+        # B
+        self.assertEqual(get_byte_from_str("2B"), 2)
+        # KB
+        self.assertEqual(get_byte_from_str("2KB"), 2 * 1024)
+        self.assertEqual(get_byte_from_str("1024KB"), 1024 * 1024)
+        self.assertEqual(get_byte_from_str("2024KB"), 2024 * 1024)
+        self.assertEqual(get_byte_from_str("4000KB"), 4000 * 1024)
+
+        # MB
+        self.assertEqual(get_byte_from_str("2MB"), 2 * 1024 * 1024)
+        self.assertEqual(get_byte_from_str("1024MB"), 1024 * 1024 * 1024)
+
+        #GB
+        self.assertEqual(get_byte_from_str("2GB"), 2 * 1024 * 1024 * 1024)
+
+        #TB
+        self.assertEqual(get_byte_from_str("2TB"), 2 * 1024 * 1024 * 1024 * 1024)
+        self.assertEqual(get_byte_from_str("1024TB"), 1024 * 1024 * 1024 * 1024 * 1024)
+
+        # more str
+        self.assertEqual(get_byte_from_str("2BW"), 2)
+        self.assertEqual(get_byte_from_str("2WBW"), None)

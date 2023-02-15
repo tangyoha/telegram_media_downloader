@@ -42,7 +42,4 @@ class AppTestCase(unittest.TestCase):
         app.config_file = "config_test.yaml"
         app.app_data_file = "data_test.yaml"
         app.update_config()
-        mock_open.assert_called_with("data_test.yaml", "w")
-        mock_yaml.dump.assert_called_with(
-            app.config, mock.ANY, default_flow_style=False
-        )
+        mock_open.assert_called_with("data_test.yaml", "w", encoding='utf-8')

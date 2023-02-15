@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from ply import lex, yacc
+from utils.format import get_byte_from_str
 
 from utils.meta_data import MetaData, NoneObj, ReString
 
@@ -64,6 +65,7 @@ class BaseFilter(Parser):
         "LAND",
         "STRING",
         "RESTRING",
+        "BYTE",
         "EQ",
         "NE",
         "TIME",
@@ -81,19 +83,27 @@ class BaseFilter(Parser):
     t_EQ = r"=="
     t_NE = r"!="
 
+    def t_BYTE(self, t):
+        r"\d{1,}(B|KB|MB|GB|TB)"
+        t.value = get_byte_from_str(t.value)
+        t.type = "NUMBER"
+        return t
+
     def t_TIME(self, t):
         r"\d{4}-\d{1,2}-\d{1,2}[ ]{1,}\d{1,2}:\d{1,2}:\d{1,2}"
         t.value = datetime.strptime(t.value, "%Y-%m-%d %H:%M:%S")
         return t
 
     def t_STRING(self, t):
-        r"'([^\\']+|\\'|\\\\)*'"
-        t.value = t.value[1:-1].encode().decode("unicode_escape")
+        r"'.*?'"
+        #r"'([^\\']+|\\'|\\\\)*'"
+        t.value = t.value[1:-1]
         return t
 
     def t_RESTRING(self, t):
-        r"r'([^\\']+|\\'|\\\\)*'"
-        t.value = t.value[2:-1].encode().decode("unicode_escape")
+        r"r'.*?'"
+        #r"r'([^\\']+|\\'|\\\\)*'"
+        t.value = t.value[2:-1]
         return t
 
     def t_NAME(self, t):
@@ -217,13 +227,13 @@ class BaseFilter(Parser):
             if not isinstance(p[1], str):
                 p[0] = 0
                 return
-            p[0] = re.fullmatch(p[3].re_string, p[1]) is not None
+            p[0] = re.fullmatch(p[3].re_string, p[1], re.MULTILINE) is not None
             self._output(f"{p[1]} {p[2]} {p[3].re_string} {p[0]}")
         elif isinstance(p[1], ReString):
             if not isinstance(p[3], str):
                 p[0] = 0
                 return
-            p[0] = re.fullmatch(p[1].re_string, p[3]) is not None
+            p[0] = re.fullmatch(p[1].re_string, p[3], re.MULTILINE) is not None
             self._output(f"{p[1]} {p[2]} {p[3].re_string} {p[0]}")
         else:
             p[0] = p[1] == p[3]
@@ -242,13 +252,13 @@ class BaseFilter(Parser):
             if not isinstance(p[1], str):
                 p[0] = 0
                 return
-            p[0] = re.fullmatch(p[3].re_string, p[1]) is None
+            p[0] = re.fullmatch(p[3].re_string, p[1], re.MULTILINE) is None
             self._output(f"{p[1]} {p[2]} {p[3].re_string} {p[0]}")
         elif isinstance(p[1], ReString):
             if not isinstance(p[3], str):
                 p[0] = 0
                 return
-            p[0] = re.fullmatch(p[1].re_string, p[3]) is None
+            p[0] = re.fullmatch(p[1].re_string, p[3], re.MULTILINE) is None
             self._output(f"{p[1]} {p[2]} {p[3].re_string} {p[0]}")
         else:
             p[0] = p[1] != p[3]
@@ -317,6 +327,10 @@ class Filter:
         """Set meta data for filter"""
         self.filter.reset()
         self.filter.names = meta_data.data()
+
+    def set_debug(self, debug : bool):
+        """Set Filter Debug Model"""
+        self.filter.debug = debug
 
     def exec(self, filter_str: str) -> Any:
         """Exec filter str"""

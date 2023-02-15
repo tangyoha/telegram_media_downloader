@@ -44,20 +44,6 @@ class Application:
 
         self.reset()
 
-        try:
-            with open(os.path.join(os.path.abspath("."), self.config_file)) as f:
-                self.config = yaml.safe_load(f)
-                self.load_config(self.config)
-        except Exception as e:
-            logger.error(f"load {self.config_file} error, {e}!")
-
-        try:
-            with open(os.path.join(os.path.abspath("."), self.app_data_file)) as f:
-                self.app_data = yaml.safe_load(f)
-                self.load_app_data(self.app_data)
-        except Exception as e:
-            logger.error(f"load {self.app_data_file} error, {e}!")
-
     def reset(self):
         """reset Application"""
         # TODO: record total download task
@@ -90,8 +76,8 @@ class Application:
         self.web_port: int = 5000
         self.download_filter_dict: dict = {}
 
-    def load_config(self, _config: dict) -> bool:
-        """load config from str.
+    def assign_config(self, _config: dict) -> bool:
+        """assign config from str.
 
         Parameters
         ----------
@@ -185,8 +171,8 @@ class Application:
 
         return True
 
-    def load_app_data(self, app_data: dict) -> bool:
-        """load config from str.
+    def assign_app_data(self, app_data: dict) -> bool:
+        """Assign config from str.
 
         Parameters
         ----------
@@ -312,7 +298,9 @@ class Application:
 
         if chat_id in self.download_filter_dict:
             self.download_filter.set_meta_data(meta_data)
-            return not self.download_filter.exec(self.download_filter_dict[chat_id])
+            exec_res = not self.download_filter.exec(
+                self.download_filter_dict[chat_id])
+            return exec_res
 
         return False
 
@@ -327,7 +315,8 @@ class Application:
 
         # pylint: disable = W0201
         self.ids_to_retry = (
-            list(set(self.ids_to_retry) - set(self.downloaded_ids)) + self.failed_ids
+            list(set(self.ids_to_retry) -
+                 set(self.downloaded_ids)) + self.failed_ids
         )
 
         self.config["last_read_message_id"] = self.last_read_message_id
@@ -346,12 +335,24 @@ class Application:
         # self.app_data["already_download_ids"] = list(self.already_download_ids_set)
 
         if immediate:
-            with open(self.config_file, "w") as yaml_file:
-                yaml.dump(self.config, yaml_file, default_flow_style=False)
+            with open(self.config_file, "w", encoding="utf-8") as yaml_file:
+                yaml.dump(self.config, yaml_file, default_flow_style=False,
+                          encoding='utf-8', allow_unicode=True)
 
         if immediate:
-            with open(self.app_data_file, "w") as yaml_file:
-                yaml.dump(self.app_data, yaml_file, default_flow_style=False)
+            with open(self.app_data_file, "w", encoding="utf-8") as yaml_file:
+                yaml.dump(self.app_data, yaml_file, default_flow_style=False,
+                          encoding='utf-8', allow_unicode=True)
+
+    def load_config(self):
+        """Load user config"""
+        with open(os.path.join(os.path.abspath("."), self.config_file), encoding="utf-8") as f:
+            self.config = yaml.load(f.read(),Loader=yaml.FullLoader)
+            self.assign_config(self.config)
+
+        with open(os.path.join(os.path.abspath("."), self.app_data_file), encoding="utf-8") as f:
+            self.app_data = yaml.load(f.read(),Loader=yaml.FullLoader)
+            self.assign_app_data(self.app_data)
 
     def pre_run(self):
         """before run application do"""

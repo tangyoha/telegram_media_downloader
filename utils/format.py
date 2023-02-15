@@ -99,12 +99,13 @@ def get_date_time(text: str, fmt: str) -> SearchDateTimeResult:
         if search_res:
             time_str = search_res.group(0)
             res.value = datetime.strptime(
-                time_str.replace("/", "-").replace(".", "-").strip(), format_list[i]
+                time_str.replace("/", "-").replace(".",
+                                                   "-").strip(), format_list[i]
             ).strftime(fmt)
             if search_res.start() != 0:
-                res.left_str = search_text[0 : search_res.start()]
+                res.left_str = search_text[0: search_res.start()]
             if search_res.end() + 1 <= len(search_text):
-                res.right_str = search_text[search_res.end() :]
+                res.right_str = search_text[search_res.end():]
             res.match = True
             return res
 
@@ -121,6 +122,7 @@ def replace_date_time(text: str, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
 
     fmt: str
         the right datetime format
+
     Returns
     -------
     str
@@ -138,3 +140,35 @@ def replace_date_time(text: str, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
         res_str += replace_date_time(res.right_str)
 
     return res_str
+
+
+_BYTE_UNIT = ["B", "KB", "MB", "GB", "TB"]
+
+
+def get_byte_from_str(byte_str: str) -> int:
+    """Get byte from str
+
+    Parameters
+    ----------
+    byte_str: str
+        Include byte str
+
+    Returns
+    -------
+    int
+        Byte
+    """
+    search_res = re.match(r"(\d{1,})(B|KB|MB|GB|TB)", byte_str)
+    if search_res:
+        unit_str = search_res.group(2)
+        unit: int = 1
+        for it in _BYTE_UNIT:
+            if it == unit_str:
+                break
+            unit *= 1024
+        else:
+            raise ValueError(f"{byte_str} not support")
+
+        return int(search_res.group(1)) * unit
+
+    return None
