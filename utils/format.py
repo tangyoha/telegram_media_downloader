@@ -1,8 +1,10 @@
 """util format"""
 
 import math
+import os
 import re
 from datetime import datetime
+import unicodedata
 
 
 def format_byte(size: float, dot=2):
@@ -172,3 +174,28 @@ def get_byte_from_str(byte_str: str) -> int:
         return int(search_res.group(1)) * unit
 
     return None
+
+
+def truncate_filename(path: str, limit: int = 255):
+    """Truncate filename to the max len.
+
+    Parameters
+    ----------
+    path: str
+        File name path
+
+    limit: int
+        limit file name len(utf-8 byte)
+
+    Returns
+    -------
+    str
+        if file name len more than limit then return truncate filename or return filename
+
+    """
+    p, f = os.path.split(os.path.normpath(path))
+    f, e = os.path.splitext(f)
+    f_max = limit - len(e.encode('utf-8'))
+    f = unicodedata.normalize('NFC', f)
+    f_trunc = f.encode()[:f_max].decode('utf-8', errors='ignore')
+    return os.path.join(p, f_trunc + e)

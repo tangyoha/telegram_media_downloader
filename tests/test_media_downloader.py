@@ -4,18 +4,18 @@ import os
 import platform
 import unittest
 from datetime import datetime
-
+from pyrogram.file_id import FileType, PHOTO_TYPES
 import mock
 import pyrogram
 
 from media_downloader import (
     _can_download,
+    _check_config,
     _get_media_meta,
     _is_exist,
     app,
     begin_import,
     download_media,
-    exec_main,
     main,
     process_messages,
 )
@@ -92,6 +92,74 @@ def raise_keyboard_interrupt():
 
 def raise_exception():
     raise Exception
+
+
+def load_config():
+    print("aaaaa")
+    raise ValueError("error load config")
+
+
+def get_file_type(file_id: str):
+    if file_id == "THUMBNAIL":
+        return FileType.THUMBNAIL
+    elif file_id == "CHAT_PHOTO":
+        return FileType.CHAT_PHOTO
+    elif file_id == "PHOTO":
+        return FileType.PHOTO
+    elif file_id == "VOICE":
+        return FileType.VOICE
+    elif file_id == "VIDEO":
+        return FileType.VIDEO
+    elif file_id == "DOCUMENT":
+        return FileType.DOCUMENT
+    elif file_id == "ENCRYPTED":
+        return FileType.ENCRYPTED
+    elif file_id == "TEMP":
+        return FileType.TEMP
+    elif file_id == "STICKER":
+        return FileType.STICKER
+    elif file_id == "AUDIO":
+        return FileType.AUDIO
+    elif file_id == "ANIMATION":
+        return FileType.ANIMATION
+    elif file_id == "ENCRYPTED_THUMBNAIL":
+        return FileType.ENCRYPTED_THUMBNAIL
+    elif file_id == "WALLPAPER":
+        return FileType.WALLPAPER
+    elif file_id == "VIDEO_NOTE":
+        return FileType.VIDEO_NOTE
+    elif file_id == "SECURE_RAW":
+        return FileType.SECURE_RAW
+    elif file_id == "SECURE":
+        return FileType.SECURE
+    elif file_id == "BACKGROUND":
+        return FileType.BACKGROUND
+    elif file_id == "DOCUMENT_AS_FILE":
+        return FileType.DOCUMENT_AS_FILE
+
+    raise ValueError("error file id!")
+
+
+def get_extension(file_id: str, mime_type: str):
+    file_type = get_file_type(file_id=file_id)
+    guessed_extension = ""
+
+    if file_type in PHOTO_TYPES:
+        extension = ".jpg"
+    elif file_type == FileType.VOICE:
+        extension = guessed_extension or ".ogg"
+    elif file_type in (FileType.VIDEO, FileType.ANIMATION, FileType.VIDEO_NOTE):
+        extension = guessed_extension or ".mp4"
+    elif file_type == FileType.DOCUMENT:
+        extension = guessed_extension or ".zip"
+    elif file_type == FileType.STICKER:
+        extension = guessed_extension or ".webp"
+    elif file_type == FileType.AUDIO:
+        extension = guessed_extension or ".mp3"
+    else:
+        extension = ".unknown"
+
+    return extension
 
 
 class MockEventLoop:
@@ -249,6 +317,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
         cls.loop = asyncio.get_event_loop()
         rest_app(MOCK_CONF)
 
+    @mock.patch("media_downloader.get_extension", new=get_extension)
+    # @mock.patch("media_downloader.app.save_path", new=MOCK_DIR)
     def test_get_media_meta(self):
         rest_app(MOCK_CONF)
         app.save_path = MOCK_DIR
@@ -292,8 +362,9 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path("/root/project/test2/2019_08/2 - ADAVKJYIFV.jpg"),
-                "jpg",
+                platform_generic_path(
+                    "/root/project/test2/2019_08/2 - ADAVKJYIFV.jpg"),
+                None,
             ),
             result,
         )
@@ -317,7 +388,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
                 platform_generic_path(
                     "/root/project/test2/2019_08/2 - #home #book - ADAVKJYIFV.jpg"
                 ),
-                "jpg",
+                None,
             ),
             result,
         )
@@ -337,7 +408,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path("/root/project/test2/0/3 - sample_document.pdf"),
+                platform_generic_path(
+                    "/root/project/test2/0/3 - sample_document.pdf"),
                 "pdf",
             ),
             result,
@@ -432,7 +504,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path("/root/project/test2/2022_08/5 - test.mp4"),
+                platform_generic_path(
+                    "/root/project/test2/2022_08/5 - test.mp4"),
                 "mp4",
             ),
             result,
@@ -456,7 +529,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
         print(app.chat_id)
         self.assertEqual(
             (
-                platform_generic_path("/root/project/8654123/2022_08/5 - test.mp4"),
+                platform_generic_path(
+                    "/root/project/8654123/2022_08/5 - test.mp4"),
                 "mp4",
             ),
             result,
@@ -625,7 +699,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
             )
         )
         self.assertEqual(420, result)
-        mock_logger.warning.assert_called_with("Message[{}]: FlowWait {}", 420, 420)
+        mock_logger.warning.assert_called_with(
+            "Message[{}]: FlowWait {}", 420, 420)
         self.assertEqual(app.failed_ids.count(420), 1)
 
         # Test other Exception
@@ -851,6 +926,19 @@ class MediaDownloaderTestCase(unittest.TestCase):
 
         self.assertEqual(app.ids_to_retry, [1, 2, 3, 4])
 
+    @mock.patch("media_downloader._load_config", new=load_config)
+    @mock.patch("media_downloader.logger")
+    def test_check_config(self, mock_logger):
+        _check_config()
+        mock_logger.error.assert_called_with(
+            "load config error: error load config")
+
     @classmethod
     def tearDownClass(cls):
         cls.loop.close()
+        config_test = os.path.join(os.path.abspath("."), "config_test.yaml")
+        data_test = os.path.join(os.path.abspath("."), "data_test.yaml")
+        if os.path.exists(config_test):
+            os.remove(config_test)
+        if os.path.exists(data_test):
+            os.remove(data_test)

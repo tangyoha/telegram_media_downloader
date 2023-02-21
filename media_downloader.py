@@ -13,7 +13,9 @@ from pyrogram.types import Audio, Document, Photo, Video, VideoNote, Voice
 from rich.logging import RichHandler
 
 from module.app import Application
+from module.pyrogram_extension import get_extension
 from module.web import get_flask_app, update_download_status
+from utils.format import truncate_filename
 from utils.log import LogFilter
 from utils.meta import print_meta
 from utils.meta_data import MetaData
@@ -144,8 +146,9 @@ def _is_exist(file_path: str) -> bool:
     """
     return not os.path.isdir(file_path) and os.path.exists(file_path)
 
-
 # pylint: disable = R0912
+
+
 async def _get_media_meta(
     message: pyrogram.types.Message,
     media_obj: Union[Audio, Document, Photo, Video, VideoNote, Voice],
@@ -203,13 +206,14 @@ async def _get_media_meta(
 
         file_name_suffix = ".unknown"
         if not file_name:
-            if message.photo:
-                file_format = "jpg"
+            file_name_suffix = get_extension(
+                media_obj.file_id, getattr(media_obj, "mime_type", ""))
         else:
-            file_name = file_name.split(".")[0]
-
-        if file_format:
-            file_name_suffix = f".{file_format}"
+            #file_name = file_name.split(".")[0]
+            _, file_name_without_suffix = os.path.split(
+                os.path.normpath(file_name))
+            file_name, file_name_suffix = os.path.splitext(
+                file_name_without_suffix)
 
         if caption:
             caption = _validate_title(caption)
@@ -228,6 +232,7 @@ async def _get_media_meta(
         file_save_path = app.get_file_save_path(
             _type, dirname, datetime_dir_name)
         file_name = os.path.join(file_save_path, gen_file_name)
+        file_name = truncate_filename(file_name)
     return file_name, file_format
 
 
@@ -301,6 +306,8 @@ async def download_media(
                         "id={} {} already download,download skipped.\n",
                         message.id, ui_file_name,
                     )
+
+                    app.downloaded_ids.append(message.id)
 
                     return message.id
 
@@ -535,25 +542,31 @@ def main():
     finally:
         logger.info("update config......")
         app.update_config()
+        logger.success(
+            "Updated last read message_id to config file,"
+            "total download {}, total upload file {}",
+            app.total_download_task,
+            app.cloud_drive_config.total_upload_success_file_count,
+        )
 
 
-def exec_main():
-    """main"""
+def _load_config() -> str:
+    """Load config"""
+    app.load_config()
+
+
+def _check_config() -> bool:
+    """Check config"""
     print_meta(logger)
     try:
-        app.load_config()
+        _load_config()
     except Exception as e:
-        logger.error(f"load config error {e}")
-        return
+        logger.error(f"load config error: {e}")
+        return False
 
-    main()
-    logger.success(
-        "Updated last read message_id to config file,"
-        "total download {}, total upload file {}",
-        app.total_download_task,
-        app.cloud_drive_config.total_upload_success_file_count,
-    )
+    return True
 
 
 if __name__ == "__main__":
-    exec_main()
+    if _check_config():
+        main()

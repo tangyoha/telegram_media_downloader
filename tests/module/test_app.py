@@ -6,6 +6,7 @@ import unittest
 from unittest import mock
 
 from module.app import Application
+import module.app
 
 sys.path.append("..")  # Adds higher directory to python modules path.
 

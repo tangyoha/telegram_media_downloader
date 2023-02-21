@@ -1,4 +1,5 @@
 """Application module"""
+
 import os
 from typing import List, Optional
 
@@ -9,6 +10,7 @@ from module.cloud_drive import CloudDrive, CloudDriveConfig
 from module.filter import Filter
 from utils.format import replace_date_time
 from utils.meta_data import MetaData
+
 
 # pylint: disable = R0902
 

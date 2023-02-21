@@ -96,13 +96,13 @@ class BaseFilter(Parser):
 
     def t_STRING(self, t):
         r"'.*?'"
-        #r"'([^\\']+|\\'|\\\\)*'"
+        # r"'([^\\']+|\\'|\\\\)*'"
         t.value = t.value[1:-1]
         return t
 
     def t_RESTRING(self, t):
         r"r'.*?'"
-        #r"r'([^\\']+|\\'|\\\\)*'"
+        # r"r'([^\\']+|\\'|\\\\)*'"
         t.value = t.value[2:-1]
         return t
 
@@ -328,13 +328,16 @@ class Filter:
         self.filter.reset()
         self.filter.names = meta_data.data()
 
-    def set_debug(self, debug : bool):
+    def set_debug(self, debug: bool):
         """Set Filter Debug Model"""
         self.filter.debug = debug
 
-    def exec(self, filter_str: str) -> Any:
+    def exec(self, filter_str: str) -> bool:
         """Exec filter str"""
 
         if self.filter.names:
-            return self.filter.exec(filter_str)
+            res = self.filter.exec(filter_str)
+            if isinstance(res, bool):
+                return res
+            return False
         raise ValueError("meta data cannot be empty!")
