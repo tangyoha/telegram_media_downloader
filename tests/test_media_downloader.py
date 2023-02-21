@@ -2,6 +2,7 @@
 import asyncio
 import os
 import platform
+from typing import List
 import unittest
 from datetime import datetime
 
@@ -20,6 +21,7 @@ from media_downloader import (
     main,
     process_messages,
 )
+from module.cloud_drive import CloudDriveConfig
 
 from .test_common import (
     Chat,
@@ -70,7 +72,34 @@ def os_get_file_size(file: str) -> int:
 
 
 def rest_app(conf: dict):
-    app.reset()
+    app.total_download_task = 0
+    app.downloaded_ids: list = []
+    # app.already_download_ids_set = set()
+    app.failed_ids: list = []
+    app.disable_syslog: list = []
+    app.save_path = os.path.abspath(".")
+    app.ids_to_retry: list = []
+    app.api_id: str = ""
+    app.api_hash: str = ""
+    app.chat_id: str = ""
+    app.media_types: List[str] = []
+    app.file_formats: dict = {}
+    app.proxy: dict = {}
+    app.last_read_message_id = 0
+    app.restart_program = False
+    app.config: dict = {}
+    app.app_data: dict = {}
+    app.file_path_prefix: List[str] = ["chat_title", "media_datetime"]
+    app.file_name_prefix: List[str] = ["message_id", "file_name"]
+    app.file_name_prefix_split: str = " - "
+    app.log_file_path = os.path.join(os.path.abspath("."), "log")
+    app.cloud_drive_config = CloudDriveConfig()
+    app.hide_file_name = False
+    app.caption_name_dict: dict = {}
+    app.max_concurrent_transmissions: int = 1
+    app.web_host: str = "localhost"
+    app.web_port: int = 5000
+    app.download_filter_dict: dict = {}
     app.config_file = "config_test.yaml"
     app.app_data_file = "data_test.yaml"
     app.assign_config(conf)
