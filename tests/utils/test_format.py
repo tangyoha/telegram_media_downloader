@@ -123,5 +123,5 @@ class FormatTestCase(unittest.TestCase):
             self.assertEqual(truncate_filename("D:\\MyDisk\\github\\wwww_我我我我.mp4", 14),
                          "D:\\MyDisk\\github\\wwww_我.mp4")
         else:
-            self.assertEqual(truncate_filename("/hom/MyDisk/github/wwww_wwww.mp4", 8),
+            self.assertEqual(truncate_filename("/home/MyDisk/github/wwww_wwww.mp4", 8),
                          "/home/MyDisk/github/wwww.mp4")
