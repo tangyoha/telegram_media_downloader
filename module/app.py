@@ -4,7 +4,6 @@ import os
 from typing import List, Optional
 
 import yaml
-from loguru import logger
 
 from module.cloud_drive import CloudDrive, CloudDriveConfig
 from module.filter import Filter
@@ -43,10 +42,6 @@ class Application:
         self.application_name: str = application_name
         self.download_filter = Filter()
 
-        self.reset()
-
-    def reset(self):
-        """reset Application"""
         # TODO: record total download task
         self.total_download_task = 0
         self.downloaded_ids: list = []
@@ -76,6 +71,7 @@ class Application:
         self.web_host: str = "localhost"
         self.web_port: int = 5000
         self.download_filter_dict: dict = {}
+        self.ids_to_retry_dict: dict = {}
 
     def assign_config(self, _config: dict) -> bool:
         """assign config from str.
@@ -101,7 +97,7 @@ class Application:
         if _config.get("ids_to_retry"):
             self.ids_to_retry = _config["ids_to_retry"]
 
-        self.ids_to_retry_dict: dict = {}
+        self.ids_to_retry_dict = {}
         for it in self.ids_to_retry:
             self.ids_to_retry_dict[it] = True
 

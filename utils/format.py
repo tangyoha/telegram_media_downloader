@@ -5,6 +5,7 @@ import os
 import re
 import unicodedata
 from datetime import datetime
+from typing import Optional
 
 
 def format_byte(size: float, dot=2):
@@ -146,7 +147,7 @@ def replace_date_time(text: str, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
 _BYTE_UNIT = ["B", "KB", "MB", "GB", "TB"]
 
 
-def get_byte_from_str(byte_str: str) -> int:
+def get_byte_from_str(byte_str: str) -> Optional[int]:
     """Get byte from str
 
     Parameters
@@ -175,7 +176,7 @@ def get_byte_from_str(byte_str: str) -> int:
     return None
 
 
-def truncate_filename(path: str, limit: int = 255):
+def truncate_filename(path: str, limit: int = 255) -> str:
     """Truncate filename to the max len.
 
     Parameters

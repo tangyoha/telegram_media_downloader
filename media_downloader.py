@@ -546,7 +546,7 @@ def main():
         )
 
 
-def _load_config() -> str:
+def _load_config():
     """Load config"""
     app.load_config()
 

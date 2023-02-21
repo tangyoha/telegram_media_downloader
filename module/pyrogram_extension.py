@@ -1,3 +1,5 @@
+"""Pyrogram ext"""
+
 import struct
 from io import BytesIO, StringIO
 from mimetypes import MimeTypes
