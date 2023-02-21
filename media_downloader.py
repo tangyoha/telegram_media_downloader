@@ -41,10 +41,9 @@ logging.getLogger("pyrogram.client").addFilter(LogFilter())
 logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
 
-def _check_download_finish(media_size: int,
-                           download_path: str,
-                           ui_file_name: str,
-                           message_id: int):
+def _check_download_finish(
+    media_size: int, download_path: str, ui_file_name: str, message_id: int
+):
     """Check download task if finish
 
     Parameters
@@ -146,6 +145,7 @@ def _is_exist(file_path: str) -> bool:
     """
     return not os.path.isdir(file_path) and os.path.exists(file_path)
 
+
 # pylint: disable = R0912
 
 
@@ -170,8 +170,7 @@ async def _get_media_meta(
     """
     if _type in ["audio", "document", "video"]:
         # pylint: disable = C0301
-        file_format: Optional[str] = media_obj.mime_type.split(
-            "/")[-1]  # type: ignore
+        file_format: Optional[str] = media_obj.mime_type.split("/")[-1]  # type: ignore
     else:
         file_format = None
 
@@ -188,8 +187,7 @@ async def _get_media_meta(
     if _type in ["voice", "video_note"]:
         # pylint: disable = C0209
         file_format = media_obj.mime_type.split("/")[-1]  # type: ignore
-        file_save_path = app.get_file_save_path(
-            _type, dirname, datetime_dir_name)
+        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
 
         file_name = os.path.join(
             file_save_path,
@@ -207,13 +205,12 @@ async def _get_media_meta(
         file_name_suffix = ".unknown"
         if not file_name:
             file_name_suffix = get_extension(
-                media_obj.file_id, getattr(media_obj, "mime_type", ""))
+                media_obj.file_id, getattr(media_obj, "mime_type", "")
+            )
         else:
-            #file_name = file_name.split(".")[0]
-            _, file_name_without_suffix = os.path.split(
-                os.path.normpath(file_name))
-            file_name, file_name_suffix = os.path.splitext(
-                file_name_without_suffix)
+            # file_name = file_name.split(".")[0]
+            _, file_name_without_suffix = os.path.split(os.path.normpath(file_name))
+            file_name, file_name_suffix = os.path.splitext(file_name_without_suffix)
 
         if caption:
             caption = _validate_title(caption)
@@ -225,12 +222,10 @@ async def _get_media_meta(
             file_name = f"{message.photo.file_unique_id}"
 
         gen_file_name = (
-            app.get_file_name(message.id, file_name,
-                              caption) + file_name_suffix
+            app.get_file_name(message.id, file_name, caption) + file_name_suffix
         )
 
-        file_save_path = app.get_file_save_path(
-            _type, dirname, datetime_dir_name)
+        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
         file_name = os.path.join(file_save_path, gen_file_name)
         file_name = truncate_filename(file_name)
     return file_name, file_format
@@ -304,7 +299,8 @@ async def download_media(
                     # FIXME: if exist and not empty file skip
                     logger.info(
                         "id={} {} already download,download skipped.\n",
-                        message.id, ui_file_name,
+                        message.id,
+                        ui_file_name,
                     )
 
                     app.downloaded_ids.append(message.id)
@@ -342,7 +338,8 @@ async def download_media(
             if download_path and isinstance(download_path, str):
                 # TODO: if not exist file size or media
                 _check_download_finish(
-                    media_size, download_path, ui_file_name, message.id)
+                    media_size, download_path, ui_file_name, message.id
+                )
                 await app.upload_file(file_name)
 
             break
@@ -363,8 +360,7 @@ async def download_media(
                 )
         except pyrogram.errors.exceptions.flood_420.FloodWait as wait_err:
             await asyncio.sleep(wait_err.value)
-            logger.warning("Message[{}]: FlowWait {}",
-                           message.id, wait_err.value)
+            logger.warning("Message[{}]: FlowWait {}", message.id, wait_err.value)
             _check_timeout(retry, message.id)
         except TypeError:
             # pylint: disable = C0301

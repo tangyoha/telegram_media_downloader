@@ -72,7 +72,7 @@ class MetaData:
             "media_file_name": self.media_file_name,
             "media_duration": self.media_duration,
             # small
-            "id" : self.message_id,
+            "id": self.message_id,
             "caption": self.message_caption,
             "file_size": self.media_file_size,
             "file_name": self.media_file_name,

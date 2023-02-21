@@ -1,12 +1,17 @@
-
 import struct
 from io import BytesIO, StringIO
 from mimetypes import MimeTypes
 from typing import Optional
 
+from pyrogram.file_id import (
+    FILE_REFERENCE_FLAG,
+    PHOTO_TYPES,
+    WEB_LOCATION_FLAG,
+    FileType,
+    b64_decode,
+    rle_decode,
+)
 from pyrogram.mime_types import mime_types
-from pyrogram.file_id import FileType, PHOTO_TYPES, WEB_LOCATION_FLAG, FILE_REFERENCE_FLAG, rle_decode, b64_decode
-
 
 _mimetypes = MimeTypes()
 _mimetypes.readfp(StringIO(mime_types))
@@ -42,8 +47,7 @@ def _get_file_type(file_id: str):
     try:
         file_type = FileType(file_type)
     except ValueError as exc:
-        raise ValueError(
-            f"Unknown file_type {file_type} of file_id {file_id}") from exc
+        raise ValueError(f"Unknown file_type {file_type} of file_id {file_id}") from exc
 
     return file_type
 
@@ -54,7 +58,7 @@ def get_extension(file_id: str, mime_type: str) -> str:
     file_type = _get_file_type(file_id)
 
     guessed_extension = _guess_extension(mime_type)
-    
+
     if file_type in PHOTO_TYPES:
         extension = ".jpg"
     elif file_type == FileType.VOICE:

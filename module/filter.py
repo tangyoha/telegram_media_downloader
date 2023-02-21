@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Any
 
 from ply import lex, yacc
-from utils.format import get_byte_from_str
 
+from utils.format import get_byte_from_str
 from utils.meta_data import MetaData, NoneObj, ReString
 
 

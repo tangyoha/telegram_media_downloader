@@ -1,8 +1,7 @@
-
-
 from datetime import datetime
-from tests.test_common import MockMessage, MockVideo
+
 from module.filter import Filter, MetaData
+from tests.test_common import MockMessage, MockVideo
 from utils.format import replace_date_time
 
 # enter you want to test

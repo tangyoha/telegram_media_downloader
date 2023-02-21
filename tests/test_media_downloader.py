@@ -4,9 +4,10 @@ import os
 import platform
 import unittest
 from datetime import datetime
-from pyrogram.file_id import FileType, PHOTO_TYPES
+
 import mock
 import pyrogram
+from pyrogram.file_id import PHOTO_TYPES, FileType
 
 from media_downloader import (
     _can_download,
@@ -362,8 +363,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path(
-                    "/root/project/test2/2019_08/2 - ADAVKJYIFV.jpg"),
+                platform_generic_path("/root/project/test2/2019_08/2 - ADAVKJYIFV.jpg"),
                 None,
             ),
             result,
@@ -408,8 +408,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path(
-                    "/root/project/test2/0/3 - sample_document.pdf"),
+                platform_generic_path("/root/project/test2/0/3 - sample_document.pdf"),
                 "pdf",
             ),
             result,
@@ -504,8 +503,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path(
-                    "/root/project/test2/2022_08/5 - test.mp4"),
+                platform_generic_path("/root/project/test2/2022_08/5 - test.mp4"),
                 "mp4",
             ),
             result,
@@ -529,8 +527,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         print(app.chat_id)
         self.assertEqual(
             (
-                platform_generic_path(
-                    "/root/project/8654123/2022_08/5 - test.mp4"),
+                platform_generic_path("/root/project/8654123/2022_08/5 - test.mp4"),
                 "mp4",
             ),
             result,
@@ -699,8 +696,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             )
         )
         self.assertEqual(420, result)
-        mock_logger.warning.assert_called_with(
-            "Message[{}]: FlowWait {}", 420, 420)
+        mock_logger.warning.assert_called_with("Message[{}]: FlowWait {}", 420, 420)
         self.assertEqual(app.failed_ids.count(420), 1)
 
         # Test other Exception
@@ -930,8 +926,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
     @mock.patch("media_downloader.logger")
     def test_check_config(self, mock_logger):
         _check_config()
-        mock_logger.error.assert_called_with(
-            "load config error: error load config")
+        mock_logger.error.assert_called_with("load config error: error load config")
 
     @classmethod
     def tearDownClass(cls):

@@ -2,7 +2,12 @@
 import sys
 import unittest
 
-from utils.format import truncate_filename, format_byte, get_byte_from_str, replace_date_time
+from utils.format import (
+    format_byte,
+    get_byte_from_str,
+    replace_date_time,
+    truncate_filename,
+)
 
 sys.path.append("..")  # Adds higher directory to python modules path.
 
@@ -62,8 +67,7 @@ class FormatTestCase(unittest.TestCase):
 
         # more space
         self.assertEqual(
-            replace_date_time(
-                "xxxxx 2020.03.08 2020.03.09      14:51 xxxxxxxxx"),
+            replace_date_time("xxxxx 2020.03.08 2020.03.09      14:51 xxxxxxxxx"),
             "xxxxx 2020-03-08 00:00:00 2020-03-09 14:51:00 xxxxxxxxx",
         )
 
@@ -98,10 +102,8 @@ class FormatTestCase(unittest.TestCase):
         self.assertEqual(get_byte_from_str("2GB"), 2 * 1024 * 1024 * 1024)
 
         # TB
-        self.assertEqual(get_byte_from_str("2TB"),
-                         2 * 1024 * 1024 * 1024 * 1024)
-        self.assertEqual(get_byte_from_str("1024TB"),
-                         1024 * 1024 * 1024 * 1024 * 1024)
+        self.assertEqual(get_byte_from_str("2TB"), 2 * 1024 * 1024 * 1024 * 1024)
+        self.assertEqual(get_byte_from_str("1024TB"), 1024 * 1024 * 1024 * 1024 * 1024)
 
         # more str
         self.assertEqual(get_byte_from_str("2BW"), 2)
@@ -109,19 +111,25 @@ class FormatTestCase(unittest.TestCase):
 
     def test_truncate_filename(self):
 
-        self.assertEqual(truncate_filename("wwww wwww", 8),
-                         "wwww www")
+        self.assertEqual(truncate_filename("wwww wwww", 8), "wwww www")
 
-        self.assertEqual(truncate_filename("wwww 我我我", 8),
-                         "wwww 我")
+        self.assertEqual(truncate_filename("wwww 我我我", 8), "wwww 我")
 
         if sys.platform == "win32":
-            self.assertEqual(truncate_filename("D:\\MyDisk\\github\\wwww_wwww.mp4", 8),
-                         "D:\\MyDisk\\github\\wwww.mp4")
-            self.assertEqual(truncate_filename("D:\\MyDisk\\github\\wwww_我我我我.mp4", 12),
-                         "D:\\MyDisk\\github\\wwww_我.mp4")
-            self.assertEqual(truncate_filename("D:\\MyDisk\\github\\wwww_我我我我.mp4", 14),
-                         "D:\\MyDisk\\github\\wwww_我.mp4")
+            self.assertEqual(
+                truncate_filename("D:\\MyDisk\\github\\wwww_wwww.mp4", 8),
+                "D:\\MyDisk\\github\\wwww.mp4",
+            )
+            self.assertEqual(
+                truncate_filename("D:\\MyDisk\\github\\wwww_我我我我.mp4", 12),
+                "D:\\MyDisk\\github\\wwww_我.mp4",
+            )
+            self.assertEqual(
+                truncate_filename("D:\\MyDisk\\github\\wwww_我我我我.mp4", 14),
+                "D:\\MyDisk\\github\\wwww_我.mp4",
+            )
         else:
-            self.assertEqual(truncate_filename("/home/MyDisk/github/wwww_wwww.mp4", 8),
-                         "/home/MyDisk/github/wwww.mp4")
+            self.assertEqual(
+                truncate_filename("/home/MyDisk/github/wwww_wwww.mp4", 8),
+                "/home/MyDisk/github/wwww.mp4",
+            )

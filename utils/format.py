@@ -3,8 +3,8 @@
 import math
 import os
 import re
-from datetime import datetime
 import unicodedata
+from datetime import datetime
 
 
 def format_byte(size: float, dot=2):
@@ -101,13 +101,12 @@ def get_date_time(text: str, fmt: str) -> SearchDateTimeResult:
         if search_res:
             time_str = search_res.group(0)
             res.value = datetime.strptime(
-                time_str.replace("/", "-").replace(".",
-                                                   "-").strip(), format_list[i]
+                time_str.replace("/", "-").replace(".", "-").strip(), format_list[i]
             ).strftime(fmt)
             if search_res.start() != 0:
-                res.left_str = search_text[0: search_res.start()]
+                res.left_str = search_text[0 : search_res.start()]
             if search_res.end() + 1 <= len(search_text):
-                res.right_str = search_text[search_res.end():]
+                res.right_str = search_text[search_res.end() :]
             res.match = True
             return res
 
@@ -195,7 +194,7 @@ def truncate_filename(path: str, limit: int = 255):
     """
     p, f = os.path.split(os.path.normpath(path))
     f, e = os.path.splitext(f)
-    f_max = limit - len(e.encode('utf-8'))
-    f = unicodedata.normalize('NFC', f)
-    f_trunc = f.encode()[:f_max].decode('utf-8', errors='ignore')
+    f_max = limit - len(e.encode("utf-8"))
+    f = unicodedata.normalize("NFC", f)
+    f_trunc = f.encode()[:f_max].decode("utf-8", errors="ignore")
     return os.path.join(p, f_trunc + e)

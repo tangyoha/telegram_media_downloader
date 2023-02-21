@@ -11,7 +11,6 @@ from module.filter import Filter
 from utils.format import replace_date_time
 from utils.meta_data import MetaData
 
-
 # pylint: disable = R0902
 
 
@@ -300,8 +299,7 @@ class Application:
 
         if chat_id in self.download_filter_dict:
             self.download_filter.set_meta_data(meta_data)
-            exec_res = not self.download_filter.exec(
-                self.download_filter_dict[chat_id])
+            exec_res = not self.download_filter.exec(self.download_filter_dict[chat_id])
             return exec_res
 
         return False
@@ -317,8 +315,7 @@ class Application:
 
         # pylint: disable = W0201
         self.ids_to_retry = (
-            list(set(self.ids_to_retry) -
-                 set(self.downloaded_ids)) + self.failed_ids
+            list(set(self.ids_to_retry) - set(self.downloaded_ids)) + self.failed_ids
         )
 
         self.config["last_read_message_id"] = self.last_read_message_id
@@ -338,22 +335,36 @@ class Application:
 
         if immediate:
             with open(self.config_file, "w", encoding="utf-8") as yaml_file:
-                yaml.dump(self.config, yaml_file, default_flow_style=False,
-                          encoding='utf-8', allow_unicode=True)
+                yaml.dump(
+                    self.config,
+                    yaml_file,
+                    default_flow_style=False,
+                    encoding="utf-8",
+                    allow_unicode=True,
+                )
 
         if immediate:
             with open(self.app_data_file, "w", encoding="utf-8") as yaml_file:
-                yaml.dump(self.app_data, yaml_file, default_flow_style=False,
-                          encoding='utf-8', allow_unicode=True)
+                yaml.dump(
+                    self.app_data,
+                    yaml_file,
+                    default_flow_style=False,
+                    encoding="utf-8",
+                    allow_unicode=True,
+                )
 
     def load_config(self):
         """Load user config"""
-        with open(os.path.join(os.path.abspath("."), self.config_file), encoding="utf-8") as f:
-            self.config = yaml.load(f.read(),Loader=yaml.FullLoader)
+        with open(
+            os.path.join(os.path.abspath("."), self.config_file), encoding="utf-8"
+        ) as f:
+            self.config = yaml.load(f.read(), Loader=yaml.FullLoader)
             self.assign_config(self.config)
 
-        with open(os.path.join(os.path.abspath("."), self.app_data_file), encoding="utf-8") as f:
-            self.app_data = yaml.load(f.read(),Loader=yaml.FullLoader)
+        with open(
+            os.path.join(os.path.abspath("."), self.app_data_file), encoding="utf-8"
+        ) as f:
+            self.app_data = yaml.load(f.read(), Loader=yaml.FullLoader)
             self.assign_app_data(self.app_data)
 
     def pre_run(self):
