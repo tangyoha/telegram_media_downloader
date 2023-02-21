@@ -2,9 +2,9 @@
 import asyncio
 import os
 import platform
-from typing import List
 import unittest
 from datetime import datetime
+from typing import List
 
 import mock
 import pyrogram
