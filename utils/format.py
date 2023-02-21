@@ -1,8 +1,11 @@
 """util format"""
 
 import math
+import os
 import re
+import unicodedata
 from datetime import datetime
+from typing import Optional
 
 
 def format_byte(size: float, dot=2):
@@ -121,6 +124,7 @@ def replace_date_time(text: str, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
 
     fmt: str
         the right datetime format
+
     Returns
     -------
     str
@@ -138,3 +142,60 @@ def replace_date_time(text: str, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
         res_str += replace_date_time(res.right_str)
 
     return res_str
+
+
+_BYTE_UNIT = ["B", "KB", "MB", "GB", "TB"]
+
+
+def get_byte_from_str(byte_str: str) -> Optional[int]:
+    """Get byte from str
+
+    Parameters
+    ----------
+    byte_str: str
+        Include byte str
+
+    Returns
+    -------
+    int
+        Byte
+    """
+    search_res = re.match(r"(\d{1,})(B|KB|MB|GB|TB)", byte_str)
+    if search_res:
+        unit_str = search_res.group(2)
+        unit: int = 1
+        for it in _BYTE_UNIT:
+            if it == unit_str:
+                break
+            unit *= 1024
+        else:
+            raise ValueError(f"{byte_str} not support")
+
+        return int(search_res.group(1)) * unit
+
+    return None
+
+
+def truncate_filename(path: str, limit: int = 255) -> str:
+    """Truncate filename to the max len.
+
+    Parameters
+    ----------
+    path: str
+        File name path
+
+    limit: int
+        limit file name len(utf-8 byte)
+
+    Returns
+    -------
+    str
+        if file name len more than limit then return truncate filename or return filename
+
+    """
+    p, f = os.path.split(os.path.normpath(path))
+    f, e = os.path.splitext(f)
+    f_max = limit - len(e.encode("utf-8"))
+    f = unicodedata.normalize("NFC", f)
+    f_trunc = f.encode()[:f_max].decode("utf-8", errors="ignore")
+    return os.path.join(p, f_trunc + e)

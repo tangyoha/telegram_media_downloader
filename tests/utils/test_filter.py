@@ -37,7 +37,7 @@ class FilterTestCase(unittest.TestCase):
             media=True,
             date=datetime(2022, 8, 5, 14, 35, 12),
             chat_title="test2",
-            caption="",
+            caption=None,
             video=MockVideo(
                 mime_type="video/mp4",
                 file_size=1024 * 1024 * 10,
@@ -75,9 +75,15 @@ class FilterTestCase(unittest.TestCase):
         self.assertEqual(
             filter_exec(download_filter, "media_file_name == r'test.*mp4'"), True
         )
+
+        self.assertEqual(
+            filter_exec(download_filter, "media_file_name == r'test\.*mp4'"), True
+        )
+
         self.assertEqual(
             filter_exec(download_filter, "media_file_name == r'test2.*mp4'"), False
         )
+
         self.assertEqual(
             filter_exec(download_filter, "media_file_name != r'test2.*mp4'"), True
         )
@@ -177,3 +183,61 @@ class FilterTestCase(unittest.TestCase):
             ),
             True,
         )
+
+        download_filter.set_debug(True)
+
+        # test file_size
+        self.assertEqual(filter_exec(download_filter, "file_size >= 10MB"), True)
+
+        self.assertEqual(filter_exec(download_filter, "file_size >= 11MB"), False)
+
+        self.assertEqual(filter_exec(download_filter, "file_size >= 11GB"), False)
+
+        self.assertEqual(filter_exec(download_filter, "file_size <= 11GB"), True)
+
+        self.assertEqual(
+            filter_exec(download_filter, "1024 * 1024 * 1024 * 11 == 11GB"), True
+        )
+
+    def test_str_obj(self):
+        download_filter = Filter()
+        self.assertRaises(ValueError, filter_exec, download_filter, "213")
+
+        meta = MetaData()
+
+        message = MockMessage(
+            id=5,
+            media=True,
+            date=datetime(2022, 8, 5, 14, 35, 12),
+            chat_title="test2",
+            caption="#中文最吊 #哈啰",
+            video=MockVideo(
+                mime_type="video/mp4",
+                file_size=1024 * 1024 * 10,
+                file_name="test.mp4",
+                width=1920,
+                height=1080,
+                duration=35,
+            ),
+        )
+
+        meta.get_meta_data(message)
+
+        self.assertEqual(meta.message_id, 5)
+        self.assertEqual(meta.message_date, datetime(2022, 8, 5, 14, 35, 12))
+        self.assertEqual(meta.message_caption, "#中文最吊 #哈啰")
+        self.assertEqual(meta.media_file_size, 1024 * 1024 * 10)
+        self.assertEqual(meta.media_width, 1920)
+        self.assertEqual(meta.media_height, 1080)
+        self.assertEqual(meta.media_file_name, "test.mp4")
+        self.assertEqual(meta.media_duration, 35)
+
+        download_filter.set_meta_data(meta)
+        download_filter.set_debug(True)
+
+        # test caption
+        self.assertEqual(filter_exec(download_filter, "caption == r'.*#test.*'"), False)
+
+        self.assertEqual(filter_exec(download_filter, "caption == r'.*#中文.*'"), True)
+
+        self.assertEqual(filter_exec(download_filter, "caption == r'.*#中文啊.*'"), False)
