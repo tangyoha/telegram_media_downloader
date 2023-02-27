@@ -306,6 +306,8 @@ async def download_media(
                     app.downloaded_ids.append(message.id)
 
                     return message.id
+            else:
+                return message.id
 
             break
     except Exception as e:
