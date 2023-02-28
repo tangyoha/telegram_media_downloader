@@ -456,6 +456,10 @@ async def begin_import(pagination_limit: int):
 
     if getattr(client, "max_concurrent_transmissions", None):
         client.max_concurrent_transmissions = app.max_concurrent_transmissions
+        client.save_file_semaphore = asyncio.Semaphore(
+            client.max_concurrent_transmissions)
+        client.get_file_semaphore = asyncio.Semaphore(
+            client.max_concurrent_transmissions)
 
     await client.start()
     print("Successfully started (Press Ctrl+C to stop)")
