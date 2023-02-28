@@ -72,6 +72,7 @@ class Application:
         self.web_port: int = 5000
         self.download_filter_dict: dict = {}
         self.ids_to_retry_dict: dict = {}
+        self.session_name = self.application_name
 
     def assign_config(self, _config: dict) -> bool:
         """assign config from str.

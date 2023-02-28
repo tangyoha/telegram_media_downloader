@@ -3,6 +3,7 @@ import asyncio
 import logging
 import os
 import re
+import sys
 import threading
 import time
 from typing import List, Optional, Tuple, Union
@@ -208,7 +209,6 @@ async def _get_media_meta(
                 media_obj.file_id, getattr(media_obj, "mime_type", "")
             )
         else:
-            # file_name = file_name.split(".")[0]
             _, file_name_without_suffix = os.path.split(os.path.normpath(file_name))
             file_name, file_name_suffix = os.path.splitext(file_name_without_suffix)
 
@@ -448,7 +448,7 @@ async def begin_import(pagination_limit: int):
         Number of message to download asynchronously as a batch.
     """
     client = pyrogram.Client(
-        "media_downloader",
+        app.session_name,
         api_id=app.api_id,
         api_hash=app.api_hash,
         proxy=app.proxy,
@@ -566,5 +566,9 @@ def _check_config() -> bool:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 2:
+        app.config_file = str(sys.argv[1])
+        app.app_data_file = str(sys.argv[2])
+        _, app.session_name = os.path.split(os.path.normpath(app.config_file))
     if _check_config():
         main()
