@@ -4,6 +4,7 @@ import os
 from typing import List, Optional
 
 import yaml
+import re
 
 from module.cloud_drive import CloudDrive, CloudDriveConfig
 from module.filter import Filter
@@ -268,6 +269,8 @@ class Application:
                 res += f"{caption}"
         if res == "":
             res = f"{message_id}"
+        forbidden_symbols = '[<>:"/\\|?*]'
+        res = re.sub(forbidden_symbols, '_', res)
         return res
 
     def need_skip_message(
