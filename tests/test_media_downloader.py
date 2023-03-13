@@ -2,6 +2,7 @@
 import asyncio
 import os
 import platform
+import sys
 import unittest
 from datetime import datetime
 from typing import List, Union
@@ -50,6 +51,9 @@ MOCK_CONF = {
     "file_name_prefix": ["message_id", "caption", "file_name"],
 }
 
+event_str = "asyncio.AbstractEventLoop.run_forever"
+if sys.version_info > (3, 8):
+    event_str = "asyncio.ProactorEventLoop.run_forever"
 
 def os_remove(_: str):
     pass
@@ -907,8 +911,9 @@ class MediaDownloaderTestCase(unittest.TestCase):
 
         self.assertEqual(res, DownloadStatus.SkipDownload)
 
+    
     @mock.patch(
-        "asyncio.ProactorEventLoop.run_forever",
+        event_str,
         new=raise_keyboard_interrupt,
     )
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
