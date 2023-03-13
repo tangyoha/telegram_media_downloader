@@ -110,6 +110,7 @@ class Application:
             min(32, (os.cpu_count() or 0) + 4), thread_name_prefix="multi_task"
         )
 
+    # pylint: disable = R0915
     def assign_config(self, _config: dict) -> bool:
         """assign config from str.
 
@@ -233,6 +234,7 @@ class Application:
                     self._chat_id
                 ].download_filter = download_filter_dict[self._chat_id]
 
+        # pylint: disable = R1733
         for key, value in self.chat_download_config.items():
             self.chat_download_config[key].download_filter = replace_date_time(
                 value.download_filter
@@ -408,6 +410,7 @@ class Application:
                 {"chat_id": i} for i in range(0, len(self.config["chat"]))
             ]
         idx = 0
+        # pylint: disable = R1733
         for key, value in self.chat_download_config.items():
             # pylint: disable = W0201
             self.chat_download_config[key].ids_to_retry = (

@@ -1,3 +1,5 @@
+"""Bot for media downloader"""
+
 from typing import Callable
 
 import pyrogram
@@ -58,6 +60,7 @@ def start_download_bot(
     _bot.start(app, client, download_task, download_chat_task)
 
 
+# pylint: disable = R0912, R0915
 async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Message):
     """Download from bot"""
     if _bot.app.language is Language.CN:
@@ -142,7 +145,8 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
             message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML
         )
         return
-    elif len(text) >= 2:
+
+    if len(text) >= 2:
         url = text[1]
         offset_id = 0
         limit = 0

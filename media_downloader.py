@@ -33,7 +33,7 @@ CONFIG_NAME = "config.yaml"
 DATA_FILE_NAME = "data.yaml"
 APPLICATION_NAME = "media_downloader"
 app = Application(CONFIG_NAME, DATA_FILE_NAME, APPLICATION_NAME)
-queue = asyncio.Queue()
+queue: asyncio.Queue[tuple[pyrogram.types.Message, int | str]] = asyncio.Queue()
 RETRY_TIME_OUT = 5
 
 logging.getLogger("pyrogram.session.session").addFilter(LogFilter())
@@ -42,9 +42,7 @@ logging.getLogger("pyrogram.client").addFilter(LogFilter())
 logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
 
-def _check_download_finish(
-    media_size: int, download_path: str, ui_file_name: str, message_id: int
-):
+def _check_download_finish(media_size: int, download_path: str, ui_file_name: str):
     """Check download task if finish
 
     Parameters
@@ -55,8 +53,6 @@ def _check_download_finish(
         Resource download hold path
     ui_file_name: str
         Really show file name
-    message_id: int
-        Download message id
 
     """
     download_size = os.path.getsize(download_path)
@@ -230,7 +226,7 @@ async def _get_media_meta(
     return file_name, file_format
 
 
-# pylint: disable = R0915
+# pylint: disable = R0915,R0914
 async def download_media(
     client: pyrogram.client.Client,
     message: pyrogram.types.Message,
@@ -336,9 +332,7 @@ async def download_media(
 
             if download_path and isinstance(download_path, str):
                 # TODO: if not exist file size or media
-                _check_download_finish(
-                    media_size, download_path, ui_file_name, message.id
-                )
+                _check_download_finish(media_size, download_path, ui_file_name)
                 await app.upload_file(file_name)
                 return DownloadStatus.SuccessDownload
         except pyrogram.errors.exceptions.bad_request_400.BadRequest:

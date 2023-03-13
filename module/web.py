@@ -51,7 +51,7 @@ def update_download_status(
     global _last_download_time
 
     if not _download_result.get(chat_id):
-        _download_result[chat_id]: dict = {}
+        _download_result[chat_id] = {}
 
     if _download_result[chat_id].get(message_id):
         last_download_byte = _download_result[chat_id][message_id]["down_byte"]
