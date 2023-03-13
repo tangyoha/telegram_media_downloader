@@ -4,6 +4,7 @@ import logging
 import os
 import time
 from typing import Union
+
 from flask import Flask, render_template, request
 
 import utils
