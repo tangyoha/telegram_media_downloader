@@ -199,3 +199,20 @@ def truncate_filename(path: str, limit: int = 255) -> str:
     f = unicodedata.normalize("NFC", f)
     f_trunc = f.encode()[:f_max].decode("utf-8", errors="ignore")
     return os.path.join(p, f_trunc + e)
+
+
+def extract_info_from_link(link: str):
+    """Extract info from link"""
+    channel_match = re.match(r"(?:https?://)?t\.me/c/(\w+)(?:/(\d+))?", link)
+    if channel_match:
+        chat_id = f"-100{channel_match.group(1)}"
+        message_id = int(channel_match.group(2)) if channel_match.group(2) else None
+        return chat_id, message_id
+
+    username_match = re.match(r"(?:https?://)?t\.me/(\w+)(?:/(\d+))?", link)
+    if username_match:
+        username = username_match.group(1)
+        message_id = int(username_match.group(2)) if username_match.group(2) else None
+        return username, message_id
+
+    return None, None

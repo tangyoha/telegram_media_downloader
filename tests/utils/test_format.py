@@ -3,6 +3,7 @@ import sys
 import unittest
 
 from utils.format import (
+    extract_info_from_link,
     format_byte,
     get_byte_from_str,
     replace_date_time,
@@ -133,3 +134,24 @@ class FormatTestCase(unittest.TestCase):
                 truncate_filename("/home/MyDisk/github/wwww_wwww.mp4", 8),
                 "/home/MyDisk/github/wwww.mp4",
             )
+
+    def test_extract_info_from_link(self):
+        link1 = "https://t.me/"
+        username, message_id = extract_info_from_link(link1)
+        self.assertEqual(username, None)
+        self.assertEqual(message_id, None)
+
+        link1 = "https://t.me/username/1234"
+        username, message_id = extract_info_from_link(link1)
+        self.assertEqual(username, "username")
+        self.assertEqual(message_id, 1234)
+
+        link2 = "https://t.me/username"
+        username, message_id = extract_info_from_link(link2)
+        self.assertEqual(username, "username")
+        self.assertEqual(message_id, None)
+
+        link3 = "https://t.me/c/213213/91011"
+        username, message_id = extract_info_from_link(link3)
+        self.assertEqual(username, "-100213213")
+        self.assertEqual(message_id, 91011)

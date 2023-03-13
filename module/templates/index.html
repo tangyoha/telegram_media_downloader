@@ -85,7 +85,7 @@
         , height: 'full-160'
         , limit: 10000
         , cols: [[
-
+          { field: 'chat', title: 'chat', width: 100 },
           { field: 'id', title: 'id', width: 100 }
           , { field: 'filename', title: 'file name', align: 'center' }
           , { field: 'total_size', title: 'total byte', align: 'center' }
@@ -138,19 +138,19 @@
             for (var j = 0, len2 = download_list_table_data.length; j < len2; j++) {
               find_iter = false
               for (var i = 0, len = result.length; i < len; i++) {
-                if (result[i].id == download_list_table_data[j].id) {
+                if (result[i].chat == download_list_table_data[j].chat && result[i].id == download_list_table_data[j].id) {
                   download_list_table_data[j].download_progress = result[i].download_progress
                   var progress = download_list_table_data[j].download_progress
-                  element.progress('down-' + result[i].id, progress + '%');
+                  element.progress('down-' + result[i].chat + '-' + result[i].id, progress + '%');
 
-                  var download_speed_obj = $('div[lay-filter="down_speed-' + result[i].id + '"]')
+                  var download_speed_obj = $('div[lay-filter="down_speed-' +result[i].chat + '-' + result[i].id + '"]')
                   download_speed_obj.html(result[i].download_speed)
 
                   if (progress == 100) {
-                    var device_obj = $('div[lay-filter="down-' + result[i].id + '"] div')
+                    var device_obj = $('div[lay-filter="down-' + result[i].chat + '-' + result[i].id + '"] div')
                     device_obj.removeClass("layui-bg-blue")
                     device_obj.addClass("layui-bg-green")
-                    obj = $('div[lay-id="download_list"]  tr[data-index="' + result[i].id + '"]')
+                    obj = $('div[lay-id="download_list"]  tr[data-index="' +result[i].chat + '-' + result[i].id + '"]')
                     obj.remove()
                   }
                   find_iter = true
@@ -164,7 +164,7 @@
             for (var i = 0, len = result.length; i < len; i++) {
               find_iter = false
               for (var j = 0, len2 = download_list_table_data.length; j < len2; j++) {
-                if (result[i].id == download_list_table_data[j].id) {
+                if (result[i].chat == download_list_table_data[j].chat && result[i].id == download_list_table_data[j].id) {
                   find_iter = true
                   break
                 }
@@ -175,12 +175,13 @@
               }
               // not found
               obj = $('div[lay-id="download_list"]  .layui-table-body .layui-table tbody')
-              var tr = ' <tr data-index="' + result[i].id + '">' +
-                '<td data-field="id" data-key="1-0-0" class=""><div class="layui-table-cell laytable-cell-1-0-0">' + result[i].id + '</div></td>' +
-                '<td data-field="filename" data-key="1-0-1" class=""><div class="layui-table-cell laytable-cell-1-0-1" align="center">' + result[i].filename + '</div></td>' +
-                '<td data-field="total_size" data-key="1-0-2" class=""><div class="layui-table-cell laytable-cell-1-0-2" align="center">' + result[i].total_size + '</div></td>' +
-                '<td data-field="download_progress" data-key="1-0-3" data-content="' + result[i].download_progress + '" class=""><div class="layui-table-cell laytable-cell-1-0-3" align="center"><div class="layui-progress layui-progress-big" lay-showpercent="true" lay-filter="down-' + result[i].id + '"><div class="layui-progress-bar layui-bg-blue" lay-percent="' + result[i].download_progress + '%" style="width: ' + result[i].download_progress + '%;"><span class="layui-progress-text">' + result[i].download_progress + '%</span></div></div></div></td>' +
-                '<td data-field="download_speed" data-key="1-0-4" class=""><div class="layui-table-cell laytable-cell-1-0-4" align="center"lay-filter="down_speed-' + result[i].id + '">' + result[i].download_speed + '</div></td>' +
+              var tr = ' <tr data-index="' + result[i].chat + '-' + result[i].id  + '">' +
+                '<td data-field="id" data-key="1-0-0" class=""><div class="layui-table-cell laytable-cell-1-0-0">' + result[i].chat + '</div></td>' +
+                '<td data-field="id" data-key="1-0-1" class=""><div class="layui-table-cell laytable-cell-1-0-1">' + result[i].id + '</div></td>' +
+                '<td data-field="filename" data-key="1-0-2" class=""><div class="layui-table-cell laytable-cell-1-0-2" align="center">' + result[i].filename + '</div></td>' +
+                '<td data-field="total_size" data-key="1-0-3" class=""><div class="layui-table-cell laytable-cell-1-0-3" align="center">' + result[i].total_size + '</div></td>' +
+                '<td data-field="download_progress" data-key="1-0-4" data-content="' + result[i].download_progress + '" class=""><div class="layui-table-cell laytable-cell-1-0-4" align="center"><div class="layui-progress layui-progress-big" lay-showpercent="true" lay-filter="down-' + result[i].chat + '-' + result[i].id + '"><div class="layui-progress-bar layui-bg-blue" lay-percent="' + result[i].download_progress + '%" style="width: ' + result[i].download_progress + '%;"><span class="layui-progress-text">' + result[i].download_progress + '%</span></div></div></div></td>' +
+                '<td data-field="download_speed" data-key="1-0-5" class=""><div class="layui-table-cell laytable-cell-1-0-5" align="center"lay-filter="down_speed-' + result[i].chat + '-' + result[i].id + '">' + result[i].download_speed + '</div></td>' +
                 "  </tr>";
               obj.append(tr)
               download_list_table_data.push(result[i])
@@ -235,7 +236,7 @@
               find_iter = false
 
               for (var j = 0, len2 = already_download_list_data.length; j < len2; j++) {
-                if (result[i].id == already_download_list_data[j].id) {
+                if (result[i].chat == download_list_table_data[i].chat && result[i].id == already_download_list_data[j].id) {
                   find_iter = true
                   break
                 }
@@ -246,7 +247,7 @@
               }
               // not found
               obj = $('div[lay-id="already_download_list"]  .layui-table-body .layui-table tbody')
-              var tr = ' <tr data-index="' + result[i].id + '">' +
+              var tr = ' <tr data-index="' + result[i].chat + '-' + result[i].id + '">' +
                 '<td data-field="id" data-key="2-0-0" class=""><div class="layui-table-cell laytable-cell-2-0-0">' + result[i].id + '</div></td>' +
                 '<td data-field="filename" data-key="2-0-1" class=""><div class="layui-table-cell laytable-cell-2-0-1" align="center">' + result[i].filename + '</div></td>' +
                 '<td data-field="total_size" data-key="2-0-2" class=""><div class="layui-table-cell laytable-cell-2-0-2" align="center">' + result[i].total_size + '</div></td>' +

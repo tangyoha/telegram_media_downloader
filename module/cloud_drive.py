@@ -126,7 +126,7 @@ class CloudDrive:
             logger.error(f"{e.__class__} {e}")
 
     @staticmethod
-    async def aligo_upload_file(
+    def aligo_upload_file(
         drive_config: CloudDriveConfig, save_path: str, local_file_path: str
     ):
         """aliyun upload file"""
@@ -196,4 +196,4 @@ class CloudDrive:
                 drive_config, save_path, local_file_path
             )
         elif drive_config.upload_adapter == "aligo":
-            await CloudDrive.aligo_upload_file(drive_config, save_path, local_file_path)
+            CloudDrive.aligo_upload_file(drive_config, save_path, local_file_path)
