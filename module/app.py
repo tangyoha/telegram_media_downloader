@@ -208,7 +208,8 @@ class Application:
             chat = _config["chat"]
             for item in chat:
                 if "chat_id" in item:
-                    self.chat_download_config[item["chat_id"]] = ChatDownloadConfig()
+                    self.chat_download_config[item["chat_id"]
+                                              ] = ChatDownloadConfig()
                     self.chat_download_config[
                         item["chat_id"]
                     ].last_read_message_id = item.get("last_read_message_id", 0)
@@ -218,6 +219,9 @@ class Application:
         elif _config.get("chat_id"):
             # Compatible with lower versions
             self._chat_id = _config["chat_id"]
+
+            self.chat_download_config[self._chat_id] = ChatDownloadConfig()
+
             if _config.get("ids_to_retry"):
                 self.chat_download_config[self._chat_id].ids_to_retry = _config[
                     "ids_to_retry"
@@ -231,10 +235,15 @@ class Application:
                 "last_read_message_id"
             ]
             download_filter_dict = _config.get("download_filter", None)
-            if download_filter_dict:
+
+            self.config["chat"] = [{"chat_id": self._chat_id,
+                                    "last_read_message_id": self.chat_download_config[self._chat_id].last_read_message_id}]
+
+            if download_filter_dict and self._chat_id in download_filter_dict:
                 self.chat_download_config[
                     self._chat_id
                 ].download_filter = download_filter_dict[self._chat_id]
+                self.config["chat"][0]["download_filter"] = download_filter_dict[self._chat_id]
 
         # pylint: disable = R1733
         for key, value in self.chat_download_config.items():
@@ -396,7 +405,8 @@ class Application:
 
         if download_config.download_filter:
             self.download_filter.set_meta_data(meta_data)
-            exec_res = not self.download_filter.exec(download_config.download_filter)
+            exec_res = not self.download_filter.exec(
+                download_config.download_filter)
             return exec_res
 
         return False
@@ -438,6 +448,17 @@ class Application:
 
         if self.app_data.get("ids_to_retry"):
             self.app_data.pop("ids_to_retry")
+
+        if self.config.get("chat_id"):
+            self.config.pop("chat_id")
+        
+        if self.config.get("download_filter"):
+            self.config.pop("download_filter")
+        
+        if self.config.get("last_read_message_id"):
+            self.config.pop("last_read_message_id")
+        
+
 
         # for it in self.downloaded_ids:
         #    self.already_download_ids_set.add(it)
@@ -540,6 +561,7 @@ class Application:
             self.chat_download_config[chat_id].last_read_message_id, message_id
         )
         if download_status is not DownloadStatus.FailedDownload:
-            self.chat_download_config[chat_id].downloaded_ids.append(message_id)
+            self.chat_download_config[chat_id].downloaded_ids.append(
+                message_id)
         else:
             self.chat_download_config[chat_id].failed_ids.append(message_id)

@@ -42,6 +42,11 @@ class FormatTestCase(unittest.TestCase):
             self.assertEqual(isinstance(e, ValueError), True)
 
     def test_replace_date_time(self):
+        self.assertEqual(
+            replace_date_time(""),
+            "",
+        )
+
         # split by '.'
         self.assertEqual(
             replace_date_time("xxxxx 2020.03.08 xxxxxxxxx"),

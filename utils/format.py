@@ -131,6 +131,9 @@ def replace_date_time(text: str, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
         The right format datetime str
 
     """
+
+    if not text:
+        return text
     res_str = ""
     res = get_date_time(text, fmt)
     if not res.match:
