@@ -35,10 +35,7 @@ DATA_FILE_NAME = "data.yaml"
 APPLICATION_NAME = "media_downloader"
 app = Application(CONFIG_NAME, DATA_FILE_NAME, APPLICATION_NAME)
 
-if sys.version_info > (3, 8):
-    queue: asyncio.Queue[Tuple[pyrogram.types.Message, Union[int, str]]] = asyncio.Queue()
-else:
-    queue: asyncio.Queue = asyncio.Queue()
+queue: asyncio.Queue = asyncio.Queue()
 RETRY_TIME_OUT = 5
 
 logging.getLogger("pyrogram.session.session").addFilter(LogFilter())
