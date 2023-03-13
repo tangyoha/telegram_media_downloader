@@ -135,7 +135,6 @@ class FormatTestCase(unittest.TestCase):
                 "/home/MyDisk/github/wwww.mp4",
             )
 
-
     def test_extract_info_from_link(self):
         link1 = "https://t.me/"
         username, message_id = extract_info_from_link(link1)

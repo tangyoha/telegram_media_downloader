@@ -1,7 +1,6 @@
 from typing import Callable
 
 import pyrogram
-
 from pyrogram.handlers import MessageHandler
 
 from module.app import Application, ChatDownloadConfig, Language
@@ -18,7 +17,13 @@ class DownloadBot:
         self.download_chat_task: Callable = None
         self.app = None
 
-    def start(self, app: Application, client: pyrogram.Client, download_task: Callable, download_chat_task: Callable):
+    def start(
+        self,
+        app: Application,
+        client: pyrogram.Client,
+        download_task: Callable,
+        download_chat_task: Callable,
+    ):
         """Start bot"""
         self.bot = pyrogram.Client(
             app.application_name + "_bot",
@@ -43,50 +48,67 @@ class DownloadBot:
 _bot = DownloadBot()
 
 
-def start_download_bot(app: Application, client: pyrogram.Client, download_task: Callable, download_chat_task: Callable):
+def start_download_bot(
+    app: Application,
+    client: pyrogram.Client,
+    download_task: Callable,
+    download_chat_task: Callable,
+):
     """Start download bot"""
     _bot.start(app, client, download_task, download_chat_task)
 
 
-async def download_from_bot(client: pyrogram.Client, message:  pyrogram.types.Message):
+async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Message):
     """Download from bot"""
     if _bot.app.language is Language.CN:
-        msg = '参数错误，请按照参考格式输入:\n\n' \
-            '1.下载普通群组所有消息\n' \
-            '<i>/download https://t.me/fkdhlg</i>\n\n' \
-            '私密群组(频道) 链接为随便复制一条群组消息链接\n\n' \
-            '2.下载从第0条消息开始的所有消息\n' \
-            '<i>/download https://t.me/12000000</i>\n\n' \
-            '3.下载从第2条消息开始,100结束\n' \
-            '<i>/download https://t.me/12000000 2</i>\n\n' \
-            '4.下载从第2条消息开始,100结束\n' \
-            '<i>/download https://t.me/12000000 2 100</i>\n\n' \
-            '5. 直接下载，直接转发消息给你的机器人\n\n'\
-            '6. 直接下载单条消息\n'\
-            '<i>https://t.me/12000000/1</i>\n\n'
+        msg = (
+            "参数错误，请按照参考格式输入:\n\n"
+            "1.下载普通群组所有消息\n"
+            "<i>/download https://t.me/fkdhlg</i>\n\n"
+            "私密群组(频道) 链接为随便复制一条群组消息链接\n\n"
+            "2.下载从第0条消息开始的所有消息\n"
+            "<i>/download https://t.me/12000000</i>\n\n"
+            "3.下载从第2条消息开始,100结束\n"
+            "<i>/download https://t.me/12000000 2</i>\n\n"
+            "4.下载从第2条消息开始,100结束\n"
+            "<i>/download https://t.me/12000000 2 100</i>\n\n"
+            "5. 直接下载，直接转发消息给你的机器人\n\n"
+            "6. 直接下载单条消息\n"
+            "<i>https://t.me/12000000/1</i>\n\n"
+        )
     else:
-        msg = 'parameter error, please enter according to the reference format:\n\n' \
-            '1. Download all messages of ordinary groups\n' \
-            '<i>/download https://t.me/fkdhlg</i>\n\n'\
-            'The private group (channel) link is just copy a group message link\n\n'\
-            '2. Download all messages starting from message 0\n' \
-            '<i>/download https://t.me/12000000</i>\n\n'\
-            '3. The download starts from the 2nd message and ends at 100\n' \
-            '<i>/download https://t.me/12000000 2</i>\n\n'\
-            '4. The download starts from the 2nd message and ends at 100\n' \
-            '<i>/download https://t.me/12000000 2 100</i>\n\n' \
-            '5. Direct download, direct message to your robot\n\n'\
-            '6. Directly download a single message\n'\
-            '<i>https://t.me/12000000/1</i>\n\n'
+        msg = (
+            "parameter error, please enter according to the reference format:\n\n"
+            "1. Download all messages of ordinary groups\n"
+            "<i>/download https://t.me/fkdhlg</i>\n\n"
+            "The private group (channel) link is just copy a group message link\n\n"
+            "2. Download all messages starting from message 0\n"
+            "<i>/download https://t.me/12000000</i>\n\n"
+            "3. The download starts from the 2nd message and ends at 100\n"
+            "<i>/download https://t.me/12000000 2</i>\n\n"
+            "4. The download starts from the 2nd message and ends at 100\n"
+            "<i>/download https://t.me/12000000 2 100</i>\n\n"
+            "5. Direct download, direct message to your robot\n\n"
+            "6. Directly download a single message\n"
+            "<i>https://t.me/12000000/1</i>\n\n"
+        )
 
     if message.media:
         media = getattr(message, message.media.value)
         if media:
-            await _bot.download_task(client, message, _bot.app.media_types, _bot.app.file_formats, client.name)
+            await _bot.download_task(
+                client,
+                message,
+                _bot.app.media_types,
+                _bot.app.file_formats,
+                client.name,
+            )
             return
 
     if not message.text:
-        await client.send_message(message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML)
+        await client.send_message(
+            message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML
+        )
         return
 
     text = message.text.split()
@@ -111,10 +133,14 @@ async def download_from_bot(client: pyrogram.Client, message:  pyrogram.types.Me
                 reply_message += f"download message id = {message_id} !"
 
                 await client.send_message(message.from_user.id, reply_message)
-                await _bot.download_chat_task(_bot.client, entity.id, chat_download_config, limit)
+                await _bot.download_chat_task(
+                    _bot.client, entity.id, chat_download_config, limit
+                )
                 return
 
-        await client.send_message(message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML)
+        await client.send_message(
+            message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML
+        )
         return
     elif len(text) >= 2:
         url = text[1]
@@ -145,17 +171,25 @@ async def download_from_bot(client: pyrogram.Client, message:  pyrogram.types.Me
 
                 await client.send_message(message.from_user.id, reply_message)
 
-                await _bot.download_chat_task(_bot.client, entity.id, chat_download_config, limit)
+                await _bot.download_chat_task(
+                    _bot.client, entity.id, chat_download_config, limit
+                )
         except Exception as e:
             if _bot.app.language is Language.CN:
-                await client.send_message(message.from_user.id, 'chat输入错误，请输入频道或群组的链接\n\n'
-                                          f'错误类型：{e.__class__}'
-                                          f'异常消息：{e}')
+                await client.send_message(
+                    message.from_user.id,
+                    "chat输入错误，请输入频道或群组的链接\n\n" f"错误类型：{e.__class__}" f"异常消息：{e}",
+                )
             else:
-                await client.send_message(message.from_user.id, 'chat input error, please enter the channel or group link\n\n'
-                                          f'Error type: {e.__class__}'
-                                          f'Exception message: {e}')
+                await client.send_message(
+                    message.from_user.id,
+                    "chat input error, please enter the channel or group link\n\n"
+                    f"Error type: {e.__class__}"
+                    f"Exception message: {e}",
+                )
             return
     else:
-        await client.send_message(message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML)
+        await client.send_message(
+            message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML
+        )
         return

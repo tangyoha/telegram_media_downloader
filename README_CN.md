@@ -106,7 +106,7 @@ pip3 install -r requirements.txt
 api_hash: your_api_hash
 api_id: your_api_id
 bot_token: your_bot_token
-chat: 
+chat:
   - chat_id: telegram_chat_id
   last_read_message_id: 0
   download_filter: message_date >= 2022-12-01 00:00:00 and message_date <= 2023-01-17 00:00:00

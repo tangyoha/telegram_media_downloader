@@ -6,13 +6,14 @@ import re
 import threading
 import time
 from typing import List, Optional, Tuple, Union
+
 import pyrogram
 from loguru import logger
 from pyrogram.types import Audio, Document, Photo, Video, VideoNote, Voice
 from rich.logging import RichHandler
 
+from module.app import Application, ChatDownloadConfig, DownloadStatus
 from module.bot import start_download_bot
-from module.app import Application, DownloadStatus, ChatDownloadConfig
 from module.pyrogram_extension import get_extension
 from module.web import get_flask_app, update_download_status
 from utils.format import truncate_filename
@@ -168,8 +169,7 @@ async def _get_media_meta(
     """
     if _type in ["audio", "document", "video"]:
         # pylint: disable = C0301
-        file_format: Optional[str] = media_obj.mime_type.split(
-            "/")[-1]  # type: ignore
+        file_format: Optional[str] = media_obj.mime_type.split("/")[-1]  # type: ignore
     else:
         file_format = None
 
@@ -186,8 +186,7 @@ async def _get_media_meta(
     if _type in ["voice", "video_note"]:
         # pylint: disable = C0209
         file_format = media_obj.mime_type.split("/")[-1]  # type: ignore
-        file_save_path = app.get_file_save_path(
-            _type, dirname, datetime_dir_name)
+        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
 
         file_name = os.path.join(
             file_save_path,
@@ -209,10 +208,8 @@ async def _get_media_meta(
             )
         else:
             # file_name = file_name.split(".")[0]
-            _, file_name_without_suffix = os.path.split(
-                os.path.normpath(file_name))
-            file_name, file_name_suffix = os.path.splitext(
-                file_name_without_suffix)
+            _, file_name_without_suffix = os.path.split(os.path.normpath(file_name))
+            file_name, file_name_suffix = os.path.splitext(file_name_without_suffix)
 
         if caption:
             caption = _validate_title(caption)
@@ -224,12 +221,10 @@ async def _get_media_meta(
             file_name = f"{message.photo.file_unique_id}"
 
         gen_file_name = (
-            app.get_file_name(message.id, file_name,
-                              caption) + file_name_suffix
+            app.get_file_name(message.id, file_name, caption) + file_name_suffix
         )
 
-        file_save_path = app.get_file_save_path(
-            _type, dirname, datetime_dir_name)
+        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
         file_name = os.path.join(file_save_path, gen_file_name)
         file_name = truncate_filename(file_name)
     return file_name, file_format
@@ -241,7 +236,7 @@ async def download_media(
     message: pyrogram.types.Message,
     media_types: List[str],
     file_formats: dict,
-    chat_id: int | str
+    chat_id: int | str,
 ):
     """
     Download media from Telegram.
@@ -285,7 +280,9 @@ async def download_media(
             _media = getattr(message, _type, None)
             if _media is None:
                 continue
-            file_name, file_format = await _get_media_meta(chat_id, message, _media, _type)
+            file_name, file_format = await _get_media_meta(
+                chat_id, message, _media, _type
+            )
             media_size = getattr(_media, "file_size", 0)
 
             ui_file_name = file_name
@@ -361,8 +358,7 @@ async def download_media(
                 )
         except pyrogram.errors.exceptions.flood_420.FloodWait as wait_err:
             await asyncio.sleep(wait_err.value)
-            logger.warning("Message[{}]: FlowWait {}",
-                           message.id, wait_err.value)
+            logger.warning("Message[{}]: FlowWait {}", message.id, wait_err.value)
             _check_timeout(retry, message.id)
         except TypeError:
             # pylint: disable = C0301
@@ -412,17 +408,24 @@ async def worker(client: pyrogram.client.Client):
         item = await queue.get()
         message = item[0]
         chat_id = item[1]
-        download_status = await download_media(client, message, app.media_types, app.file_formats, chat_id)
+        download_status = await download_media(
+            client, message, app.media_types, app.file_formats, chat_id
+        )
         app.set_download_id(chat_id, message.id, download_status)
 
 
-async def download_task(client: pyrogram.Client,
-                        chat_id: str | int,
-                        chat_download_config: ChatDownloadConfig,
-                        limit: int = 0):
+async def download_task(
+    client: pyrogram.Client,
+    chat_id: str | int,
+    chat_download_config: ChatDownloadConfig,
+    limit: int = 0,
+):
     """Download all task"""
     messages_iter = client.get_chat_history(
-        chat_id, limit=limit, offset_id=chat_download_config.last_read_message_id, reverse=True
+        chat_id,
+        limit=limit,
+        offset_id=chat_download_config.last_read_message_id,
+        reverse=True,
     )
     if chat_download_config.ids_to_retry:
         logger.info("Downloading files failed during last run...")
@@ -440,7 +443,8 @@ async def download_task(client: pyrogram.Client,
             await queue.put((message, chat_id))
         else:
             chat_download_config.last_read_message_id = max(
-                chat_download_config.last_read_message_id, message.id)
+                chat_download_config.last_read_message_id, message.id
+            )
             chat_download_config.downloaded_ids.append(message.id)
 
 
@@ -468,16 +472,17 @@ def main():
         if getattr(client, "max_concurrent_transmissions", None):
             client.max_concurrent_transmissions = app.max_concurrent_transmissions
             client.save_file_semaphore = asyncio.Semaphore(
-                client.max_concurrent_transmissions)
+                client.max_concurrent_transmissions
+            )
             client.get_file_semaphore = asyncio.Semaphore(
-                client.max_concurrent_transmissions)
+                client.max_concurrent_transmissions
+            )
 
         client.start()
         print("Successfully started (Press Ctrl+C to stop)")
 
         if app.bot_token:
-            start_download_bot(app, client,
-                               download_media, download_task)
+            start_download_bot(app, client, download_media, download_task)
 
         loop = asyncio.get_event_loop()
         loop.create_task(download_all_chat(client))
@@ -495,7 +500,7 @@ def main():
         app.is_running = False
         for task in tasks:
             task.cancel()
-        print('Stopped!')
+        print("Stopped!")
         check_for_updates()
         logger.info("update config......")
         app.update_config()

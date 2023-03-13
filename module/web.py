@@ -36,7 +36,12 @@ def get_total_download_speed() -> int:
 
 
 def update_download_status(
-    chat_id: str | int, message_id: int, down_byte: int, total_size: int, file_name: str, start_time: float
+    chat_id: str | int,
+    message_id: int,
+    down_byte: int,
+    total_size: int,
+    file_name: str,
+    start_time: float,
 ):
     """update_download_status"""
     cur_time = time.time()
@@ -61,8 +66,7 @@ def update_download_status(
         each_second_total_download += down_byte - last_download_byte
 
         if cur_time - last_time >= 1.0:
-            download_speed = int(
-                each_second_total_download / (cur_time - last_time))
+            download_speed = int(each_second_total_download / (cur_time - last_time))
             end_time = cur_time
             each_second_total_download = 0
 

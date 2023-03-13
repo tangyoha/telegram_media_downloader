@@ -16,11 +16,11 @@ from media_downloader import (
     _get_media_meta,
     _is_exist,
     app,
+    download_all_chat,
     download_media,
     download_task,
-    download_all_chat,
-    worker,
     main,
+    worker,
 )
 from module.app import DownloadStatus
 from module.cloud_drive import CloudDriveConfig
@@ -43,8 +43,7 @@ if platform.system() == "Windows":
 MOCK_CONF = {
     "api_id": 123,
     "api_hash": "hasw5Tgawsuj67",
-    "chat": [{"chat_id": 8654123, "last_read_message_id": 0,
-             "ids_to_retry": [1, 2]}],
+    "chat": [{"chat_id": 8654123, "last_read_message_id": 0, "ids_to_retry": [1, 2]}],
     "media_types": ["audio", "voice"],
     "file_formats": {"audio": ["all"], "voice": ["all"]},
     "save_path": MOCK_DIR,
@@ -71,19 +70,23 @@ def os_get_file_size(file: str) -> int:
         return 1024
     return 0
 
-def new_set_download_id(chat_id: str | int, message_id: int, download_status: DownloadStatus):
+
+def new_set_download_id(
+    chat_id: str | int, message_id: int, download_status: DownloadStatus
+):
     if download_status is DownloadStatus.SuccessDownload:
         app.total_download_task += 1
     if chat_id not in app.chat_download_config:
         return
     app.chat_download_config[chat_id].last_read_message_id = max(
-        app.chat_download_config[chat_id].last_read_message_id, message_id)
+        app.chat_download_config[chat_id].last_read_message_id, message_id
+    )
     if download_status is not DownloadStatus.FailedDownload:
-        app.chat_download_config[chat_id].downloaded_ids.append(
-            message_id)
+        app.chat_download_config[chat_id].downloaded_ids.append(message_id)
     else:
         app.chat_download_config[chat_id].failed_ids.append(message_id)
     app.is_running = False
+
 
 def rest_app(conf: dict):
     app.total_download_task = 0
@@ -210,7 +213,8 @@ def get_extension(file_id: str, mime_type: str):
 
 class MyQueue:
     async def get():
-        return (MockMessage(
+        return (
+            MockMessage(
                 id=7,
                 media=True,
                 chat_id=123456,
@@ -220,7 +224,9 @@ class MyQueue:
                     file_name="sample_video.mov",
                     mime_type="video/mov",
                 ),
-                ), 8654123)
+            ),
+            8654123,
+        )
 
 
 class MockEventLoop:
@@ -244,7 +250,9 @@ async def async_get_media_meta(chat_id, message, message_media, _type):
     return result
 
 
-async def async_download_media(client, message, media_types, file_formats, chat_id=-123):
+async def async_download_media(
+    client, message, media_types, file_formats, chat_id=-123
+):
     result = await download_media(client, message, media_types, file_formats, chat_id)
     return result
 
@@ -413,8 +421,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path(
-                    "/root/project/test2/2019_08/2 - ADAVKJYIFV.jpg"),
+                platform_generic_path("/root/project/test2/2019_08/2 - ADAVKJYIFV.jpg"),
                 None,
             ),
             result,
@@ -459,8 +466,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path(
-                    "/root/project/test2/0/3 - sample_document.pdf"),
+                platform_generic_path("/root/project/test2/0/3 - sample_document.pdf"),
                 "pdf",
             ),
             result,
@@ -555,8 +561,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path(
-                    "/root/project/test2/2022_08/5 - test.mp4"),
+                platform_generic_path("/root/project/test2/2022_08/5 - test.mp4"),
                 "mp4",
             ),
             result,
@@ -580,8 +585,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         print(app.chat_id)
         self.assertEqual(
             (
-                platform_generic_path(
-                    "/root/project/-123/2022_08/5 - test.mp4"),
+                platform_generic_path("/root/project/-123/2022_08/5 - test.mp4"),
                 "mp4",
             ),
             result,
@@ -599,8 +603,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             ),
         )
         result = self.loop.run_until_complete(
-            async_get_media_meta(-123, message,
-                                 message.video_note, "video_note")
+            async_get_media_meta(-123, message, message.video_note, "video_note")
         )
         self.assertEqual(
             (
@@ -762,8 +765,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             )
         )
         self.assertEqual(DownloadStatus.FailedDownload, result)
-        mock_logger.warning.assert_called_with(
-            "Message[{}]: FlowWait {}", 420, 420)
+        mock_logger.warning.assert_called_with("Message[{}]: FlowWait {}", 420, 420)
 
         # Test other Exception
         message_8 = MockMessage(
@@ -803,8 +805,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         rest_app(MOCK_CONF)
         client = MockClient()
         app.chat_download_config[8654123].download_filter = "id != 1213"
-        self.loop.run_until_complete(download_all_chat(
-            client))
+        self.loop.run_until_complete(download_all_chat(client))
         moc_put.assert_called()
 
     def test_can_download(self):
@@ -906,7 +907,10 @@ class MediaDownloaderTestCase(unittest.TestCase):
 
         self.assertEqual(res, DownloadStatus.SkipDownload)
 
-    @mock.patch("media_downloader.asyncio.ProactorEventLoop.run_forever", new=raise_keyboard_interrupt)
+    @mock.patch(
+        "media_downloader.asyncio.ProactorEventLoop.run_forever",
+        new=raise_keyboard_interrupt,
+    )
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
     @mock.patch("media_downloader.RETRY_TIME_OUT", new=1)
     @mock.patch("media_downloader.logger")
@@ -916,8 +920,11 @@ class MediaDownloaderTestCase(unittest.TestCase):
         main()
 
         mock_logger.success.assert_called_with(
-            "Updated last read message_id to config file,total download {}, total upload file {}", 0, 0)
-        
+            "Updated last read message_id to config file,total download {}, total upload file {}",
+            0,
+            0,
+        )
+
     @mock.patch("media_downloader.app.pre_run", new=raise_keyboard_interrupt)
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
     @mock.patch("media_downloader.RETRY_TIME_OUT", new=1)
@@ -927,10 +934,12 @@ class MediaDownloaderTestCase(unittest.TestCase):
 
         main()
 
-        mock_logger.info.assert_any_call(
-            "KeyboardInterrupt!")
+        mock_logger.info.assert_any_call("KeyboardInterrupt!")
         mock_logger.success.assert_called_with(
-            "Updated last read message_id to config file,total download {}, total upload file {}", 0, 0)
+            "Updated last read message_id to config file,total download {}, total upload file {}",
+            0,
+            0,
+        )
 
     @mock.patch("media_downloader.app.pre_run", new=raise_exception)
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
@@ -942,15 +951,16 @@ class MediaDownloaderTestCase(unittest.TestCase):
         main()
 
         mock_logger.success.assert_called_with(
-            "Updated last read message_id to config file,total download {}, total upload file {}", 0, 0)
-        
-    
+            "Updated last read message_id to config file,total download {}, total upload file {}",
+            0,
+            0,
+        )
+
     @mock.patch("media_downloader._load_config", new=load_config)
     @mock.patch("media_downloader.logger")
     def test_check_config(self, mock_logger):
         _check_config()
-        mock_logger.error.assert_called_with(
-            "load config error: error load config")
+        mock_logger.error.assert_called_with("load config error: error load config")
 
     def test_check_config_suc(self):
         app.update_config()
