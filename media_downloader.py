@@ -33,7 +33,7 @@ CONFIG_NAME = "config.yaml"
 DATA_FILE_NAME = "data.yaml"
 APPLICATION_NAME = "media_downloader"
 app = Application(CONFIG_NAME, DATA_FILE_NAME, APPLICATION_NAME)
-queue: asyncio.Queue[tuple[pyrogram.types.Message, int | str]] = asyncio.Queue()
+queue: asyncio.Queue[tuple[pyrogram.types.Message, Union[int, str]]] = asyncio.Queue()
 RETRY_TIME_OUT = 5
 
 logging.getLogger("pyrogram.session.session").addFilter(LogFilter())
@@ -144,7 +144,7 @@ def _is_exist(file_path: str) -> bool:
 
 
 async def _get_media_meta(
-    chat_id: int | str,
+    chat_id: Union[int, str],
     message: pyrogram.types.Message,
     media_obj: Union[Audio, Document, Photo, Video, VideoNote, Voice],
     _type: str,
@@ -232,7 +232,7 @@ async def download_media(
     message: pyrogram.types.Message,
     media_types: List[str],
     file_formats: dict,
-    chat_id: int | str,
+    chat_id: Union[int, str],
 ):
     """
     Download media from Telegram.
@@ -410,7 +410,7 @@ async def worker(client: pyrogram.client.Client):
 
 async def download_task(
     client: pyrogram.Client,
-    chat_id: str | int,
+    chat_id: Union[int, str],
     chat_download_config: ChatDownloadConfig,
     limit: int = 0,
 ):

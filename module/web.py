@@ -3,7 +3,7 @@
 import logging
 import os
 import time
-
+from typing import Union
 from flask import Flask, render_template, request
 
 import utils
@@ -36,7 +36,7 @@ def get_total_download_speed() -> int:
 
 
 def update_download_status(
-    chat_id: str | int,
+    chat_id: Union[int, str],
     message_id: int,
     down_byte: int,
     total_size: int,

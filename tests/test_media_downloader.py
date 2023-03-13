@@ -4,7 +4,7 @@ import os
 import platform
 import unittest
 from datetime import datetime
-from typing import List
+from typing import List, Union
 
 import mock
 import pyrogram
@@ -72,7 +72,7 @@ def os_get_file_size(file: str) -> int:
 
 
 def new_set_download_id(
-    chat_id: str | int, message_id: int, download_status: DownloadStatus
+    chat_id: Union[int, str], message_id: int, download_status: DownloadStatus
 ):
     if download_status is DownloadStatus.SuccessDownload:
         app.total_download_task += 1
