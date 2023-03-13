@@ -908,7 +908,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         self.assertEqual(res, DownloadStatus.SkipDownload)
 
     @mock.patch(
-        "media_downloader.asyncio.ProactorEventLoop.run_forever",
+        "asyncio.ProactorEventLoop.run_forever",
         new=raise_keyboard_interrupt,
     )
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
