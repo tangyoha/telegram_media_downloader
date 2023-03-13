@@ -2,12 +2,12 @@
 
 import asyncio
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from typing import List, Optional, Union
 
 import yaml
-import re
 
 from module.cloud_drive import CloudDrive, CloudDriveConfig
 from module.filter import Filter
@@ -363,7 +363,7 @@ class Application:
         if res == "":
             res = f"{message_id}"
         forbidden_symbols = '[<>:"/\\|?*]'
-        res = re.sub(forbidden_symbols, '_', res)
+        res = re.sub(forbidden_symbols, "_", res)
         return res
 
     def need_skip_message(
