@@ -104,8 +104,12 @@ The very first step requires you to obtain a valid Telegram API key (API id/hash
 ```yaml
 api_hash: your_api_hash
 api_id: your_api_id
-chat_id: telegram_chat_id
-last_read_message_id: 0
+chat: 
+  - chat_id: telegram_chat_id
+  last_read_message_id: 0
+  download_filter: message_date >= 2022-12-01 00:00:00 and message_date <= 2023-01-17 00:00:00
+  - chat_id: telegram_chat_id_2
+  last_read_message_id: 0
 # note we remove ids_to_retry to data.yaml
 ids_to_retry: []
 media_types:
@@ -146,18 +150,20 @@ file_name_prefix:
 - message_id
 - file_name
 file_name_prefix_split: ' - '
-max_concurrent_transmissions: 1
+max_download_task: 5
 web_host: 127.0.0.1
 web_port: 5000
-download_filter:
-  'telegram_chat_id': message_date >= 2022-12-01 00:00:00 and message_date <= 2023-01-17 00:00:00
+language: EN
 ```
 
 - **api_hash**  - The api_hash you got from telegram apps
 - **api_id** - The api_id you got from telegram apps
-- **chat_id** -  The id of the chat/channel you want to download media. Which you get from the above-mentioned steps.
-- **last_read_message_id** - If it is the first time you are going to read the channel let it be `0` or if you have already used this script to download media it will have some numbers which are auto-updated after the scripts successful execution. Don't change it.
-- **ids_to_retry** - `Leave it as it is.` This is used by the downloader script to keep track of all skipped downloads so that it can be downloaded during the next execution of the script.
+- **bot_token** - Your bot token
+- **chat** - Chat list
+  - `chat_id` -  The id of the chat/channel you want to download media. Which you get from the above-mentioned steps.
+  - `download_filter` - Download filter, see [How to use Filter](https://github.com/tangyoha/telegram_media_downloader/wiki/How-to-use-Filter)
+  - `last_read_message_id` - If it is the first time you are going to read the channel let it be `0` or if you have already used this script to download media it will have some numbers which are auto-updated after the scripts successful execution. Don't change it.
+  - `ids_to_retry` - `Leave it as it is.` This is used by the downloader script to keep track of all skipped downloads so that it can be downloaded during the next execution of the script.
 - **media_types** - Type of media to download, you can update which type of media you want to download it can be one or any of the available types.
 - **file_formats** - File types to download for supported media types which are `audio`, `document` and `video`. Default format is `all`, downloads all files.
 - **save_path** - The root directory where you want to store downloaded files.
@@ -178,11 +184,13 @@ download_filter:
   - `file_name` - File name (may be empty)
   - `caption` - The title of the message (may be empty)
 - **file_name_prefix_split** - Custom file name prefix symbol, the default is `-`
-- **max_concurrent_transmissions** - Set the maximum amount of concurrent transmissions (uploads & downloads). A value that is too high may result in network related issues. Defaults to 1.
+- **max_download_task** - The maximum number of task download tasks, the default is 5.
 - **hide_file_name** - Whether to hide the web interface file name, default `false`
-- **web_host** - Web host.
-- **web_port** - Web port.
-- **download_filter** - Download filter, see [How to use Filter](https://github.com/tangyoha/telegram_media_downloader/wiki/How-to-use-Filter)
+- **web_host** - Web host
+- **web_port** - Web port
+- **language** - Application language, the default is English (`EN`), optional `CN`(Chinese).
+
+
 
 ## Execution
 

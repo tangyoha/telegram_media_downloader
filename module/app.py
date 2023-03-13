@@ -1,5 +1,8 @@
 """Application module"""
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from enum import Enum
 import os
 from typing import List, Optional
 
@@ -11,6 +14,33 @@ from utils.format import replace_date_time
 from utils.meta_data import MetaData
 
 # pylint: disable = R0902
+
+
+class Language(Enum):
+    """Language for ui"""
+    CN = 1
+    EN = 2
+
+
+class DownloadStatus(Enum):
+    """Download status"""
+    SkipDownload = 1
+    SuccessDownload = 2
+    FailedDownload = 3
+
+
+class ChatDownloadConfig:
+    """Chat Message Download Status"""
+
+    def __init__(self):
+        self.downloaded_ids: list = []
+        self.failed_ids: list = []
+        self.ids_to_retry_dict: dict = []
+
+        # need storage
+        self.download_filter: list = []
+        self.ids_to_retry: list = []
+        self.last_read_message_id = 0
 
 
 class Application:
@@ -41,22 +71,21 @@ class Application:
         self.app_data_file: str = app_data_file
         self.application_name: str = application_name
         self.download_filter = Filter()
+        self.is_running = True
 
-        # TODO: record total download task
         self.total_download_task = 0
-        self.downloaded_ids: list = []
-        # self.already_download_ids_set = set()
-        self.failed_ids: list = []
+
+        self.chat_download_config: dict = {}
+
         self.disable_syslog: list = []
         self.save_path = os.path.abspath(".")
-        self.ids_to_retry: list = []
         self.api_id: str = ""
         self.api_hash: str = ""
-        self.chat_id: str = ""
+        self.bot_token: str = ""
+        self._chat_id: str = ""
         self.media_types: List[str] = []
         self.file_formats: dict = {}
         self.proxy: dict = {}
-        self.last_read_message_id = 0
         self.restart_program = False
         self.config: dict = {}
         self.app_data: dict = {}
@@ -70,8 +99,13 @@ class Application:
         self.max_concurrent_transmissions: int = 1
         self.web_host: str = "localhost"
         self.web_port: int = 5000
-        self.download_filter_dict: dict = {}
-        self.ids_to_retry_dict: dict = {}
+        self.max_download_task: int = 5
+        self.language = Language.EN
+
+        self.loop = asyncio.get_event_loop()
+
+        self.executor = ThreadPoolExecutor(
+            min(32, (os.cpu_count() or 0) + 4), thread_name_prefix="multi_task")
 
     def assign_config(self, _config: dict) -> bool:
         """assign config from str.
@@ -93,17 +127,10 @@ class Application:
         if _config.get("disable_syslog") is not None:
             self.disable_syslog = _config["disable_syslog"]
 
-        self.last_read_message_id = _config["last_read_message_id"]
-        if _config.get("ids_to_retry"):
-            self.ids_to_retry = _config["ids_to_retry"]
-
-        self.ids_to_retry_dict = {}
-        for it in self.ids_to_retry:
-            self.ids_to_retry_dict[it] = True
-
         self.api_id = _config["api_id"]
         self.api_hash = _config["api_hash"]
-        self.chat_id = _config["chat_id"]
+        self.bot_token = _config.get("bot_token", "")
+
         self.media_types = _config["media_types"]
         self.file_formats = _config["file_formats"]
 
@@ -153,18 +180,56 @@ class Application:
         self.web_host = _config.get("web_host", self.web_host)
         self.web_port = _config.get("web_port", self.web_port)
 
-        self.download_filter_dict = _config.get(
-            "download_filter", self.download_filter_dict
-        )
-
-        for key, value in self.download_filter_dict.items():
-            self.download_filter_dict[key] = replace_date_time(value)
-
         # TODO: add check if expression exist syntax error
 
         self.max_concurrent_transmissions = _config.get(
             "max_concurrent_transmissions", self.max_concurrent_transmissions
         )
+
+        self.max_download_task = _config.get(
+            "max_download_task", self.max_download_task
+        )
+
+        language = _config.get(
+            "language"
+        )
+
+        if language:
+            if language == "CN":
+                self.language = Language.CN
+            elif language == "EN":
+                self.language = Language.EN
+
+        if _config.get("chat"):
+            chat = _config["chat"]
+            for item in chat:
+                if "chat_id" in item:
+                    self.chat_download_config[item["chat_id"]
+                                              ] = ChatDownloadConfig()
+                    self.chat_download_config[item["chat_id"]
+                                              ].last_read_message_id = item.get("last_read_message_id", 0)
+                    self.chat_download_config[item["chat_id"]
+                                              ].download_filter = item.get("download_filter", "")
+        elif _config.get("chat_id"):
+            # Compatible with lower versions
+            self._chat_id = _config["chat_id"]
+            if _config.get("ids_to_retry"):
+                self.chat_download_config[
+                    self._chat_id].ids_to_retry = _config["ids_to_retry"]
+                for it in self.chat_download_config[self._chat_id].ids_to_retry:
+                    self.chat_download_config[
+                        self._chat_id].ids_to_retry_dict[it] = True
+
+            self.chat_download_config[
+                self._chat_id].last_read_message_id = _config["last_read_message_id"]
+            download_filter_dict = _config.get("download_filter", None)
+            if download_filter_dict:
+                self.chat_download_config[
+                    self._chat_id].download_filter = download_filter_dict[self._chat_id]
+
+        for key, value in self.chat_download_config.items():
+            self.chat_download_config[key].download_filter = replace_date_time(
+                value.download_filter)
 
         return True
 
@@ -180,23 +245,34 @@ class Application:
         -------
         bool
         """
-
         if app_data.get("ids_to_retry"):
-            # check old config.yaml exist
-            if len(self.ids_to_retry) > 0:
-                self.ids_to_retry.extend(list(app_data["ids_to_retry"]))
-            else:
-                self.ids_to_retry = app_data["ids_to_retry"]
-
-        # if app_data.get("already_download_ids"):
-        #    self.already_download_ids_set = set(app_data["already_download_ids"])
+            self.chat_download_config[
+                self._chat_id].ids_to_retry = app_data["ids_to_retry"]
+            for it in self.chat_download_config[self._chat_id].ids_to_retry:
+                self.chat_download_config[
+                    self._chat_id].ids_to_retry_dict[it] = True
+        else:
+            if app_data.get("chat"):
+                chat = app_data["chat"]
+                for item in chat:
+                    if "chat_id" in item and item["chat_id"] in self.chat_download_config:
+                        self.chat_download_config[item["chat_id"]
+                                                  ].ids_to_retry = item.get("ids_to_retry", [])
         return True
 
-    def upload_file(self, local_file_path: str):
+    async def upload_file(self, local_file_path: str):
         """Upload file"""
-        return CloudDrive.upload_file(
-            self.cloud_drive_config, self.save_path, local_file_path
-        )
+
+        if not self.cloud_drive_config.enable_upload_file:
+            return
+
+        if self.cloud_drive_config.upload_adapter == "rclone":
+            await CloudDrive.rclone_upload_file(
+                self.cloud_drive_config, self.save_path, local_file_path
+            )
+        elif self.cloud_drive_config.upload_adapter == "aligo":
+            await self.loop.run_in_executor(self.executor, CloudDrive.aligo_upload_file(
+                self.cloud_drive_config, self.save_path, local_file_path))
 
     def get_file_save_path(
         self, media_type: str, chat_title: str, media_datetime: str
@@ -271,7 +347,7 @@ class Application:
         return res
 
     def need_skip_message(
-        self, chat_id: str, message_id: int, meta_data: MetaData
+        self, chat_id: str | int, message_id: int, meta_data: MetaData
     ) -> bool:
         """if need skip download message.
 
@@ -290,12 +366,17 @@ class Application:
         -------
         bool
         """
-        if message_id in self.ids_to_retry_dict:
+        if chat_id not in self.chat_download_config:
+            return False
+
+        download_config = self.chat_download_config[chat_id]
+        if message_id in download_config.ids_to_retry_dict:
             return True
 
-        if chat_id in self.download_filter_dict:
+        if download_config.download_filter:
             self.download_filter.set_meta_data(meta_data)
-            exec_res = not self.download_filter.exec(self.download_filter_dict[chat_id])
+            exec_res = not self.download_filter.exec(
+                download_config.download_filter)
             return exec_res
 
         return False
@@ -308,13 +389,22 @@ class Application:
         immediate: bool
             If update config immediate,default True
         """
+        if not self.app_data.get("chat"):
+            self.app_data["chat"] = [{"chat_id": i}
+                                     for i in range(0, len(self.config["chat"]))]
+        idx = 0
+        for key, value in self.chat_download_config.items():
+            # pylint: disable = W0201
+            self.chat_download_config[key].ids_to_retry = (
+                list(set(value.ids_to_retry) -
+                     set(value.downloaded_ids)) + value.failed_ids
+            )
 
-        # pylint: disable = W0201
-        self.ids_to_retry = (
-            list(set(self.ids_to_retry) - set(self.downloaded_ids)) + self.failed_ids
-        )
+            self.config["chat"][idx]["last_read_message_id"] = value.last_read_message_id
+            self.app_data["chat"][idx]["chat_id"] = key
+            self.app_data["chat"][idx]["ids_to_retry"] = value.ids_to_retry
+            idx += 1
 
-        self.config["last_read_message_id"] = self.last_read_message_id
         self.config["disable_syslog"] = self.disable_syslog
         self.config["save_path"] = self.save_path
         self.config["file_path_prefix"] = self.file_path_prefix
@@ -322,7 +412,8 @@ class Application:
         if self.config.get("ids_to_retry"):
             self.config.pop("ids_to_retry")
 
-        self.app_data["ids_to_retry"] = self.ids_to_retry
+        if self.app_data.get("ids_to_retry"):
+            self.app_data.pop("ids_to_retry")
 
         # for it in self.downloaded_ids:
         #    self.already_download_ids_set.add(it)
@@ -368,7 +459,7 @@ class Application:
         self.cloud_drive_config.pre_run()
 
     def set_caption_name(
-        self, chat_id: str, media_group_id: Optional[str], caption: str
+        self, chat_id: str | int, media_group_id: Optional[str], caption: str
     ):
         """set caption name map
 
@@ -392,7 +483,7 @@ class Application:
             self.caption_name_dict[chat_id] = {media_group_id: caption}
 
     def get_caption_name(
-        self, chat_id: str, media_group_id: Optional[str]
+        self, chat_id: str | int, media_group_id: Optional[str]
     ) -> Optional[str]:
         """set caption name map
                 media_group_id: Optional[str]
@@ -410,3 +501,19 @@ class Application:
             return None
 
         return str(self.caption_name_dict[chat_id][media_group_id])
+
+    def set_download_id(self, chat_id: str | int, message_id: int, download_status: DownloadStatus):
+        """Set Download status"""
+        if download_status is DownloadStatus.SuccessDownload:
+            self.total_download_task += 1
+
+        if chat_id not in self.chat_download_config:
+            return
+
+        self.chat_download_config[chat_id].last_read_message_id = max(
+            self.chat_download_config[chat_id].last_read_message_id, message_id)
+        if download_status is not DownloadStatus.FailedDownload:
+            self.chat_download_config[chat_id].downloaded_ids.append(
+                message_id)
+        else:
+            self.chat_download_config[chat_id].failed_ids.append(message_id)

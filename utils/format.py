@@ -102,12 +102,13 @@ def get_date_time(text: str, fmt: str) -> SearchDateTimeResult:
         if search_res:
             time_str = search_res.group(0)
             res.value = datetime.strptime(
-                time_str.replace("/", "-").replace(".", "-").strip(), format_list[i]
+                time_str.replace("/", "-").replace(".",
+                                                   "-").strip(), format_list[i]
             ).strftime(fmt)
             if search_res.start() != 0:
-                res.left_str = search_text[0 : search_res.start()]
+                res.left_str = search_text[0: search_res.start()]
             if search_res.end() + 1 <= len(search_text):
-                res.right_str = search_text[search_res.end() :]
+                res.right_str = search_text[search_res.end():]
             res.match = True
             return res
 
@@ -199,3 +200,22 @@ def truncate_filename(path: str, limit: int = 255) -> str:
     f = unicodedata.normalize("NFC", f)
     f_trunc = f.encode()[:f_max].decode("utf-8", errors="ignore")
     return os.path.join(p, f_trunc + e)
+
+
+def extract_info_from_link(link: str):
+    """Extract info from link"""
+    channel_match = re.match(r"(?:https?://)?t\.me/c/(\w+)(?:/(\d+))?", link)
+    if channel_match:
+        chat_id = f"-100{channel_match.group(1)}"
+        message_id = int(channel_match.group(
+            2)) if channel_match.group(2) else None
+        return chat_id, message_id
+
+    username_match = re.match(r"(?:https?://)?t\.me/(\w+)(?:/(\d+))?", link)
+    if username_match:
+        username = username_match.group(1)
+        message_id = int(username_match.group(
+            2)) if username_match.group(2) else None
+        return username, message_id
+
+    return None, None

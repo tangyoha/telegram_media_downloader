@@ -105,8 +105,14 @@ pip3 install -r requirements.txt
 ```yaml
 api_hash: your_api_hash
 api_id: your_api_id
-chat_id: telegram_chat_id
-last_read_message_id: 0
+bot_token: your_bot_token
+chat: 
+  - chat_id: telegram_chat_id
+  last_read_message_id: 0
+  download_filter: message_date >= 2022-12-01 00:00:00 and message_date <= 2023-01-17 00:00:00
+  - chat_id: telegram_chat_id_2
+  last_read_message_id: 0
+# 我们将ids_to_retry移到data.yaml
 ids_to_retry: []
 media_types:
 - audio
@@ -138,17 +144,20 @@ file_name_prefix:
 - message_id
 - file_name
 file_name_prefix_split: ' - '
-max_concurrent_transmissions: 1
+max_download_task: 5
 web_host: 127.0.0.1
 web_port: 5000
-download_filter:
-  'telegram_chat_id': message_date >= 2022-12-01 00:00:00 and message_date <= 2023-01-17 00:00:00
 ```
 
 - **api_hash** - 你从电报应用程序获得的 api_hash
 - **api_id** - 您从电报应用程序获得的 api_id
+- **bot_token** - 你的机器人凭证
+- **chat** -  多频道
+  - `chat_id` -  您要下载媒体的聊天/频道的 ID。你从上述步骤中得到的。
+  - `download_filter` - 下载过滤器, 查阅 [如何使用过滤器](https://github.com/tangyoha/telegram_media_downloader/wiki/%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8%E8%BF%87%E6%BB%A4%E5%99%A8)
+  - `last_read_message_id` -如果这是您第一次阅读频道，请将其设置为“0”，或者如果您已经使用此脚本下载媒体，它将有一些数字，这些数字会在脚本成功执行后自动更新。不要改变它。
 - **chat_id** - 您要下载媒体的聊天/频道的 ID。你从上述步骤中得到的。
-- **last_read_message_id** - 如果这是您第一次阅读频道，请将其设置为“0”，或者如果您已经使用此脚本下载媒体，它将有一些数字，这些数字会在脚本成功执行后自动更新。不要改变它。如果你需要下载收藏夹的内容，请填`me`。
+- **last_read_message_id** - 如果这是您第一次阅读频道，请将其设置为“0”，或者如果您已经使用此脚本下载媒体，它将有一些数字，这些数字会在脚本成功执行后自动更新。不要改变它。
 - **ids_to_retry** - `保持原样。`下载器脚本使用它来跟踪所有跳过的下载，以便在下次执行脚本时可以下载它。
 - **media_types** - 要下载的媒体类型，您可以更新要下载的媒体类型，它可以是一种或任何可用类型。
 - **file_formats** - 为支持的媒体类型（“音频”、“文档”和“视频”）下载的文件类型。默认格式为“all”，下载所有文件。
@@ -170,11 +179,11 @@ download_filter:
   - `file_name` - 文件名称（可能为空）
   - `caption` - 消息的标题（可能为空）
 - **file_name_prefix_split** - 自定义文件名称分割符号，默认为` - `
-- **max_concurrent_transmissions** - 设置最大并发传输量（上传和下载）。 太高的值可能会导致与网络相关的问题。 默认为 1。
+- **max_download_task** - 最大任务下载任务个数，默认为5个。
 - **hide_file_name** - 是否隐藏web界面文件名称，默认`false`
 - **web_host** - web界面地址
 - **web_port** - web界面端口
-- **download_filter** - 下载过滤器, 查阅 [如何使用过滤器](https://github.com/tangyoha/telegram_media_downloader/wiki/%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8%E8%BF%87%E6%BB%A4%E5%99%A8)
+- **language** - 应用语言，默认为英文(`EN`),可选`CN`（中文）。
 
 ## 执行
 
