@@ -33,7 +33,7 @@ CONFIG_NAME = "config.yaml"
 DATA_FILE_NAME = "data.yaml"
 APPLICATION_NAME = "media_downloader"
 app = Application(CONFIG_NAME, DATA_FILE_NAME, APPLICATION_NAME)
-queue: asyncio.Queue[tuple[pyrogram.types.Message, Union[int, str]]] = asyncio.Queue()
+queue: asyncio.Queue[Tuple[pyrogram.types.Message, Union[int, str]]] = asyncio.Queue()
 RETRY_TIME_OUT = 5
 
 logging.getLogger("pyrogram.session.session").addFilter(LogFilter())
