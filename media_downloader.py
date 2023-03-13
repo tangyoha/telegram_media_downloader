@@ -451,7 +451,7 @@ async def download_all_chat(client: pyrogram.Client):
 
 def _exec_loop():
     """Exec loop"""
-    asyncio.get_event_loop().run_forever()
+    app.loop.run_forever()
 
 
 def main():
@@ -484,10 +484,9 @@ def main():
         if app.bot_token:
             start_download_bot(app, client, download_media, download_task)
 
-        loop = asyncio.get_event_loop()
-        loop.create_task(download_all_chat(client))
+        app.loop.create_task(download_all_chat(client))
         for _ in range(app.max_download_task):
-            task = loop.create_task(worker(client))
+            task = app.loop.create_task(worker(client))
             tasks.append(task)
 
         _exec_loop()

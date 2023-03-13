@@ -105,7 +105,8 @@ class Application:
         self.max_download_task: int = 5
         self.language = Language.EN
 
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
 
         self.executor = ThreadPoolExecutor(
             min(32, (os.cpu_count() or 0) + 4), thread_name_prefix="multi_task"
