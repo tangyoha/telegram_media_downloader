@@ -4,7 +4,7 @@ import asyncio
 import os
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import yaml
 
@@ -364,7 +364,7 @@ class Application:
         return res
 
     def need_skip_message(
-        self, chat_id: str | int, message_id: int, meta_data: MetaData
+        self, chat_id: Union[int, str], message_id: int, meta_data: MetaData
     ) -> bool:
         """if need skip download message.
 
@@ -479,7 +479,7 @@ class Application:
         self.cloud_drive_config.pre_run()
 
     def set_caption_name(
-        self, chat_id: str | int, media_group_id: Optional[str], caption: str
+        self, chat_id: Union[int, str], media_group_id: Optional[str], caption: str
     ):
         """set caption name map
 
@@ -503,7 +503,7 @@ class Application:
             self.caption_name_dict[chat_id] = {media_group_id: caption}
 
     def get_caption_name(
-        self, chat_id: str | int, media_group_id: Optional[str]
+        self, chat_id: Union[int, str], media_group_id: Optional[str]
     ) -> Optional[str]:
         """set caption name map
                 media_group_id: Optional[str]
@@ -523,7 +523,7 @@ class Application:
         return str(self.caption_name_dict[chat_id][media_group_id])
 
     def set_download_id(
-        self, chat_id: str | int, message_id: int, download_status: DownloadStatus
+        self, chat_id: Union[int, str], message_id: int, download_status: DownloadStatus
     ):
         """Set Download status"""
         if download_status is DownloadStatus.SuccessDownload:
