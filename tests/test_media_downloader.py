@@ -55,6 +55,7 @@ event_str = "asyncio.AbstractEventLoop.run_forever"
 if sys.version_info > (3, 8):
     event_str = "asyncio.ProactorEventLoop.run_forever"
 
+
 def os_remove(_: str):
     pass
 
@@ -425,7 +426,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path("/root/project/test2/2019_08/2 - ADAVKJYIFV.jpg"),
+                platform_generic_path(
+                    "/root/project/test2/2019_08/2 - ADAVKJYIFV.jpg"),
                 None,
             ),
             result,
@@ -470,7 +472,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path("/root/project/test2/0/3 - sample_document.pdf"),
+                platform_generic_path(
+                    "/root/project/test2/0/3 - sample_document.pdf"),
                 "pdf",
             ),
             result,
@@ -565,7 +568,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual(
             (
-                platform_generic_path("/root/project/test2/2022_08/5 - test.mp4"),
+                platform_generic_path(
+                    "/root/project/test2/2022_08/5 - test.mp4"),
                 "mp4",
             ),
             result,
@@ -589,7 +593,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
         print(app.chat_id)
         self.assertEqual(
             (
-                platform_generic_path("/root/project/-123/2022_08/5 - test.mp4"),
+                platform_generic_path(
+                    "/root/project/-123/2022_08/5 - test.mp4"),
                 "mp4",
             ),
             result,
@@ -607,7 +612,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
             ),
         )
         result = self.loop.run_until_complete(
-            async_get_media_meta(-123, message, message.video_note, "video_note")
+            async_get_media_meta(-123, message,
+                                 message.video_note, "video_note")
         )
         self.assertEqual(
             (
@@ -769,7 +775,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
             )
         )
         self.assertEqual(DownloadStatus.FailedDownload, result)
-        mock_logger.warning.assert_called_with("Message[{}]: FlowWait {}", 420, 420)
+        mock_logger.warning.assert_called_with(
+            "Message[{}]: FlowWait {}", 420, 420)
 
         # Test other Exception
         message_8 = MockMessage(
@@ -911,9 +918,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
 
         self.assertEqual(res, DownloadStatus.SkipDownload)
 
-    
     @mock.patch(
-        event_str,
+        "media_downloader._exec_loop",
         new=raise_keyboard_interrupt,
     )
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
@@ -965,7 +971,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
     @mock.patch("media_downloader.logger")
     def test_check_config(self, mock_logger):
         _check_config()
-        mock_logger.error.assert_called_with("load config error: error load config")
+        mock_logger.error.assert_called_with(
+            "load config error: error load config")
 
     def test_check_config_suc(self):
         app.update_config()
@@ -978,7 +985,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
         client = MockClient()
         self.loop.run_until_complete(worker(client))
 
-        self.assertEqual(app.chat_download_config[8654123].last_read_message_id, 7)
+        self.assertEqual(
+            app.chat_download_config[8654123].last_read_message_id, 7)
         self.assertEqual(app.chat_download_config[8654123].downloaded_ids, [7])
 
     @classmethod

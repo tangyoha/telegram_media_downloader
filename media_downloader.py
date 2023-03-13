@@ -452,6 +452,9 @@ async def download_all_chat(client: pyrogram.Client):
     for key, value in app.chat_download_config.items():
         await download_task(client, key, value)
 
+def _exec_loop():
+    """Exec loop"""
+    asyncio.get_event_loop().run_forever()
 
 def main():
     """Main function of the downloader."""
@@ -489,7 +492,7 @@ def main():
             task = loop.create_task(worker(client))
             tasks.append(task)
 
-        loop.run_forever()
+        _exec_loop()
     except KeyboardInterrupt:
         logger.info("KeyboardInterrupt!")
     except Exception as e:
