@@ -391,7 +391,7 @@ def _check_config() -> bool:
     try:
         _load_config()
     except Exception as e:
-        logger.error(f"load config error: {e}")
+        logger.exception(f"load config error: {e}")
         return False
 
     return True
