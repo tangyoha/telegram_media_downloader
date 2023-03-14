@@ -266,11 +266,12 @@ class Application:
         bool
         """
         if app_data.get("ids_to_retry"):
-            self.chat_download_config[self._chat_id].ids_to_retry = app_data[
-                "ids_to_retry"
-            ]
-            for it in self.chat_download_config[self._chat_id].ids_to_retry:
-                self.chat_download_config[self._chat_id].ids_to_retry_dict[it] = True
+            if self._chat_id:
+                self.chat_download_config[self._chat_id].ids_to_retry = app_data[
+                    "ids_to_retry"
+                ]
+                for it in self.chat_download_config[self._chat_id].ids_to_retry:
+                    self.chat_download_config[self._chat_id].ids_to_retry_dict[it] = True
         else:
             if app_data.get("chat"):
                 chat = app_data["chat"]
@@ -451,14 +452,12 @@ class Application:
 
         if self.config.get("chat_id"):
             self.config.pop("chat_id")
-        
+
         if self.config.get("download_filter"):
             self.config.pop("download_filter")
-        
+
         if self.config.get("last_read_message_id"):
             self.config.pop("last_read_message_id")
-        
-
 
         # for it in self.downloaded_ids:
         #    self.already_download_ids_set.add(it)

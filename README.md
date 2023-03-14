@@ -105,10 +105,10 @@ The very first step requires you to obtain a valid Telegram API key (API id/hash
 api_hash: your_api_hash
 api_id: your_api_id
 chat:
-  - chat_id: telegram_chat_id
+- chat_id: telegram_chat_id
   last_read_message_id: 0
   download_filter: message_date >= 2022-12-01 00:00:00 and message_date <= 2023-01-17 00:00:00
-  - chat_id: telegram_chat_id_2
+- chat_id: telegram_chat_id_2
   last_read_message_id: 0
 # note we remove ids_to_retry to data.yaml
 ids_to_retry: []
