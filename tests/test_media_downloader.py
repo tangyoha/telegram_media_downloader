@@ -965,7 +965,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
     @mock.patch("media_downloader.logger")
     def test_check_config(self, mock_logger):
         _check_config()
-        mock_logger.error.assert_called_with("load config error: error load config")
+        mock_logger.exception.assert_called_with("load config error: error load config")
 
     def test_check_config_suc(self):
         app.update_config()

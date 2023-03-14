@@ -38,7 +38,7 @@ class ChatDownloadConfig:
     def __init__(self):
         self.downloaded_ids: list = []
         self.failed_ids: list = []
-        self.ids_to_retry_dict: dict = []
+        self.ids_to_retry_dict: dict = {}
 
         # need storage
         self.download_filter: list = []
@@ -208,8 +208,7 @@ class Application:
             chat = _config["chat"]
             for item in chat:
                 if "chat_id" in item:
-                    self.chat_download_config[item["chat_id"]
-                                              ] = ChatDownloadConfig()
+                    self.chat_download_config[item["chat_id"]] = ChatDownloadConfig()
                     self.chat_download_config[
                         item["chat_id"]
                     ].last_read_message_id = item.get("last_read_message_id", 0)
@@ -236,14 +235,22 @@ class Application:
             ]
             download_filter_dict = _config.get("download_filter", None)
 
-            self.config["chat"] = [{"chat_id": self._chat_id,
-                                    "last_read_message_id": self.chat_download_config[self._chat_id].last_read_message_id}]
+            self.config["chat"] = [
+                {
+                    "chat_id": self._chat_id,
+                    "last_read_message_id": self.chat_download_config[
+                        self._chat_id
+                    ].last_read_message_id,
+                }
+            ]
 
             if download_filter_dict and self._chat_id in download_filter_dict:
                 self.chat_download_config[
                     self._chat_id
                 ].download_filter = download_filter_dict[self._chat_id]
-                self.config["chat"][0]["download_filter"] = download_filter_dict[self._chat_id]
+                self.config["chat"][0]["download_filter"] = download_filter_dict[
+                    self._chat_id
+                ]
 
         # pylint: disable = R1733
         for key, value in self.chat_download_config.items():
@@ -271,7 +278,10 @@ class Application:
                     "ids_to_retry"
                 ]
                 for it in self.chat_download_config[self._chat_id].ids_to_retry:
-                    self.chat_download_config[self._chat_id].ids_to_retry_dict[it] = True
+                    self.chat_download_config[self._chat_id].ids_to_retry_dict[
+                        it
+                    ] = True
+                self.app_data.pop("ids_to_retry")
         else:
             if app_data.get("chat"):
                 chat = app_data["chat"]
@@ -406,8 +416,7 @@ class Application:
 
         if download_config.download_filter:
             self.download_filter.set_meta_data(meta_data)
-            exec_res = not self.download_filter.exec(
-                download_config.download_filter)
+            exec_res = not self.download_filter.exec(download_config.download_filter)
             return exec_res
 
         return False
@@ -446,9 +455,6 @@ class Application:
 
         if self.config.get("ids_to_retry"):
             self.config.pop("ids_to_retry")
-
-        if self.app_data.get("ids_to_retry"):
-            self.app_data.pop("ids_to_retry")
 
         if self.config.get("chat_id"):
             self.config.pop("chat_id")
@@ -489,14 +495,19 @@ class Application:
         with open(
             os.path.join(os.path.abspath("."), self.config_file), encoding="utf-8"
         ) as f:
-            self.config = yaml.load(f.read(), Loader=yaml.FullLoader)
-            self.assign_config(self.config)
+            config = yaml.load(f.read(), Loader=yaml.FullLoader)
+            if config:
+                self.config = config
+                self.assign_config(self.config)
 
         with open(
-            os.path.join(os.path.abspath("."), self.app_data_file), encoding="utf-8"
+            os.path.join(os.path.abspath("."), self.app_data_file),
+            encoding="utf-8",
         ) as f:
-            self.app_data = yaml.load(f.read(), Loader=yaml.FullLoader)
-            self.assign_app_data(self.app_data)
+            app_data = yaml.load(f.read(), Loader=yaml.FullLoader)
+            if app_data:
+                self.app_data = app_data
+                self.assign_app_data(self.app_data)
 
     def pre_run(self):
         """before run application do"""
@@ -560,7 +571,6 @@ class Application:
             self.chat_download_config[chat_id].last_read_message_id, message_id
         )
         if download_status is not DownloadStatus.FailedDownload:
-            self.chat_download_config[chat_id].downloaded_ids.append(
-                message_id)
+            self.chat_download_config[chat_id].downloaded_ids.append(message_id)
         else:
             self.chat_download_config[chat_id].failed_ids.append(message_id)
