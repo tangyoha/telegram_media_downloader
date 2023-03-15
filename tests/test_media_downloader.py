@@ -94,21 +94,23 @@ def new_set_download_id(
 
 
 def rest_app(conf: dict):
+    config_test = os.path.join(os.path.abspath("."), "config_test.yaml")
+    data_test = os.path.join(os.path.abspath("."), "data_test.yaml")
+    if os.path.exists(config_test):
+        os.remove(config_test)
+    if os.path.exists(data_test):
+        os.remove(data_test)
     app.total_download_task = 0
     app.is_running = True
-    app.downloaded_ids: list = []
+    app.chat_download_config: dict = {}
     # app.already_download_ids_set = set()
-    app.failed_ids: list = []
     app.disable_syslog: list = []
     app.save_path = os.path.abspath(".")
-    app.ids_to_retry: list = []
     app.api_id: str = ""
     app.api_hash: str = ""
-    app.chat_id: str = ""
     app.media_types: List[str] = []
     app.file_formats: dict = {}
     app.proxy: dict = {}
-    app.last_read_message_id = 0
     app.restart_program = False
     app.config: dict = {}
     app.app_data: dict = {}
@@ -122,7 +124,6 @@ def rest_app(conf: dict):
     app.max_concurrent_transmissions: int = 1
     app.web_host: str = "localhost"
     app.web_port: int = 5000
-    app.download_filter_dict: dict = {}
     app.config_file = "config_test.yaml"
     app.app_data_file = "data_test.yaml"
     app.config = conf
@@ -231,6 +232,8 @@ class MyQueue:
                 ),
             ),
             8654123,
+            None,
+            None,
         )
 
 
@@ -587,7 +590,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
             async_get_media_meta(-123, message, message.video, "video")
         )
 
-        print(app.chat_id)
         self.assertEqual(
             (
                 platform_generic_path("/root/project/-123/2022_08/5 - test.mp4"),
@@ -930,6 +932,20 @@ class MediaDownloaderTestCase(unittest.TestCase):
             0,
         )
 
+    @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
+    @mock.patch("media_downloader.RETRY_TIME_OUT", new=1)
+    @mock.patch("media_downloader.logger")
+    def test_main_with_bot(self, mock_logger):
+        rest_app(MOCK_CONF)
+
+        main()
+
+        mock_logger.success.assert_called_with(
+            "Updated last read message_id to config file,total download {}, total upload file {}",
+            0,
+            0,
+        )
+
     @mock.patch("media_downloader.app.pre_run", new=raise_keyboard_interrupt)
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
     @mock.patch("media_downloader.RETRY_TIME_OUT", new=1)
@@ -976,6 +992,8 @@ class MediaDownloaderTestCase(unittest.TestCase):
     def test_worker(self):
         rest_app(MOCK_CONF)
         client = MockClient()
+
+        app.chat_download_config[8654123].last_read_message_id = 0
         self.loop.run_until_complete(worker(client))
 
         self.assertEqual(app.chat_download_config[8654123].last_read_message_id, 7)
@@ -984,9 +1002,3 @@ class MediaDownloaderTestCase(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.loop.close()
-        config_test = os.path.join(os.path.abspath("."), "config_test.yaml")
-        data_test = os.path.join(os.path.abspath("."), "data_test.yaml")
-        if os.path.exists(config_test):
-            os.remove(config_test)
-        if os.path.exists(data_test):
-            os.remove(data_test)

@@ -137,7 +137,12 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
 
                 await client.send_message(message.from_user.id, reply_message)
                 await _bot.download_chat_task(
-                    _bot.client, entity.id, chat_download_config, limit
+                    _bot.client,
+                    entity.id,
+                    chat_download_config,
+                    limit,
+                    _bot.bot,
+                    message.from_user.id,
                 )
                 return
 
@@ -176,7 +181,12 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
                 await client.send_message(message.from_user.id, reply_message)
 
                 await _bot.download_chat_task(
-                    _bot.client, entity.id, chat_download_config, limit
+                    _bot.client,
+                    entity.id,
+                    chat_download_config,
+                    limit,
+                    _bot.bot,
+                    message.from_user.id,
                 )
         except Exception as e:
             if _bot.app.language is Language.CN:

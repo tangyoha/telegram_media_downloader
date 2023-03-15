@@ -7,13 +7,14 @@ from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from typing import List, Optional, Union
 
-import yaml
+from ruamel import yaml
 
 from module.cloud_drive import CloudDrive, CloudDriveConfig
 from module.filter import Filter
 from utils.format import replace_date_time
 from utils.meta_data import MetaData
 
+_yaml = yaml.YAML()
 # pylint: disable = R0902
 
 
@@ -44,6 +45,9 @@ class ChatDownloadConfig:
         self.download_filter: list = []
         self.ids_to_retry: list = []
         self.last_read_message_id = 0
+        self.total_task: int = 0
+        self.finish_task: int = 0
+        self.need_check: bool = False
 
 
 class Application:
@@ -442,6 +446,9 @@ class Application:
                 + value.failed_ids
             )
 
+            if idx >= len(self.app_data["chat"]):
+                self.app_data["chat"].append({})
+
             self.config["chat"][idx][
                 "last_read_message_id"
             ] = value.last_read_message_id
@@ -472,30 +479,18 @@ class Application:
 
         if immediate:
             with open(self.config_file, "w", encoding="utf-8") as yaml_file:
-                yaml.dump(
-                    self.config,
-                    yaml_file,
-                    default_flow_style=False,
-                    encoding="utf-8",
-                    allow_unicode=True,
-                )
+                _yaml.dump(self.config, yaml_file)
 
         if immediate:
             with open(self.app_data_file, "w", encoding="utf-8") as yaml_file:
-                yaml.dump(
-                    self.app_data,
-                    yaml_file,
-                    default_flow_style=False,
-                    encoding="utf-8",
-                    allow_unicode=True,
-                )
+                _yaml.dump(self.app_data, yaml_file)
 
     def load_config(self):
         """Load user config"""
         with open(
             os.path.join(os.path.abspath("."), self.config_file), encoding="utf-8"
         ) as f:
-            config = yaml.load(f.read(), Loader=yaml.FullLoader)
+            config = _yaml.load(f.read())
             if config:
                 self.config = config
                 self.assign_config(self.config)
@@ -504,7 +499,7 @@ class Application:
             os.path.join(os.path.abspath("."), self.app_data_file),
             encoding="utf-8",
         ) as f:
-            app_data = yaml.load(f.read(), Loader=yaml.FullLoader)
+            app_data = _yaml.load(f.read())
             if app_data:
                 self.app_data = app_data
                 self.assign_app_data(self.app_data)
@@ -566,6 +561,8 @@ class Application:
 
         if chat_id not in self.chat_download_config:
             return
+
+        self.chat_download_config[chat_id].finish_task += 1
 
         self.chat_download_config[chat_id].last_read_message_id = max(
             self.chat_download_config[chat_id].last_read_message_id, message_id

@@ -403,10 +403,20 @@ async def worker(client: pyrogram.client.Client):
         item = await queue.get()
         message = item[0]
         chat_id = item[1]
+        bot: pyrogram.Client = item[2]
+        from_user_id = item[3]
         download_status = await download_media(
             client, message, app.media_types, app.file_formats, chat_id
         )
-        app.set_download_id(chat_id, message.id, download_status)
+        if not bot:
+            app.set_download_id(chat_id, message.id, download_status)
+        else:
+            await bot.send_message(
+                from_user_id,
+                f"from `{message.chat.title if message.chat else chat_id}`\n"
+                f"* message id : `{message.id}`\n"
+                f"* status: **{download_status.name}**",
+            )
 
 
 async def download_task(
@@ -414,6 +424,8 @@ async def download_task(
     chat_id: Union[int, str],
     chat_download_config: ChatDownloadConfig,
     limit: int = 0,
+    bot: pyrogram.Client = None,
+    from_user_id: Union[int, str] = None,
 ):
     """Download all task"""
     messages_iter = client.get_chat_history(
@@ -429,18 +441,22 @@ async def download_task(
         )
 
         for message in skipped_messages:
-            await queue.put((message, chat_id))
+            await queue.put((message, chat_id, bot, from_user_id))
+            chat_download_config.total_task += 1
 
     async for message in messages_iter:  # type: ignore
         meta_data = MetaData()
         meta_data.get_meta_data(message)
         if not app.need_skip_message(chat_id, message.id, meta_data):
-            await queue.put((message, chat_id))
+            await queue.put((message, chat_id, bot, from_user_id))
+            chat_download_config.total_task += 1
         else:
             chat_download_config.last_read_message_id = max(
                 chat_download_config.last_read_message_id, message.id
             )
             chat_download_config.downloaded_ids.append(message.id)
+
+    chat_download_config.need_check = True
 
 
 async def download_all_chat(client: pyrogram.Client):
@@ -449,9 +465,27 @@ async def download_all_chat(client: pyrogram.Client):
         await download_task(client, key, value)
 
 
+async def run_until_all_task_finish():
+    """Normal download"""
+    while True:
+        finish: bool = True
+        for _, value in app.chat_download_config.items():
+            if not value.need_check or value.total_task != value.finish_task:
+                finish = False
+
+        if finish:
+            break
+
+        await asyncio.sleep(1)
+
+
 def _exec_loop():
     """Exec loop"""
-    app.loop.run_forever()
+
+    if app.bot_token:
+        app.loop.run_forever()
+    else:
+        app.loop.run_until_complete(run_until_all_task_finish())
 
 
 def main():
