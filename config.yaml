@@ -1,8 +1,8 @@
 api_hash: your_api_hash
 api_id: your_api_id
-chat_id: telegram_chat_id
-disable_syslog:
-- INFO
+chat:
+- chat_id: telegram_chat_id
+  last_read_message_id: 0
 file_formats:
   audio:
   - all
@@ -13,8 +13,6 @@ file_formats:
 file_path_prefix:
 - chat_title
 - media_datetime
-ids_to_retry: []
-last_read_message_id: 0
 media_types:
 - audio
 - photo
@@ -22,4 +20,5 @@ media_types:
 - document
 - voice
 - video_note
+# in linux please use /
 save_path: E:\github\telegram_media_downloader
