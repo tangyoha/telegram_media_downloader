@@ -97,15 +97,22 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
         )
 
     if message.media:
-        media = getattr(message, message.media.value)
-        if media:
-            await _bot.download_task(
+        if getattr(message, message.media.value):
+            download_status = await _bot.download_task(
                 client,
                 message,
                 _bot.app.media_types,
                 _bot.app.file_formats,
                 client.name,
             )
+
+            await _bot.bot.send_message(
+                message.from_user.id,
+                f"from `{message.from_user.first_name}`\n"
+                f"* message id : `{message.id}`\n"
+                f"* status: **{download_status.name}**",
+            )
+
             return
 
     if not message.text:
