@@ -2,7 +2,7 @@
 
 import re
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 
 from ply import lex, yacc
 
@@ -360,7 +360,7 @@ class Filter:
             return False
         raise ValueError("meta data cannot be empty!")
 
-    def check_filter(self, filter_str: str) -> tuple[bool, Optional[str]]:
+    def check_filter(self, filter_str: str) -> Tuple[bool, Optional[str]]:
         """check filter str"""
         try:
             return not self.exec(filter_str) is None, None
