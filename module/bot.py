@@ -147,6 +147,9 @@ class DownloadBot:
             MessageHandler(help_command, filters=pyrogram.filters.command(["help"]))
         )
         self.bot.add_handler(
+            MessageHandler(help_command, filters=pyrogram.filters.command(["start"]))
+        )
+        self.bot.add_handler(
             MessageHandler(
                 set_language, filters=pyrogram.filters.command(["set_language"])
             )
@@ -211,7 +214,6 @@ async def help_command(client: pyrogram.Client, message: pyrogram.types.Message)
 
     if _bot.app.language is Language.CN:
         msg = (
-            "**注意**：1表示整个聊天的开始，0表示整个聊天的结束，`[` `]` 表示可选项，非必填\n"
             "可用命令:\n"
             "/help - 显示可用命令\n"
             # "/add_filter - 添加下载的过滤器\n"
@@ -219,11 +221,11 @@ async def help_command(client: pyrogram.Client, message: pyrogram.types.Message)
             "/forward - 转发消息\n"
             "/listen_forward - 监听转发消息\n"
             "/set_language - 设置语言\n"
+            "**注意**：1表示整个聊天的开始，"
+            "0表示整个聊天的结束\n`[` `]` 表示可选项，非必填\n"
         )
     else:
         msg = (
-            "Note: 1 means the start of the entire chat, "
-            "0 means the end of the entire chat, `[` `]` means optional, not required\n"
             "Available commands:\n"
             "/help - Show available commands\n"
             # "/add_filter - Add download filter\n"
@@ -231,6 +233,9 @@ async def help_command(client: pyrogram.Client, message: pyrogram.types.Message)
             "/forward - Forward messages\n"
             "/listen_forward - Listen for forwarded messages\n"
             "/set_language - Set language\n"
+            "Note: 1 means the start of the entire chat,"
+            "0 means the end of the entire chat\n"
+            "`[` `]` means optional, not required\n"
         )
 
     await client.send_message(message.chat.id, msg)
