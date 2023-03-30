@@ -77,10 +77,12 @@ class DownloadTaskNode:
 
     def can_reply(self):
         """
-        Checks if the bot can reply to a message based on the time elapsed since the last reply.
+        Checks if the bot can reply to a message
+            based on the time elapsed since the last reply.
 
         Returns:
-            True if the time elapsed since the last reply is greater than 1 second, False otherwise.
+            True if the time elapsed since
+                the last reply is greater than 1 second, False otherwise.
         """
         cur_time = time.time()
         if cur_time - self.last_reply_time > 1.0:

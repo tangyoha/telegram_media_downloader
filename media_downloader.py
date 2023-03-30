@@ -66,7 +66,7 @@ def _check_download_finish(media_size: int, download_path: str, ui_file_name: st
     if media_size == download_size:
         logger.success("Media downloaded - {}", ui_file_name)
     else:
-        logger.error("Media downloaded with wrong size - {}", ui_file_name)
+        logger.warning("Media downloaded with wrong size - {}", ui_file_name)
         os.remove(download_path)
         raise pyrogram.errors.exceptions.bad_request_400.BadRequest()
 

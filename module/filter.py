@@ -314,8 +314,8 @@ class BaseFilter:
     def p_error(self, p):
         if p:
             raise ValueError(f"Syntax error at '{p.value}'")
-        else:
-            raise ValueError("Syntax error at EOF")
+
+        raise ValueError("Syntax error at EOF")
 
     def check_type(self, p):
         """Check filter type if is right"""
