@@ -101,9 +101,12 @@ def get_date_time(text: str, fmt: str) -> SearchDateTimeResult:
         search_res = re.search(value, search_text)
         if search_res:
             time_str = search_res.group(0)
-            res.value = datetime.strptime(
-                time_str.replace("/", "-").replace(".", "-").strip(), format_list[i]
-            ).strftime(fmt)
+            try:
+                res.value = datetime.strptime(
+                    time_str.replace("/", "-").replace(".", "-").strip(), format_list[i]
+                ).strftime(fmt)
+            except Exception:
+                break
             if search_res.start() != 0:
                 res.left_str = search_text[0 : search_res.start()]
             if search_res.end() + 1 <= len(search_text):
@@ -219,3 +222,18 @@ def extract_info_from_link(link: str):
         return username, message_id
 
     return None, None
+
+
+def validate_title(title: str):
+    """Fix if title validation fails
+
+    Parameters
+    ----------
+    title: str
+        Chat title
+
+    """
+
+    r_str = r"[\//\:\*\?\"\<\>\|\n]"  # '/ \ : * ? " < > |'
+    new_title = re.sub(r_str, "_", title)
+    return new_title

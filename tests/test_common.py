@@ -27,6 +27,7 @@ class MockMessage:
         self.video_note = kwargs.get("video_note", None)
         self.media_group_id = kwargs.get("media_group_id", None)
         self.caption = kwargs.get("caption", None)
+        self.text = None
 
         if kwargs.get("dis_chat") == None:
             self.chat = Chat(

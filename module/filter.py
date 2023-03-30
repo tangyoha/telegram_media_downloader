@@ -2,7 +2,7 @@
 
 import re
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from ply import lex, yacc
 
@@ -10,30 +10,8 @@ from utils.format import get_byte_from_str
 from utils.meta_data import MetaData, NoneObj, ReString
 
 
-class Parser:
-    """
-    Base class for a lexer/parser that has the rules defined as methods
-    """
-
-    def __init__(self, debug: bool = False):
-        self.names: dict = {}
-        self.debug = debug
-        # Build the lexer and parser
-        lex.lex(module=self)
-        yacc.yacc(module=self)
-
-    def reset(self):
-        """Reset all symbol"""
-        self.names.clear()
-
-    def exec(self, filter_str: str) -> Any:
-        """Exec filter str"""
-        # )  #
-        return yacc.parse(filter_str, debug=self.debug)
-
-
 # pylint: disable = R0904
-class BaseFilter(Parser):
+class BaseFilter:
     """for normal filter"""
 
     def __init__(self, debug: bool = False):
@@ -44,7 +22,22 @@ class BaseFilter(Parser):
             If output debug info
 
         """
-        super().__init__(debug=debug)
+        self.names: dict = {}
+        self.debug = debug
+        # Build the lexer and parser
+        # lex.lex(module=self)
+        self.lexer = lex.lex(module=self)
+        self.yacc = yacc.yacc(module=self)
+
+    def reset(self):
+        """Reset all symbol"""
+        self.names.clear()
+
+    def exec(self, filter_str: str) -> Any:
+        """Exec filter str"""
+        # )  #
+        # return yacc.parse(filter_str, debug=self.debug)
+        return self.yacc.parse(filter_str, debug=self.debug)
 
     def _output(self, output_str: str):
         """For print debug info"""
@@ -139,7 +132,8 @@ class BaseFilter(Parser):
 
     def p_statement_assign(self, p):
         'statement : NAME "=" expression'
-        self.names[p[1]] = p[3]
+        return self.p_expression_eq(p)
+        # self.names[p[1]] = p[3]
 
     def p_statement_expr(self, p):
         "statement : expression"
@@ -151,6 +145,7 @@ class BaseFilter(Parser):
         | expression '-' expression
         | expression '*' expression
         | expression '/' expression"""
+        self.check_type(p)
         if isinstance(p[1], NoneObj):
             p[1] = 0
         if isinstance(p[3], NoneObj):
@@ -170,7 +165,7 @@ class BaseFilter(Parser):
     def p_expression_comp(self, p):
         """expression : expression '>' expression
         | expression '<' expression"""
-
+        self.check_type(p)
         if isinstance(p[1], NoneObj) or isinstance(p[3], NoneObj):
             p[0] = True
             return
@@ -189,6 +184,7 @@ class BaseFilter(Parser):
 
     def p_expression_ge(self, p):
         "expression : expression GE expression"
+        self.check_type(p)
         if isinstance(p[1], NoneObj) or isinstance(p[3], NoneObj):
             p[0] = True
             return
@@ -202,6 +198,7 @@ class BaseFilter(Parser):
 
     def p_expression_le(self, p):
         "expression : expression LE expression"
+        self.check_type(p)
         if isinstance(p[1], NoneObj) or isinstance(p[3], NoneObj):
             p[0] = True
             return
@@ -215,6 +212,7 @@ class BaseFilter(Parser):
 
     def p_expression_eq(self, p):
         "expression : expression EQ expression"
+        self.check_type(p)
         if isinstance(p[1], NoneObj) or isinstance(p[3], NoneObj):
             p[0] = True
             return
@@ -241,6 +239,7 @@ class BaseFilter(Parser):
 
     def p_expression_ne(self, p):
         "expression : expression NE expression"
+        self.check_type(p)
         if isinstance(p[1], NoneObj) or isinstance(p[3], NoneObj):
             p[0] = True
             return
@@ -280,9 +279,11 @@ class BaseFilter(Parser):
         "expression : NAME"
         try:
             p[0] = self.names[p[1]]
-        except LookupError:
+        except Exception as e:
             self._output(f"Undefined name '{p[1]}'")
-            p[0] = NoneObj()
+            raise ValueError(f"Undefined name {p[1]}") from e
+            # FIXME: not support not exist name
+            # p[0] = NoneObj()
 
     def p_expression_lor(self, p):
         "expression : expression LOR expression"
@@ -312,9 +313,26 @@ class BaseFilter(Parser):
     # pylint: disable = C0116
     def p_error(self, p):
         if p:
-            print(f"Syntax error at '{p.value}'")
+            raise ValueError(f"Syntax error at '{p.value}'")
         else:
-            print("Syntax error at EOF")
+            raise ValueError("Syntax error at EOF")
+
+    def check_type(self, p):
+        """Check filter type if is right"""
+        if p[1] is None or p[1] is NoneObj or p[3] is None or p[3] is NoneObj:
+            return
+        if isinstance(p[1], str):
+            if not isinstance(p[3], str) and not isinstance(p[3], ReString):
+                raise ValueError(f"{p[1]} is str but {p[3]} is not")
+        elif isinstance(p[1], int):
+            if not isinstance(p[3], int):
+                raise ValueError(f"{p[1]} is int but {p[3]} is not")
+        elif isinstance(p[1], bool):
+            if not isinstance(p[3], bool):
+                raise ValueError(f"{p[1]} is bool but {p[3]} is not")
+        elif isinstance(p[1], datetime):
+            if not isinstance(p[3], datetime):
+                raise ValueError(f"{p[1]} is datetime but {p[3]} is not")
 
 
 class Filter:
@@ -341,3 +359,10 @@ class Filter:
                 return res
             return False
         raise ValueError("meta data cannot be empty!")
+
+    def check_filter(self, filter_str: str) -> tuple[bool, Optional[str]]:
+        """check filter str"""
+        try:
+            return not self.exec(filter_str) is None, None
+        except Exception as e:
+            return False, str(e)
