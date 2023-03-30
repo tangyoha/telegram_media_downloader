@@ -974,7 +974,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
             res,
             (
                 DownloadStatus.SuccessDownload,
-                "\\root\\project\\-123\\0\\312 - sucess_down.mp4",
+                platform_generic_path("/root/project/-123/0/312 - sucess_down.mp4"),
             ),
         )
 
