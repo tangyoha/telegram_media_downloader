@@ -545,7 +545,7 @@ class Application:
         if self.config.get("last_read_message_id"):
             self.config.pop("last_read_message_id")
 
-        self.config["language"] = self.language.value
+        self.config["language"] = self.language.name
         # for it in self.downloaded_ids:
         #    self.already_download_ids_set.add(it)
 
