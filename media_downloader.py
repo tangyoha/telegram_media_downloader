@@ -40,6 +40,13 @@ DATA_FILE_NAME = "data.yaml"
 APPLICATION_NAME = "media_downloader"
 app = Application(CONFIG_NAME, DATA_FILE_NAME, APPLICATION_NAME)
 
+logger.add(
+    os.path.join(app.log_file_path, "tdl.log"),
+    rotation="10 MB",
+    retention="10 days",
+    level="DEBUG",
+)
+
 queue: asyncio.Queue = asyncio.Queue()
 RETRY_TIME_OUT = 1
 

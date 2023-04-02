@@ -1,4 +1,5 @@
 import datetime
+import platform
 
 
 class Chat:
@@ -115,3 +116,10 @@ class MockVideoNote:
         self.mime_type = kwargs["mime_type"]
         self.file_id = "VIDEO_NOTE"
         self.date = kwargs["date"]
+
+
+def platform_generic_path(_path: str) -> str:
+    platform_specific_path: str = _path
+    if platform.system() == "Windows":
+        platform_specific_path = platform_specific_path.replace("/", "\\")
+    return platform_specific_path

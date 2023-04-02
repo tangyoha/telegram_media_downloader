@@ -174,15 +174,13 @@ def get_byte_from_str(byte_str: str) -> Optional[int]:
             if it == unit_str:
                 break
             unit *= 1024
-        else:
-            raise ValueError(f"{byte_str} not support")
 
         return int(search_res.group(1)) * unit
 
     return None
 
 
-def truncate_filename(path: str, limit: int = 255) -> str:
+def truncate_filename(path: str, limit: int = 240) -> str:
     """Truncate filename to the max len.
 
     Parameters
@@ -213,7 +211,7 @@ def extract_info_from_link(link: str):
     if channel_match:
         chat_id = f"-100{channel_match.group(1)}"
         message_id = int(channel_match.group(2)) if channel_match.group(2) else None
-        return chat_id, message_id
+        return int(chat_id), message_id
 
     username_match = re.match(r"(?:https?://)?t\.me/(\w+)(?:/(\d+))?", link)
     if username_match:

@@ -471,9 +471,15 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
         return
 
     url = args[1]
-    offset_id = int(args[2])
+    try:
+        offset_id = int(args[2])
+        limit = int(args[3])
+    except Exception:
+        await client.send_message(
+            message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML
+        )
+        return
 
-    limit = int(args[3])
     if limit:
         if limit < offset_id:
             raise ValueError("M > N")

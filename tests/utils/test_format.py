@@ -1,6 +1,8 @@
 """Unittest module for media downloader."""
+import os
 import sys
 import unittest
+from unittest.mock import patch
 
 from utils.format import (
     extract_info_from_link,
@@ -115,30 +117,7 @@ class FormatTestCase(unittest.TestCase):
         self.assertEqual(get_byte_from_str("2BW"), 2)
         self.assertEqual(get_byte_from_str("2WBW"), None)
 
-    def test_truncate_filename(self):
-
-        self.assertEqual(truncate_filename("wwww wwww", 8), "wwww www")
-
-        self.assertEqual(truncate_filename("wwww 我我我", 8), "wwww 我")
-
-        if sys.platform == "win32":
-            self.assertEqual(
-                truncate_filename("D:\\MyDisk\\github\\wwww_wwww.mp4", 8),
-                "D:\\MyDisk\\github\\wwww.mp4",
-            )
-            self.assertEqual(
-                truncate_filename("D:\\MyDisk\\github\\wwww_我我我我.mp4", 12),
-                "D:\\MyDisk\\github\\wwww_我.mp4",
-            )
-            self.assertEqual(
-                truncate_filename("D:\\MyDisk\\github\\wwww_我我我我.mp4", 14),
-                "D:\\MyDisk\\github\\wwww_我.mp4",
-            )
-        else:
-            self.assertEqual(
-                truncate_filename("/home/MyDisk/github/wwww_wwww.mp4", 8),
-                "/home/MyDisk/github/wwww.mp4",
-            )
+        self.assertEqual(get_byte_from_str("2CB"), None)
 
     def test_extract_info_from_link(self):
         link1 = "https://t.me/"
@@ -158,5 +137,60 @@ class FormatTestCase(unittest.TestCase):
 
         link3 = "https://t.me/c/213213/91011"
         username, message_id = extract_info_from_link(link3)
-        self.assertEqual(username, "-100213213")
+        self.assertEqual(username, -100213213)
         self.assertEqual(message_id, 91011)
+
+
+class TestTruncateFilename(unittest.TestCase):
+    def test_truncate_filename(self):
+        test_cases = [
+            ("testfile.txt", 240, "testfile.txt"),
+            ("testfile.txt", 5, "t.txt"),
+            ("a" * 240 + ".txt", 240, "a" * 236 + ".txt"),
+            ("a" * 241 + ".txt", 240, "a" * 236 + ".txt"),
+        ]
+
+        for path, limit, expected in test_cases:
+            self.assertEqual(truncate_filename(path, limit), expected)
+
+    @unittest.skipIf(sys.platform.startswith("win"), "requires Unix-based system")
+    def test_linux_filename_too_long(self):
+        long_filename = "a" * 265 + ".txt"
+        with self.assertRaises(OSError):
+            with open(long_filename, "w") as f:
+                f.write("test")
+
+        long_filename = "a" * 265 + ".txt"
+        long_filename = truncate_filename(long_filename)
+        try:
+            with open(long_filename, "w") as f:
+                f.write("test")
+            os.remove(long_filename)
+        except Exception:
+            self.assertEqual(False, True)
+
+    @unittest.skipIf(not sys.platform.startswith("win"), "requires Windows system")
+    def test_windows_filename_too_long(self):
+        long_filename = "a" * 265 + ".txt"
+        with self.assertRaises(OSError):
+            with open(long_filename, "w") as f:
+                f.write("test")
+
+        long_filename = "a" * 265 + ".txt"
+        long_filename = truncate_filename(long_filename)
+        try:
+            with open(long_filename, "w") as f:
+                f.write("test")
+            os.remove(long_filename)
+        except Exception:
+            self.assertEqual(False, True)
+
+    @patch("builtins.open", unittest.mock.mock_open())
+    def test_file_creation(self):
+        file_name = "a" * 240 + ".txt"
+        truncated_file_name = truncate_filename(file_name)
+
+        with open(truncated_file_name, "w") as f:
+            f.write("test")
+
+        open.assert_called_once_with(truncated_file_name, "w")
