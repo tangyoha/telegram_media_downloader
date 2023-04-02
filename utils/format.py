@@ -207,6 +207,9 @@ def truncate_filename(path: str, limit: int = 240) -> str:
 
 def extract_info_from_link(link: str):
     """Extract info from link"""
+    if link in ("me", "self"):
+        return link, None
+
     channel_match = re.match(r"(?:https?://)?t\.me/c/(\w+)(?:/(\d+))?", link)
     if channel_match:
         chat_id = f"-100{channel_match.group(1)}"

@@ -120,25 +120,18 @@ class FormatTestCase(unittest.TestCase):
         self.assertEqual(get_byte_from_str("2CB"), None)
 
     def test_extract_info_from_link(self):
-        link1 = "https://t.me/"
-        username, message_id = extract_info_from_link(link1)
-        self.assertEqual(username, None)
-        self.assertEqual(message_id, None)
+        test_cases = [
+            ("https://t.me/", (None, None)),
+            ("https://t.me/username/1234", ("username", 1234)),
+            ("https://t.me/username", ("username", None)),
+            ("https://t.me/c/213213/91011", (-100213213, 91011)),
+            ("me", ("me", None)),
+            ("self", ("self", None)),
+        ]
 
-        link1 = "https://t.me/username/1234"
-        username, message_id = extract_info_from_link(link1)
-        self.assertEqual(username, "username")
-        self.assertEqual(message_id, 1234)
-
-        link2 = "https://t.me/username"
-        username, message_id = extract_info_from_link(link2)
-        self.assertEqual(username, "username")
-        self.assertEqual(message_id, None)
-
-        link3 = "https://t.me/c/213213/91011"
-        username, message_id = extract_info_from_link(link3)
-        self.assertEqual(username, -100213213)
-        self.assertEqual(message_id, 91011)
+        for link, expected_output in test_cases:
+            result = extract_info_from_link(link)
+            self.assertEqual(result, expected_output)
 
 
 class TestTruncateFilename(unittest.TestCase):
