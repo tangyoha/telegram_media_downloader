@@ -13,22 +13,17 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Get Release Date
+        id: release_date
         run: |
           RELEASE_DATE=$(date +%Y-%m-%d)
-          echo "RELEASE_DATE<<EOF" >> $GITHUB_ENV
-          echo "$RELEASE_DATE" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo "RELEASE_DATE=$RELEASE_DATE" | tee -a $GITHUB_ENV
+          echo "::set-output name=release_date::$RELEASE_DATE"
+
       - name: Generate changelog
         id: changelog
         run: |
           LOG=$(git log $(git describe --tags $(git rev-list --tags --max-count=2 | tail -n 1))..HEAD --pretty=format:'* %s by @%an in %H')
-          git rev-list --tags --max-count=2 | tail -n 1
-          git describe --tags $(git rev-list --tags --max-count=2 | tail -n 1)
-          git log $(git describe --tags $(git rev-list --tags --max-count=2 | tail -n 1))..HEAD --pretty=format:'* %s by @%an in %H'
-          echo $LOG
-          echo "LOG<<EOF" >> $GITHUB_ENV
-          echo "$LOG" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo "::set-output name=changelog::$LOG"
 
       - name: Create Release
         id: create_release
@@ -37,10 +32,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }},${{ env.RELEASE_DATE }}
+          release_name: ${{ github.ref }},${{ steps.release_date.outputs.release_date }}
           body: |
             ## What's Changed
-            ${{ env.LOG }}
+            ${{ steps.changelog.outputs.changelog }}
 
           draft: false
           prerelease: false
