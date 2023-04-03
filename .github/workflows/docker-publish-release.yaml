@@ -1,0 +1,60 @@
+name: Create Release and Upload Assets
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get Release Date
+        id: release_date
+        run: |
+          RELEASE_DATE=$(date +%Y-%m-%d)
+          echo "RELEASE_DATE=$RELEASE_DATE" | tee -a $GITHUB_ENV
+          echo "::set-output name=release_date::$RELEASE_DATE"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREVIOUS_TAG=$(git describe --abbrev=0 --tags `git rev-list --tags --skip=1 --max-count=1`)
+          CURRENT_TAG=${{ github.ref }}
+          LOG=$(git log --pretty=format:'* %s by @%an in %H' $PREVIOUS_TAG...$CURRENT_TAG)
+          echo "::set-output name=changelog::$LOG"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }},${{ steps.release_date.outputs.release_date }}
+          body: |
+            ## What's Changed
+            ${{ steps.changelog.outputs.changelog }}
+
+          draft: false
+          prerelease: false
+
+      # docker
+      - name: Archive docker files
+        run: |
+          tar -cvzf app.tar.gz docker-compose.yaml config.yaml data.yaml
+
+      - name: Upload assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: app.tar.gz
+          asset_name: app.tar.gz
+          asset_content_type: application/gzip

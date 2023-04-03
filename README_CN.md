@@ -22,10 +22,13 @@
   <a href="https://t.me/TeegramMediaDownload">电报讨论群</a>
 </h3>
 
-### 概述
+## 概述
 
-从您所属的电报对话或频道下载所有媒体文件。
-最后读取/下载消息的元数据存储在配置文件中，这样它就不会再次下载相同的媒体文件。
+> 支持两种默认运行
+
+* 机器人运行，从机器人下发命令`下载`或者`转发`
+
+* 作为一个一次性的下载工具下载
 
 ### 界面
 
@@ -44,7 +47,7 @@
 
 * [v2.2.0](https://github.com/tangyoha/telegram_media_downloader/issues/2)
 
-### 安装
+## 安装
 
 对于具有 `make` 可用性的 *nix 操作系统发行版
 
@@ -60,6 +63,35 @@ make install
 git clone https://github.com/tangyoha/telegram_media_downloader.git
 cd telegram_media_downloader
 pip3 install -r requirements.txt
+```
+## Docker容器
+> 更详细安装教程请查看wiki
+
+确保安装了 **docker** 和 **docker-compose**
+```sh
+docker pull tangyoha/telegram_media_downloader:latest
+mkdir -p ~/app && cd ~/app
+# 下载config.yaml模板
+wget https://raw.githubusercontent.com/tangyoha/telegram_media_downloader/master/config.yaml -O config.yaml
+# 修改配置
+vi config.yaml
+# 下载docker-compose模板
+wget https://raw.githubusercontent.com/tangyoha/telegram_media_downloader/master/docker-compose.yaml -O docker-compose.yaml
+# 修改 docker-compose
+vi docker-compose.yaml
+
+docker-compose run --rm telegram_media_downloader
+# 第一次需要前台启动
+# 输入你的电话号码和密码，然后退出(ctrl + c)
+
+# 执行完以上操作后，后面的所有启动都在后台启动
+docker-compose up -d
+
+＃ 升级
+docker pull tangyoha/telegram_media_downloader:latest
+cd ~/app
+docker-compose down
+docker-compose up -d
 ```
 
 ## 升级安装

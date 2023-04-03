@@ -42,7 +42,7 @@ class MetaData:
 
     def __init__(
         self,
-        message_date: int = None,
+        message_date: str = None,
         message_id: int = None,
         message_caption: str = None,
         media_file_size: int = None,

@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  telegram_media_downloader:
+    image: tangyoha/telegram_media_downloader:latest
+    build: .
+    ports:
+      # Here is what you need to edit
+      - "5000:5000"
+    volumes:
+      # Here is what you need to edit
+      # - "/root/downloads/:/app/downloads/"
+
+      # The following is what you don't need to edit
+      - "./config.yaml:/app/config.yaml"
+      - "./data.yaml:/app/data.yaml"
+      - "./log/:/app/log/"
+      - "sessions:/app/sessions"
+      - "temp:/app/temp"
+
+volumes:
+  sessions:
+  temp:

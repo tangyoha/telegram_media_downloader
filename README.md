@@ -21,11 +21,12 @@
   <a href="https://t.me/TeegramMediaDownload">Telegram Community</a>
 </h3>
 
-### Overview
+## Overview
+> Support two default running
 
-Download all media files from a conversation or a channel that you are a part of from telegram.
-A meta of last read/downloaded message is stored in the config file so that in such a way it won't download the same media file again.
+* The robot is running, and the command `download` or `forward` is issued from the robot
 
+* Download as a one-time download tool
 ### UI
 
 ![web](./screenshot/web_ui.gif)
@@ -43,7 +44,7 @@ After running, open the browser to visit `localhost:5000`
 
 * [v2.2.0](https://github.com/tangyoha/telegram_media_downloader/issues/2)
 
-### Installation
+## Installation
 
 For *nix os distributions with `make` availability
 
@@ -59,6 +60,28 @@ For Windows which doesn't have `make` inbuilt
 git clone https://github.com/tangyoha/telegram_media_downloader.git
 cd telegram_media_downloader
 pip3 install -r requirements.txt
+```
+
+## Docker
+> For more detailed installation tutorial, please check the wiki
+
+Make sure you have **docker** and **docker-compose** installed
+```sh
+docker pull tangyoha/telegram_media_downloader:latest
+mkdir -p ~/app && cd ~/app
+wget https://github.com/tangyoha/telegram_media_downloader/blob/master/docker-compose.yaml
+docker-compose run --rm telegram_media_downloader
+# The first time you need to start the foreground
+# enter your phone number and code, then exit(ctrl + c)
+
+# After performing the above operations, all subsequent startups will start in the background
+docker-compose up -d
+
+# Upgrade
+docker pull tangyoha/telegram_media_downloader:latest
+cd ~/app
+docker-compose down
+docker-compose up -d
 ```
 
 ## Upgrade installation

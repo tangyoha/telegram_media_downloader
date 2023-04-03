@@ -101,9 +101,12 @@ def get_date_time(text: str, fmt: str) -> SearchDateTimeResult:
         search_res = re.search(value, search_text)
         if search_res:
             time_str = search_res.group(0)
-            res.value = datetime.strptime(
-                time_str.replace("/", "-").replace(".", "-").strip(), format_list[i]
-            ).strftime(fmt)
+            try:
+                res.value = datetime.strptime(
+                    time_str.replace("/", "-").replace(".", "-").strip(), format_list[i]
+                ).strftime(fmt)
+            except Exception:
+                break
             if search_res.start() != 0:
                 res.left_str = search_text[0 : search_res.start()]
             if search_res.end() + 1 <= len(search_text):
@@ -171,15 +174,13 @@ def get_byte_from_str(byte_str: str) -> Optional[int]:
             if it == unit_str:
                 break
             unit *= 1024
-        else:
-            raise ValueError(f"{byte_str} not support")
 
         return int(search_res.group(1)) * unit
 
     return None
 
 
-def truncate_filename(path: str, limit: int = 255) -> str:
+def truncate_filename(path: str, limit: int = 240) -> str:
     """Truncate filename to the max len.
 
     Parameters
@@ -206,11 +207,14 @@ def truncate_filename(path: str, limit: int = 255) -> str:
 
 def extract_info_from_link(link: str):
     """Extract info from link"""
+    if link in ("me", "self"):
+        return link, None
+
     channel_match = re.match(r"(?:https?://)?t\.me/c/(\w+)(?:/(\d+))?", link)
     if channel_match:
         chat_id = f"-100{channel_match.group(1)}"
         message_id = int(channel_match.group(2)) if channel_match.group(2) else None
-        return chat_id, message_id
+        return int(chat_id), message_id
 
     username_match = re.match(r"(?:https?://)?t\.me/(\w+)(?:/(\d+))?", link)
     if username_match:
@@ -219,3 +223,18 @@ def extract_info_from_link(link: str):
         return username, message_id
 
     return None, None
+
+
+def validate_title(title: str):
+    """Fix if title validation fails
+
+    Parameters
+    ----------
+    title: str
+        Chat title
+
+    """
+
+    r_str = r"[\//\:\*\?\"\<\>\|\n]"  # '/ \ : * ? " < > |'
+    new_title = re.sub(r_str, "_", title)
+    return new_title

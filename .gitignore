@@ -61,3 +61,6 @@ video/
 video_note/
 parser.out
 parsetab.py
+local_test/
+.vscode
+TODO.md

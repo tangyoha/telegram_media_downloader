@@ -3,6 +3,7 @@
 import asyncio
 import os
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from typing import List, Optional, Union
@@ -31,6 +32,64 @@ class DownloadStatus(Enum):
     SkipDownload = 1
     SuccessDownload = 2
     FailedDownload = 3
+    Downloading = 4
+
+
+class DownloadTaskNode:
+    """Download task node"""
+
+    def __init__(
+        self,
+        chat_id: Union[int, str],
+        from_user_id: Union[int, str] = None,
+        reply_message_id: int = 0,
+        replay_message: str = None,
+        upload_telegram_chat_id: Union[int, str] = None,
+    ):
+        self.chat_id = chat_id
+        self.from_user_id = from_user_id
+        self.upload_telegram_chat_id = upload_telegram_chat_id
+        self.reply_message_id = reply_message_id
+        self.reply_message = replay_message
+        self.total_download_task = 0
+        self.failed_download_task = 0
+        self.success_download_task = 0
+        self.skip_download_task = 0
+        self.last_reply_time = time.time()
+
+    def stat(self, status: DownloadStatus):
+        """
+        Updates the download status of the task.
+
+        Args:
+            status (DownloadStatus): The status of the download task.
+
+        Returns:
+            None
+        """
+        self.total_download_task += 1
+        if status is DownloadStatus.SuccessDownload:
+            self.success_download_task += 1
+        elif status is DownloadStatus.SkipDownload:
+            self.skip_download_task += 1
+        else:
+            self.failed_download_task += 1
+
+    def can_reply(self):
+        """
+        Checks if the bot can reply to a message
+            based on the time elapsed since the last reply.
+
+        Returns:
+            True if the time elapsed since
+                the last reply is greater than 1 second, False otherwise.
+        """
+        cur_time = time.time()
+        if cur_time - self.last_reply_time > 1.0:
+            self.last_reply_time = cur_time
+            return True
+
+        return False
 
 
 class ChatDownloadConfig:
@@ -42,12 +101,13 @@ class ChatDownloadConfig:
         self.ids_to_retry_dict: dict = {}
 
         # need storage
-        self.download_filter: list = []
+        self.download_filter: str = None
         self.ids_to_retry: list = []
         self.last_read_message_id = 0
         self.total_task: int = 0
         self.finish_task: int = 0
         self.need_check: bool = False
+        self.upload_telegram_chat_id: Union[int, str] = None
 
 
 class Application:
@@ -85,7 +145,8 @@ class Application:
         self.chat_download_config: dict = {}
 
         self.disable_syslog: list = []
-        self.save_path = os.path.abspath(".")
+        self.save_path = os.path.join(os.path.abspath("."), "downloads")
+        self.temp_save_path = os.path.join(os.path.abspath("."), "temp")
         self.api_id: str = ""
         self.api_hash: str = ""
         self.bot_token: str = ""
@@ -100,6 +161,7 @@ class Application:
         self.file_name_prefix: List[str] = ["message_id", "file_name"]
         self.file_name_prefix_split: str = " - "
         self.log_file_path = os.path.join(os.path.abspath("."), "log")
+        self.session_file_path = os.path.join(os.path.abspath("."), "sessions")
         self.cloud_drive_config = CloudDriveConfig()
         self.hide_file_name = False
         self.caption_name_dict: dict = {}
@@ -108,6 +170,7 @@ class Application:
         self.web_port: int = 5000
         self.max_download_task: int = 5
         self.language = Language.EN
+        self.after_upload_telegram_delete: bool = True
 
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
@@ -208,6 +271,10 @@ class Application:
             elif language == "EN":
                 self.language = Language.EN
 
+        self.after_upload_telegram_delete = _config.get(
+            "after_upload_telegram_delete", self.after_upload_telegram_delete
+        )
+
         if _config.get("chat"):
             chat = _config["chat"]
             for item in chat:
@@ -219,6 +286,11 @@ class Application:
                     self.chat_download_config[
                         item["chat_id"]
                     ].download_filter = item.get("download_filter", "")
+                    self.chat_download_config[
+                        item["chat_id"]
+                    ].upload_telegram_chat_id = item.get(
+                        "upload_telegram_chat_id", None
+                    )
         elif _config.get("chat_id"):
             # Compatible with lower versions
             self._chat_id = _config["chat_id"]
@@ -288,15 +360,20 @@ class Application:
                 self.app_data.pop("ids_to_retry")
         else:
             if app_data.get("chat"):
-                chat = app_data["chat"]
-                for item in chat:
+                chats = app_data["chat"]
+                for chat in chats:
                     if (
-                        "chat_id" in item
-                        and item["chat_id"] in self.chat_download_config
+                        "chat_id" in chat
+                        and chat["chat_id"] in self.chat_download_config
                     ):
-                        self.chat_download_config[
-                            item["chat_id"]
-                        ].ids_to_retry = item.get("ids_to_retry", [])
+                        chat_id = chat["chat_id"]
+                        self.chat_download_config[chat_id].ids_to_retry = chat.get(
+                            "ids_to_retry", []
+                        )
+                        for it in self.chat_download_config[chat_id].ids_to_retry:
+                            self.chat_download_config[chat_id].ids_to_retry_dict[
+                                it
+                            ] = True
         return True
 
     async def upload_file(self, local_file_path: str):
@@ -392,7 +469,7 @@ class Application:
         return res
 
     def need_skip_message(
-        self, chat_id: Union[int, str], message_id: int, meta_data: MetaData
+        self, download_config: ChatDownloadConfig, message_id: int, meta_data: MetaData
     ) -> bool:
         """if need skip download message.
 
@@ -411,10 +488,6 @@ class Application:
         -------
         bool
         """
-        if chat_id not in self.chat_download_config:
-            return False
-
-        download_config = self.chat_download_config[chat_id]
         if message_id in download_config.ids_to_retry_dict:
             return True
 
@@ -433,7 +506,8 @@ class Application:
         immediate: bool
             If update config immediate,default True
         """
-        if not self.app_data.get("chat"):
+        # TODO: fix this not exist chat
+        if not self.app_data.get("chat") and self.config.get("chat"):
             self.app_data["chat"] = [
                 {"chat_id": i} for i in range(0, len(self.config["chat"]))
             ]
@@ -472,6 +546,7 @@ class Application:
         if self.config.get("last_read_message_id"):
             self.config.pop("last_read_message_id")
 
+        self.config["language"] = self.language.name
         # for it in self.downloaded_ids:
         #    self.already_download_ids_set.add(it)
 
@@ -495,14 +570,15 @@ class Application:
                 self.config = config
                 self.assign_config(self.config)
 
-        with open(
-            os.path.join(os.path.abspath("."), self.app_data_file),
-            encoding="utf-8",
-        ) as f:
-            app_data = _yaml.load(f.read())
-            if app_data:
-                self.app_data = app_data
-                self.assign_app_data(self.app_data)
+        if os.path.exists(os.path.join(os.path.abspath("."), self.app_data_file)):
+            with open(
+                os.path.join(os.path.abspath("."), self.app_data_file),
+                encoding="utf-8",
+            ) as f:
+                app_data = _yaml.load(f.read())
+                if app_data:
+                    self.app_data = app_data
+                    self.assign_app_data(self.app_data)
 
     def pre_run(self):
         """before run application do"""
