@@ -22,6 +22,10 @@ jobs:
         id: changelog
         run: |
           LOG=$(git log $(git describe --tags $(git rev-list --tags --max-count=2 | tail -n 1))..HEAD --pretty=format:'* %s by @%an in %H')
+          git rev-list --tags --max-count=2 | tail -n 1
+          git describe --tags $(git rev-list --tags --max-count=2 | tail -n 1)
+          git log $(git describe --tags $(git rev-list --tags --max-count=2 | tail -n 1))..HEAD --pretty=format:'* %s by @%an in %H'
+          echo $LOG
           echo "LOG<<EOF" >> $GITHUB_ENV
           echo "$LOG" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
