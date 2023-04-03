@@ -10,13 +10,11 @@ services:
     volumes:
       # Here is what you need to edit
       # - "/root/downloads/:/app/downloads/"
+      
       # The following is what you don't need to edit
-      # enable config
-      # - "./config.yaml:/app/config.yaml"
-      # enable data
-      # - "./data.yaml:/app/data.yaml"
-      #  enable log
-      "./log/:/app/log/"
+      - "./config.yaml:/app/config.yaml"
+      - "./data.yaml:/app/data.yaml"
+      - "./log/:/app/log/"
       - "sessions:/app/sessions"
       - "temp:/app/temp"
 

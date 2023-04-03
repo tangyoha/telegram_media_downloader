@@ -3,7 +3,7 @@ name: Create Release and Upload Assets
 on:
   push:
     tags:
-      - 'v*'
+      - 'vv*'
 
 jobs:
   release:
@@ -47,7 +47,7 @@ jobs:
       # docker
       - name: Archive docker files
         run: |
-          tar -cvzf app.tar.gz log docker-compose.yaml config.yaml data.yaml
+          tar -cvzf app.tar.gz docker-compose.yaml config.yaml data.yaml
 
       - name: Upload assets
         uses: actions/upload-release-asset@v1
