@@ -21,14 +21,9 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
-          LOG=$(git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:'* %s by @%an in %H')
+          LOG=$(git log $(git describe --tags $(git rev-list --tags --max-count=2 | tail -n 1))..HEAD --pretty=format:'* %s by @%an in %H')
           echo "LOG<<EOF" >> $GITHUB_ENV
           echo "$LOG" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-          CONTRIBUTORS=$(git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:'%an' | sort -u | awk '{print "* @" $0}')
-          echo "CONTRIBUTORS<<EOF" >> $GITHUB_ENV
-          echo "$CONTRIBUTORS" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Create Release
@@ -43,8 +38,6 @@ jobs:
             ## What's Changed
             ${{ env.LOG }}
 
-            ## New Contributors
-            ${{ env.CONTRIBUTORS }}
           draft: false
           prerelease: false
 
