@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - name: Get Release Date
         id: release_date
@@ -22,7 +24,9 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
-          LOG=$(git log $(git describe --tags $(git rev-list --tags --max-count=2 | tail -n 1))..HEAD --pretty=format:'* %s by @%an in %H')
+          PREVIOUS_TAG=$(git describe --abbrev=0 --tags `git rev-list --tags --skip=1 --max-count=1`)
+          CURRENT_TAG=${{ github.ref }}
+          LOG=$(git log --pretty=format:'* %s by @%an in %H' $PREVIOUS_TAG...$CURRENT_TAG)
           echo "::set-output name=changelog::$LOG"
 
       - name: Create Release
