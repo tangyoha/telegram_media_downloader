@@ -12,15 +12,15 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: 14
+      # - name: Set up Node.js
+      #   uses: actions/setup-node@v2
+      #   with:
+      #     node-version: 14
 
-      - name: Install dependencies and build
-        run: |
-          npm ci
-          npm run build
+      # - name: Install dependencies and build
+      #   run: |
+      #     npm ci
+      #     npm run build
 
       # - name: Extract Release Note
       #   id: release_note
