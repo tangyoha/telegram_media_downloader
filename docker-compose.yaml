@@ -10,7 +10,7 @@ services:
     volumes:
       # Here is what you need to edit
       # - "/root/downloads/:/app/downloads/"
-      
+
       # The following is what you don't need to edit
       - "./config.yaml:/app/config.yaml"
       - "./data.yaml:/app/data.yaml"
