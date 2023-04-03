@@ -14,8 +14,10 @@ jobs:
 
       - name: Get Release Date
         run: |
-          DATE=$(date +%Y-%m-%d)
-          echo "::set-env name=RELEASE_NAME::$DATE"
+          RELEASE_DATE=$(date +%Y-%m-%d)
+          echo "RELEASE_DATE<<EOF" >> $GITHUB_ENV
+          echo "$RELEASE_DATE" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
       - name: Generate changelog
         id: changelog
         run: |
@@ -36,7 +38,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }},${{ env.RELEASE_NAME }}
+          release_name: ${{ github.ref }},${{ env.RELEASE_DATE }}
           body: |
             ## What's Changed
             ${{ env.LOG }}
