@@ -3,7 +3,7 @@ name: Create Release and Upload Assets
 on:
   push:
     tags:
-      - 'vv*'
+      - 'v*'
 
 jobs:
   release:
