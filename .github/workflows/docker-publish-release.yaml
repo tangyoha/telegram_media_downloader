@@ -1,0 +1,84 @@
+name: Create Release and Upload Assets
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14
+
+      - name: Install dependencies and build
+        run: |
+          npm ci
+          npm run build
+
+      # - name: Extract Release Note
+      #   id: release_note
+      #   run: |
+      #     RELEASE_NOTE=$(awk -v tag="${{ github.ref }}" '/^## /{ if (found) { exit } if ($2 == tag) { found=1; } } { if (found) { printf "%s\n", $0 } }' CHANGELOG.md)
+      #     echo "RELEASE_NOTE<<EOF" >> $GITHUB_ENV
+      #     echo "$RELEASE_NOTE" >> $GITHUB_ENV
+      #     echo "EOF" >> $GITHUB_ENV
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: ${{ env.RELEASE_NOTE }}
+          draft: false
+          prerelease: false
+
+      # source code
+      - name: Create source code archives
+        run: |
+          git archive --format=tar.gz -o source_code.tar.gz HEAD
+          git archive --format=zip -o source_code.zip HEAD
+
+      - name: Upload source code archives
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: source_code.tar.gz
+          asset_name: Source code.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload source code archives
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: source_code.zip
+          asset_name: Source code.zip
+          asset_content_type: application/zip
+
+      # docker
+      - name: Archive docker files
+        run: |
+          tar -cvzf app.tar.gz ./log docker-compose.yaml config.yaml data.yaml
+
+      - name: Upload assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: app.tar.gz
+          asset_name: app.tar.gz
+          asset_content_type: application/gzip

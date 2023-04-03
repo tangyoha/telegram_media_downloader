@@ -275,6 +275,10 @@ class BaseFilter:
         "expression : TIME"
         p[0] = p[1]
 
+    def p_expression_byte(self, p):
+        "expression : BYTE"
+        p[0] = p[1]
+
     def p_expression_name(self, p):
         "expression : NAME"
         try:

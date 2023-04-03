@@ -27,4 +27,6 @@ jobs:
       with:
         context: .
         push: true
-        tags: tangyoha/telegram-media-downloader:${{ github.ref_name }}
+        tags: |
+          ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:latest
+          ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:${{ github.ref_name }}

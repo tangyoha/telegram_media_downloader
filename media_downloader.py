@@ -554,6 +554,7 @@ def main():
         api_id=app.api_id,
         api_hash=app.api_hash,
         proxy=app.proxy,
+        workdir=app.session_file_path,
     )
     try:
         app.pre_run()

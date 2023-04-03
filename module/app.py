@@ -145,8 +145,8 @@ class Application:
         self.chat_download_config: dict = {}
 
         self.disable_syslog: list = []
-        self.save_path = os.path.abspath(".")
-        self.temp_save_path = os.path.join(os.path.abspath("."), "download")
+        self.save_path = os.path.join(os.path.abspath("."), "downloads")
+        self.temp_save_path = os.path.join(os.path.abspath("."), "temp")
         self.api_id: str = ""
         self.api_hash: str = ""
         self.bot_token: str = ""
@@ -161,6 +161,7 @@ class Application:
         self.file_name_prefix: List[str] = ["message_id", "file_name"]
         self.file_name_prefix_split: str = " - "
         self.log_file_path = os.path.join(os.path.abspath("."), "log")
+        self.session_file_path = os.path.join(os.path.abspath("."), "sessions")
         self.cloud_drive_config = CloudDriveConfig()
         self.hide_file_name = False
         self.caption_name_dict: dict = {}
@@ -569,14 +570,15 @@ class Application:
                 self.config = config
                 self.assign_config(self.config)
 
-        with open(
-            os.path.join(os.path.abspath("."), self.app_data_file),
-            encoding="utf-8",
-        ) as f:
-            app_data = _yaml.load(f.read())
-            if app_data:
-                self.app_data = app_data
-                self.assign_app_data(self.app_data)
+        if os.path.exists(os.path.join(os.path.abspath("."), self.app_data_file)):
+            with open(
+                os.path.join(os.path.abspath("."), self.app_data_file),
+                encoding="utf-8",
+            ) as f:
+                app_data = _yaml.load(f.read())
+                if app_data:
+                    self.app_data = app_data
+                    self.assign_app_data(self.app_data)
 
     def pre_run(self):
         """before run application do"""

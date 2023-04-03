@@ -84,6 +84,7 @@ class DownloadBot:
             api_hash=app.api_hash,
             api_id=app.api_id,
             bot_token=app.bot_token,
+            workdir=app.session_file_path,
             proxy=app.proxy,
         )
 

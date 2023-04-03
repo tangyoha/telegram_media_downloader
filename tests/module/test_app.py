@@ -23,7 +23,7 @@ class AppTestCase(unittest.TestCase):
 
     def test_app(self):
         app = Application("", "")
-        self.assertEqual(app.save_path, os.path.abspath("."))
+        self.assertEqual(app.save_path, os.path.join(os.path.abspath("."), "downloads"))
         self.assertEqual(app.proxy, {})
         self.assertEqual(app.restart_program, False)
 
