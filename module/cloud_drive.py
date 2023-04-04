@@ -5,7 +5,6 @@ from asyncio import subprocess
 from subprocess import Popen
 from zipfile import ZipFile
 
-from aligo import Aligo
 from loguru import logger
 
 from utils import platform
@@ -38,6 +37,7 @@ class CloudDriveConfig:
 
     def initAligo(self):
         """init aliyun upload"""
+        from aligo import Aligo
         self.aligo = Aligo()
 
     def pre_run(self):
