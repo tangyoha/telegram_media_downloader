@@ -1,11 +1,11 @@
 """provide upload cloud drive"""
 import asyncio
+import importlib
 import os
 from asyncio import subprocess
 from subprocess import Popen
 from zipfile import ZipFile
 
-from aligo import Aligo
 from loguru import logger
 
 from utils import platform
@@ -36,18 +36,21 @@ class CloudDriveConfig:
         self.total_upload_success_file_count = 0
         self.aligo = None
 
-    def initAligo(self):
-        """init aliyun upload"""
-        self.aligo = Aligo()
-
     def pre_run(self):
         """pre run init aligo"""
         if self.enable_upload_file and self.upload_adapter == "aligo":
-            self.initAligo()
+            CloudDrive.init_upload_adapter(self)
 
 
 class CloudDrive:
     """rclone support"""
+
+    @staticmethod
+    def init_upload_adapter(drive_config: CloudDriveConfig):
+        """Initialize the upload adapter."""
+        if drive_config.upload_adapter == "aligo":
+            Aligo = importlib.import_module("aligo").Aligo
+            drive_config.aligo = Aligo()
 
     @staticmethod
     def rclone_mkdir(drive_config: CloudDriveConfig, remote_dir: str):
