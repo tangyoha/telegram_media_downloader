@@ -583,6 +583,8 @@ class Application:
     def pre_run(self):
         """before run application do"""
         self.cloud_drive_config.pre_run()
+        if not os.path.exists(self.session_file_path):
+            os.makedirs(self.session_file_path)
 
     def set_caption_name(
         self, chat_id: Union[int, str], media_group_id: Optional[str], caption: str
