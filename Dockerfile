@@ -14,7 +14,7 @@ WORKDIR /app
 
 COPY --from=compile-image /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY config.yaml data.yaml setup.py media_downloader.py /app/
-COPY module /app/mdoule
+COPY module /app/module
 COPY utils /app/utils
 
 CMD ["python", "media_downloader.py"]
