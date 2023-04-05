@@ -225,7 +225,7 @@ def extract_info_from_link(link: str):
     return None, None
 
 
-def validate_title(title: str):
+def validate_title(title: str) -> str:
     """Fix if title validation fails
 
     Parameters
@@ -235,6 +235,6 @@ def validate_title(title: str):
 
     """
 
-    r_str = r"[\//\:\*\?\"\<\>\|\n]"  # '/ \ : * ? " < > |'
+    r_str = r"[/\\:*?\"<>|\n]"  # '/ \ : * ? " < > |'
     new_title = re.sub(r_str, "_", title)
     return new_title

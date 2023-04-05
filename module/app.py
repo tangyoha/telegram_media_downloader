@@ -2,7 +2,6 @@
 
 import asyncio
 import os
-import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
@@ -12,7 +11,7 @@ from ruamel import yaml
 
 from module.cloud_drive import CloudDrive, CloudDriveConfig
 from module.filter import Filter
-from utils.format import replace_date_time
+from utils.format import replace_date_time, validate_title
 from utils.meta_data import MetaData
 
 _yaml = yaml.YAML()
@@ -464,9 +463,8 @@ class Application:
                 res += f"{caption}"
         if res == "":
             res = f"{message_id}"
-        forbidden_symbols = '[<>:"/\\|?*]'
-        res = re.sub(forbidden_symbols, "_", res)
-        return res
+
+        return validate_title(res)
 
     def need_skip_message(
         self, download_config: ChatDownloadConfig, message_id: int, meta_data: MetaData

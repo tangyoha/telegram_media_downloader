@@ -10,6 +10,7 @@ from utils.format import (
     get_byte_from_str,
     replace_date_time,
     truncate_filename,
+    validate_title,
 )
 
 sys.path.append("..")  # Adds higher directory to python modules path.
@@ -187,3 +188,33 @@ class TestTruncateFilename(unittest.TestCase):
             f.write("test")
 
         open.assert_called_once_with(truncated_file_name, "w")
+
+
+class TestValidateTitle(unittest.TestCase):
+    def test_validate_title(self):
+        test_cases = [
+            ("Hello, World!", "Hello, World!"),
+            ("Invalid/Title", "Invalid_Title"),
+            ("File\\Name", "File_Name"),
+            ("Colons:Are:Not:Allowed", "Colons_Are_Not_Allowed"),
+            ("Asterisks*In*Title", "Asterisks_In_Title"),
+            ("Question?Mark", "Question_Mark"),
+            ('Double"Quotes', "Double_Quotes"),
+            ("Less<Than", "Less_Than"),
+            ("Greater>Than", "Greater_Than"),
+            ("Pipe|Symbol", "Pipe_Symbol"),
+            ("Multi\nLine", "Multi_Line"),
+        ]
+
+        for title, expected in test_cases:
+            with self.subTest(title=title, expected=expected):
+                self.assertEqual(validate_title(title), expected)
+
+    @patch("utils.format.re.sub")
+    def test_mock_re_sub(self, mock_re_sub):
+        title = "Invalid/Title"
+        mock_re_sub.return_value = "Mocked_Title"
+
+        result = validate_title(title)
+        self.assertEqual(result, "Mocked_Title")
+        mock_re_sub.assert_called_once_with(r"[/\\:*?\"<>|\n]", "_", title)
