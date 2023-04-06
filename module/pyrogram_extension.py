@@ -177,9 +177,7 @@ async def report_bot_status(
     """
     node.stat(download_status)
     if node.can_reply():
-        await client.edit_message_text(
-            node.from_user_id,
-            node.reply_message_id,
+        new_msg_str = (
             f"{node.reply_message}\n"
             f"**total**: `{node.total_download_task}`\n"
             f"**success**: `{node.success_download_task}`\n"
@@ -187,8 +185,16 @@ async def report_bot_status(
             f"**skip**: `{node.skip_download_task}`\n"
             f"**status**:\n"
             f"  * message id : `{message.id}`\n"
-            f"  * status: **{download_status.name}**",
+            f"  * status: **{download_status.name}**"
         )
+
+        try:
+            if new_msg_str != node.last_edit_msg:
+                await client.edit_message_text(
+                    node.from_user_id, node.reply_message_id, new_msg_str
+                )
+        except Exception:
+            pass
 
 
 def set_max_concurrent_transmissions(
