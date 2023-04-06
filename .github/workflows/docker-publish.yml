@@ -4,16 +4,34 @@ on:
   push:
     branches:
       - master
+      - master_refactor_docker_push
     tags:
       - 'v*'
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    outputs:
+      compile_image_exists: ${{ steps.check-image.outputs.exists }}
+      requirements_modified: ${{ steps.check-requirements.outputs.modified }}
 
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+
+    - name: Check if compile-image exists on Docker Hub
+      id: check-image
+      run: |
+        EXISTS=$(curl --silent --fail --head "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader_compile/tags/latest" > /dev/null && echo "true" || echo "false")
+        echo "exists=$EXISTS" >> $GITHUB_ENV
+        echo "::set-output name=exists::$EXISTS"
+
+    - name: Check if requirements.txt has been modified
+      id: check-requirements
+      run: |
+        MODIFIED=$(git diff --name-only HEAD^ HEAD | grep -w 'requirements.txt' && echo "true" || echo "false")
+        echo "modified=$MODIFIED" >> $GITHUB_ENV
+        echo "::set-output name=modified::$MODIFIED"
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
@@ -24,12 +42,22 @@ jobs:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-    - name: Build and push
+    - name: Build and push compile-image
+      if: '!steps.check-image.outputs.exists || steps.check-requirements.outputs.modified'
       uses: docker/build-push-action@v2
       with:
         context: .
         push: true
         platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le,linux/s390x
+        target: compile-image
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader_compile:latest
+
+    - name: Build and push runtime-image
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        push: true
+        platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le,linux/s390x
+        target: runtime-image
         tags: |
-          ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:latest
-          ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:${{ github.ref_name }}
+          ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:test

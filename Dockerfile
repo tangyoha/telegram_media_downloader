@@ -12,7 +12,8 @@ FROM python:3.11.2-alpine As runtime_image
 
 WORKDIR /app
 
-COPY --from=compile-image /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader_compile:latest /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+
 COPY config.yaml data.yaml setup.py media_downloader.py /app/
 COPY module /app/module
 COPY utils /app/utils
