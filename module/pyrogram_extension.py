@@ -1,13 +1,17 @@
 """Pyrogram ext"""
 
 import asyncio
+import os
+import secrets
 import struct
+import time
 from functools import wraps
 from io import BytesIO, StringIO
 from mimetypes import MimeTypes
 from typing import List, Optional, Union
 
 import pyrogram
+from loguru import logger
 from pyrogram.client import Cache
 from pyrogram.file_id import (
     FILE_REFERENCE_FLAG,
@@ -19,7 +23,7 @@ from pyrogram.file_id import (
 )
 from pyrogram.mime_types import mime_types
 
-from module.app import DownloadStatus, DownloadTaskNode
+from module.app import Application, DownloadStatus, DownloadTaskNode
 
 _mimetypes = MimeTypes()
 _mimetypes.readfp(StringIO(mime_types))
@@ -93,6 +97,7 @@ def get_extension(file_id: str, mime_type: str) -> str:
 
 async def upload_telegram_chat(
     client: pyrogram.Client,
+    app: Application,
     upload_telegram_chat_id: Union[int, str],
     message: pyrogram.types.Message,
     file_name: str,
@@ -107,9 +112,39 @@ async def upload_telegram_chat(
         file_name (str): The name of the file to upload.
     """
     if message.video:
-        await client.send_video(
-            upload_telegram_chat_id, file_name, caption=message.caption
-        )
+        video = message.video
+        # Download thumbnail
+        thumbnail = video.thumbs[0] if video.thumbs else None
+        thumbnail_file = None
+
+        if thumbnail:
+            unique_name = os.path.join(
+                app.temp_save_path,
+                "thumbnail",
+                f"thumb-{int(time.time())}-{secrets.token_hex(8)}.jpg",
+            )
+
+            thumbnail_file = await client.download_media(
+                thumbnail, file_name=unique_name
+            )
+        try:
+            # Send video to the destination chat
+            await client.send_video(
+                chat_id=upload_telegram_chat_id,
+                video=file_name,
+                thumb=thumbnail_file,
+                width=video.width,
+                height=video.height,
+                duration=video.duration,
+                caption=message.caption or "",
+                parse_mode=pyrogram.enums.ParseMode.HTML,
+            )
+        except Exception as e:
+            logger.exception(f"Upload file {file_name} error: {e}")
+        finally:
+            if thumbnail:
+                os.remove(str(thumbnail_file))
+
     elif message.photo:
         await client.send_photo(
             upload_telegram_chat_id, file_name, caption=message.caption

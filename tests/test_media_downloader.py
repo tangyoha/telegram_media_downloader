@@ -24,7 +24,7 @@ from media_downloader import (
     main,
     worker,
 )
-from module.app import DownloadStatus, DownloadTaskNode
+from module.app import Application, DownloadStatus, DownloadTaskNode
 from module.cloud_drive import CloudDriveConfig
 from module.pyrogram_extension import record_download_status, reset_download_cache
 
@@ -146,6 +146,7 @@ def raise_keyboard_interrupt():
 
 async def new_upload_telegram_chat(
     client: pyrogram.Client,
+    app: Application,
     upload_telegram_chat_id: Union[int, str],
     message: pyrogram.types.Message,
     file_name: str,
