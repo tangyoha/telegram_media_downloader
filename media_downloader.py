@@ -565,7 +565,7 @@ def main():
         set_max_concurrent_transmissions(client, app.max_concurrent_transmissions)
 
         client.start()
-        print("Successfully started (Press Ctrl+C to stop)")
+        logger.success("Successfully started (Press Ctrl+C to stop)")
 
         if app.bot_token:
             app.loop.create_task(
