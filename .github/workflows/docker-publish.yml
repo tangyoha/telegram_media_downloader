@@ -19,7 +19,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
       with:
-        fetch-depth: 2
+      fetch-depth: 2
 
     - name: Check if compile-image exists on Docker Hub
       id: check-image
@@ -43,6 +43,12 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+    
+    - name: Print Env
+      id: env_aa
+      run: |
+        echo ${{ steps.check-image.outputs.exists }}
+        echo ${{ steps.check-requirements.outputs.modified }}
 
     - name: Build and push compile-image
       if: '!steps.check-image.outputs.exists || steps.check-requirements.outputs.modified'
