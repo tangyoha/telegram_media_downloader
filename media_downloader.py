@@ -441,7 +441,7 @@ async def worker(client: pyrogram.client.Client):
             if node.upload_telegram_chat_id:
                 if download_status is DownloadStatus.SuccessDownload:
                     await upload_telegram_chat(
-                        client, node.upload_telegram_chat_id, message, file_name
+                        client, app, node.upload_telegram_chat_id, message, file_name
                     )
                     if app.after_upload_telegram_delete:
                         os.remove(file_name)
@@ -453,7 +453,7 @@ async def worker(client: pyrogram.client.Client):
                     and bot
                 ):
                     await upload_telegram_chat(
-                        client, node.upload_telegram_chat_id, message, file_name
+                        client, app, node.upload_telegram_chat_id, message, file_name
                     )
 
             # rclone upload
@@ -565,7 +565,7 @@ def main():
         set_max_concurrent_transmissions(client, app.max_concurrent_transmissions)
 
         client.start()
-        print("Successfully started (Press Ctrl+C to stop)")
+        logger.success("Successfully started (Press Ctrl+C to stop)")
 
         if app.bot_token:
             app.loop.create_task(
