@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - master_refactor_docker_push
     tags:
       - 'v*'
 
@@ -68,4 +67,5 @@ jobs:
         platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le,linux/s390x
         target: runtime-image
         tags: |
-          ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:test
+          ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:latest
+          ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:${{ github.ref_name }}
