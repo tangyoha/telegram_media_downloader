@@ -23,6 +23,7 @@ jobs:
       id: check-image
       run: |
         EXISTS=$(curl --silent --fail --head "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader_compile/tags/latest" > /dev/null && echo "true" || echo "false")
+        echo $EXISTS
         echo "exists=$EXISTS" >> $GITHUB_ENV
         echo "exists=$EXISTS" >> $GITHUB_OUTPUT
 
