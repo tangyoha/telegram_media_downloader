@@ -51,7 +51,7 @@ jobs:
         echo ${{ steps.check-requirements.outputs.modified }}
 
     - name: Build and push compile-image
-      if: '!steps.check-image.outputs.exists || steps.check-requirements.outputs.modified'
+      if: ${{ !steps.check-image.outputs.exists || steps.check-requirements.outputs.modified }}
       uses: docker/build-push-action@v2
       with:
         context: .
