@@ -23,14 +23,13 @@ jobs:
       id: check-image
       run: |
         EXISTS=$(curl --silent --fail --head "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader_compile/tags/latest" > /dev/null && echo "true" || echo "false")
-        echo $EXISTS
         echo "exists=$EXISTS" >> $GITHUB_ENV
         echo "exists=$EXISTS" >> $GITHUB_OUTPUT
 
     - name: Check if requirements.txt has been modified
       id: check-requirements
       run: |
-        MODIFIED=$(git diff --name-only HEAD^ HEAD | grep -w 'requirements.txt' && echo "true" || echo "false")
+        MODIFIED=$(git diff --name-only HEAD~1 HEAD | grep -w 'requirements.txt' && echo "true" || echo "false")
         echo "modified=$MODIFIED" >> $GITHUB_ENV
         echo "modified=$MODIFIED" >> $GITHUB_OUTPUT
 
