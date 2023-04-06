@@ -19,7 +19,7 @@ jobs:
         run: |
           RELEASE_DATE=$(date +%Y-%m-%d)
           echo "RELEASE_DATE=$RELEASE_DATE" | tee -a $GITHUB_ENV
-          echo "::set-output name=release_date::$RELEASE_DATE"
+          echo "release_date=$RELEASE_DATE" >> $GITHUB_OUTPUT
 
       - name: Generate changelog
         id: changelog
@@ -27,7 +27,7 @@ jobs:
           PREVIOUS_TAG=$(git describe --abbrev=0 --tags `git rev-list --tags --skip=1 --max-count=1`)
           CURRENT_TAG=${{ github.ref }}
           LOG=$(git log --pretty=format:'* %s by @%an in %H' $PREVIOUS_TAG...$CURRENT_TAG)
-          echo "::set-output name=changelog::$LOG"
+          echo "changelog=$LOG" >> $GITHUB_OUTPUT
 
       - name: Create Release
         id: create_release
