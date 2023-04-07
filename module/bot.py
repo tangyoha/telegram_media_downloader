@@ -6,6 +6,7 @@ from typing import Callable, List
 import pyrogram
 from pyrogram import types
 from pyrogram.handlers import MessageHandler
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from ruamel import yaml
 
 from module.app import (
@@ -19,9 +20,7 @@ from module.filter import Filter
 from module.pyrogram_extension import report_bot_status
 from utils.format import extract_info_from_link, replace_date_time, validate_title
 from utils.meta_data import MetaData
-
-# from pyrogram.types import (ReplyKeyboardMarkup, InlineKeyboardMarkup,
-#                             InlineKeyboardButton)
+from utils.updates import get_latest_release
 
 # pylint: disable = C0301, R0902
 
@@ -71,25 +70,9 @@ class DownloadBot:
         with open("d", "w", encoding="utf-8") as yaml_file:
             self._yaml.dump(self.config, yaml_file)
 
-    async def start(
-        self,
-        app: Application,
-        client: pyrogram.Client,
-        download_task: Callable,
-        download_chat_task: Callable,
-    ):
-        """Start bot"""
-        self.bot = pyrogram.Client(
-            app.application_name + "_bot",
-            api_hash=app.api_hash,
-            api_id=app.api_id,
-            bot_token=app.bot_token,
-            workdir=app.session_file_path,
-            proxy=app.proxy,
-        )
-
-        # 命令列表
-        if app.language == Language.CN:
+    async def set_bot_commands(self):
+        """Set bot commands"""
+        if self.app.language == Language.CN:
             commands = [
                 types.BotCommand("help", "帮助"),
                 types.BotCommand("download", "下载视频，使用方法直接输入/download查看"),
@@ -119,6 +102,25 @@ class DownloadBot:
                 ),
                 types.BotCommand("set_language", "Set language"),
             ]
+
+        await self.bot.set_bot_commands(commands)
+
+    async def start(
+        self,
+        app: Application,
+        client: pyrogram.Client,
+        download_task: Callable,
+        download_chat_task: Callable,
+    ):
+        """Start bot"""
+        self.bot = pyrogram.Client(
+            app.application_name + "_bot",
+            api_hash=app.api_hash,
+            api_id=app.api_id,
+            bot_token=app.bot_token,
+            workdir=app.session_file_path,
+            proxy=app.proxy,
+        )
 
         self.bot.add_handler(
             MessageHandler(
@@ -176,11 +178,36 @@ class DownloadBot:
                     self.assign_config(self.config)
 
         await self.bot.start()
+        admin = await self.client.get_me()
 
-        # 添加命令列表
-        await self.bot.set_bot_commands(commands)
-        # TODO: add admin
-        # self.bot.set_my_commands(commands, scope=types.BotCommandScopeChatAdministrators(self.app.))
+        update_keyboard = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        "Github",
+                        url="https://github.com/tangyoha/telegram_media_downloader/releases",
+                    ),
+                    InlineKeyboardButton(
+                        "Join us", url="https://t.me/TeegramMediaDownload"
+                    ),
+                ]
+            ]
+        )
+
+        try:
+            latest_release = get_latest_release()
+            if latest_release:
+                update_message = (
+                    "**New version**:\n"
+                    + f"**[{latest_release['name']}]({latest_release['html_url']})**"
+                )
+                await self.bot.send_message(
+                    admin.id, update_message, reply_markup=update_keyboard
+                )
+        except Exception:
+            pass
+
+        await self.set_bot_commands()
 
 
 _bot = DownloadBot()
@@ -281,6 +308,8 @@ async def set_language(client: pyrogram.Client, message: pyrogram.types.Message)
             await client.send_message(
                 message.from_user.id, "Invalid language option. Please use cn/en"
             )
+
+    await _bot.set_bot_commands()
 
 
 async def add_filter(client: pyrogram.Client, message: pyrogram.types.Message):
@@ -523,6 +552,10 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
                 limit,
                 _bot.bot,
             )
+
+            node.reply_message = (
+                f"{node.reply_message}\n`total_task: {chat_download_config.total_task}`"
+            )
     except Exception as e:
         if _bot.app.language is Language.CN:
             await client.send_message(
@@ -728,6 +761,10 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
             node,
             limit,
             _bot.bot,
+        )
+
+        node.reply_message = (
+            f"{node.reply_message}\n`total_task: {chat_download_config.total_task}`"
         )
 
 

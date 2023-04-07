@@ -213,14 +213,13 @@ async def report_bot_status(
     node.stat(download_status)
     if node.can_reply():
         new_msg_str = (
-            f"{node.reply_message}\n"
-            f"**total**: `{node.total_download_task}`\n"
+            f"`{node.total_download_task} tasks in progress.`\n"
             f"**success**: `{node.success_download_task}`\n"
-            f"**failed**: `{node.failed_download_task}`\n"
-            f"**skip**: `{node.skip_download_task}`\n"
+            f"**failed**:  `{node.failed_download_task}`\n"
+            f"**skip**:    `{node.skip_download_task}`\n"
             f"**status**:\n"
-            f"  * message id : `{message.id}`\n"
-            f"  * status: **{download_status.name}**"
+            f"  * **msg_id**: `{message.id}`\n"
+            f"  * **status**: **{download_status.name}**",
         )
 
         try:
