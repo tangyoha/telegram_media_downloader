@@ -440,11 +440,11 @@ class MediaDownloaderTestCase(unittest.TestCase):
         self.assertEqual(
             (
                 platform_generic_path(
-                    "/root/project/test1/2019_07/1 - voice_2019-07-25T14:53:50.ogg"
+                    "/root/project/test1/2019_07/1 - voice_2019-07-25T14_53_50.ogg"
                 ),
                 platform_generic_path(
                     os.path.join(
-                        app.temp_save_path, "test1/1 - voice_2019-07-25T14:53:50.ogg"
+                        app.temp_save_path, "test1/1 - voice_2019-07-25T14_53_50.ogg"
                     )
                 ),
                 "ogg",
@@ -679,12 +679,12 @@ class MediaDownloaderTestCase(unittest.TestCase):
         self.assertEqual(
             (
                 platform_generic_path(
-                    "/root/project/test2/2019_07/6 - video_note_2019-07-25T14:53:50.mp4"
+                    "/root/project/test2/2019_07/6 - video_note_2019-07-25T14_53_50.mp4"
                 ),
                 platform_generic_path(
                     os.path.join(
                         app.temp_save_path,
-                        "test2/6 - video_note_2019-07-25T14:53:50.mp4",
+                        "test2/6 - video_note_2019-07-25T14_53_50.mp4",
                     )
                 ),
                 "mp4",

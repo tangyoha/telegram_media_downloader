@@ -1,10 +1,8 @@
 """Unittest module for update checker."""
-import os
 import sys
 import unittest
 
 import mock
-from rich.markdown import Markdown
 
 sys.path.append("..")  # Adds higher directory to python modules path.
 from utils.updates import check_for_updates

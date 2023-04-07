@@ -207,7 +207,7 @@ async def _get_media_meta(
             media_obj.date.isoformat(),  # type: ignore
             file_format,
         )
-
+        file_name = validate_title(file_name)
         temp_file_name = os.path.join(app.temp_save_path, dirname, file_name)
 
         file_name = os.path.join(file_save_path, file_name)
