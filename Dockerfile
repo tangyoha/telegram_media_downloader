@@ -18,4 +18,6 @@ COPY config.yaml data.yaml setup.py media_downloader.py /app/
 COPY module /app/module
 COPY utils /app/utils
 
+RUN chmod -R 777 /app
+
 CMD ["python", "media_downloader.py"]
