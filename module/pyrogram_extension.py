@@ -219,7 +219,7 @@ async def report_bot_status(
             f"**skip**:    `{node.skip_download_task}`\n"
             f"**status**:\n"
             f"  * **msg_id**: `{message.id}`\n"
-            f"  * **status**: **{download_status.name}**",
+            f"  * **status**: **{download_status.name}**"
         )
 
         try:
