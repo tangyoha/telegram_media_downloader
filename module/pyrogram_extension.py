@@ -213,6 +213,7 @@ async def report_bot_status(
     node.stat(download_status)
     if node.can_reply():
         new_msg_str = (
+            f"{node.reply_message}\n"
             f"`{node.total_download_task} tasks in progress.`\n"
             f"**success**: `{node.success_download_task}`\n"
             f"**failed**:  `{node.failed_download_task}`\n"
