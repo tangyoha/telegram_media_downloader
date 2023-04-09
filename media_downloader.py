@@ -440,21 +440,28 @@ async def worker(client: pyrogram.client.Client):
             # upload telegram
             if node.upload_telegram_chat_id:
                 if download_status is DownloadStatus.SuccessDownload:
-                    await upload_telegram_chat(
-                        client, app, node.upload_telegram_chat_id, message, file_name
-                    )
+                    try:
+                        await upload_telegram_chat(
+                            client,
+                            app,
+                            node.upload_telegram_chat_id,
+                            message,
+                            file_name,
+                        )
+                    except Exception as e:
+                        logger.exception(f"Upload file {file_name} error: {e}")
                     if app.after_upload_telegram_delete:
                         os.remove(file_name)
 
                 # forward text
-                if (
-                    download_status is DownloadStatus.SkipDownload
-                    and message.text
-                    and bot
-                ):
-                    await upload_telegram_chat(
-                        client, app, node.upload_telegram_chat_id, message, file_name
-                    )
+                # if (
+                #     download_status is DownloadStatus.SkipDownload
+                #     and message.text
+                #     and bot
+                # ):
+                #     await upload_telegram_chat(
+                #         client, app, node.upload_telegram_chat_id, message, file_name
+                #     )
 
             # rclone upload
             if (

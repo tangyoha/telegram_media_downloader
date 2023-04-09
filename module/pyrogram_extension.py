@@ -118,15 +118,25 @@ async def upload_telegram_chat(
         thumbnail_file = None
 
         if thumbnail:
+            message = await client.get_messages(  # type: ignore
+                chat_id=message.chat.id,  # type: ignore
+                message_ids=message.id,
+            )
+            video = message.video
+
             unique_name = os.path.join(
                 app.temp_save_path,
                 "thumbnail",
                 f"thumb-{int(time.time())}-{secrets.token_hex(8)}.jpg",
             )
 
-            thumbnail_file = await client.download_media(
-                thumbnail, file_name=unique_name
-            )
+            try:
+                thumbnail_file = await client.download_media(
+                    thumbnail, file_name=unique_name
+                )
+            except Exception as e:
+                thumbnail = None
+                logger.exception(e)
         try:
             # Send video to the destination chat
             await client.send_video(
@@ -140,10 +150,9 @@ async def upload_telegram_chat(
                 parse_mode=pyrogram.enums.ParseMode.HTML,
             )
         except Exception as e:
-            logger.exception(f"Upload file {file_name} error: {e}")
-        finally:
             if thumbnail:
                 os.remove(str(thumbnail_file))
+            raise e
 
     elif message.photo:
         await client.send_photo(
