@@ -443,7 +443,7 @@ async def worker(client: pyrogram.client.Client):
             if not bot:
                 app.set_download_id(node.chat_id, message.id, download_status)
             elif node.reply_message_id:
-                await report_bot_status(bot, node, message, download_status)
+                await report_bot_status(bot, node, message, download_status, os.path.getsize(file_name) if file_name else 0)
 
             # upload telegram
             if node.upload_telegram_chat_id:

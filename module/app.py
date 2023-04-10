@@ -56,6 +56,7 @@ class DownloadTaskNode:
         self.skip_download_task = 0
         self.last_reply_time = time.time()
         self.last_edit_msg: str = ""
+        self.total_download_byte = 0
 
     def stat(self, status: DownloadStatus):
         """

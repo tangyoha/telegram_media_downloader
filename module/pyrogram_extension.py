@@ -24,6 +24,7 @@ from pyrogram.file_id import (
 from pyrogram.mime_types import mime_types
 
 from module.app import Application, DownloadStatus, DownloadTaskNode
+from utils.format import format_byte
 
 _mimetypes = MimeTypes()
 _mimetypes.readfp(StringIO(mime_types))
@@ -167,6 +168,9 @@ async def upload_telegram_chat(
             if thumbnail:
                 os.remove(str(thumbnail_file))
             raise e
+        finally:
+            if thumbnail:
+                os.remove(str(thumbnail_file))
 
     elif message.photo:
         await client.send_photo(
@@ -220,6 +224,7 @@ async def report_bot_status(
     node: DownloadTaskNode,
     message: pyrogram.types.Message,
     download_status: DownloadStatus,
+    download_size: int = 0,
 ):
     """
     Sends a message with the current status of the download bot.
@@ -234,9 +239,11 @@ async def report_bot_status(
         None
     """
     node.stat(download_status)
+    node.total_download_byte += download_size
     if node.can_reply():
         new_msg_str = (
             f"{node.reply_message}\n"
+            f"**total download**: {format_byte(node.total_download_byte)}\n"
             f"**total**: `{node.total_download_task}`\n"
             f"**success**: `{node.success_download_task}`\n"
             f"**failed**: `{node.failed_download_task}`\n"
