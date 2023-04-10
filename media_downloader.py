@@ -15,6 +15,7 @@ from rich.logging import RichHandler
 from module.app import Application, ChatDownloadConfig, DownloadStatus, DownloadTaskNode
 from module.bot import start_download_bot, stop_download_bot
 from module.pyrogram_extension import (
+    fetch_message,
     get_extension,
     record_download_status,
     report_bot_status,
@@ -73,7 +74,8 @@ def _check_download_finish(media_size: int, download_path: str, ui_file_name: st
     if media_size == download_size:
         logger.success("Media downloaded - {}", ui_file_name)
     else:
-        logger.warning("Media downloaded with wrong size - {}", ui_file_name)
+        logger.warning("Media downloaded with wrong size: {}, actual: {}, file name: {}",
+                       download_size, media_size, ui_file_name)
         os.remove(download_path)
         raise pyrogram.errors.exceptions.bad_request_400.BadRequest()
 
@@ -182,7 +184,8 @@ async def _get_media_meta(
     """
     if _type in ["audio", "document", "video"]:
         # pylint: disable = C0301
-        file_format: Optional[str] = media_obj.mime_type.split("/")[-1]  # type: ignore
+        file_format: Optional[str] = media_obj.mime_type.split(
+            "/")[-1]  # type: ignore
     else:
         file_format = None
 
@@ -200,7 +203,8 @@ async def _get_media_meta(
     if _type in ["voice", "video_note"]:
         # pylint: disable = C0209
         file_format = media_obj.mime_type.split("/")[-1]  # type: ignore
-        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
+        file_save_path = app.get_file_save_path(
+            _type, dirname, datetime_dir_name)
         file_name = "{} - {}_{}.{}".format(
             message.id,
             _type,
@@ -222,8 +226,10 @@ async def _get_media_meta(
             )
         else:
             # file_name = file_name.split(".")[0]
-            _, file_name_without_suffix = os.path.split(os.path.normpath(file_name))
-            file_name, file_name_suffix = os.path.splitext(file_name_without_suffix)
+            _, file_name_without_suffix = os.path.split(
+                os.path.normpath(file_name))
+            file_name, file_name_suffix = os.path.splitext(
+                file_name_without_suffix)
 
         if caption:
             caption = validate_title(caption)
@@ -235,12 +241,15 @@ async def _get_media_meta(
             file_name = f"{message.photo.file_unique_id}"
 
         gen_file_name = (
-            app.get_file_name(message.id, file_name, caption) + file_name_suffix
+            app.get_file_name(message.id, file_name,
+                              caption) + file_name_suffix
         )
 
-        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
+        file_save_path = app.get_file_save_path(
+            _type, dirname, datetime_dir_name)
 
-        temp_file_name = os.path.join(app.temp_save_path, dirname, gen_file_name)
+        temp_file_name = os.path.join(
+            app.temp_save_path, dirname, gen_file_name)
 
         file_name = os.path.join(file_save_path, gen_file_name)
     return truncate_filename(file_name), truncate_filename(temp_file_name), file_format
@@ -296,6 +305,7 @@ async def download_media(
     task_start_time: float = time.time()
     media_size = 0
     _media = None
+    message = await fetch_message(client, message)
     try:
         for _type in media_types:
             _media = getattr(message, _type, None)
@@ -364,10 +374,7 @@ async def download_media(
                 message.id,
             )
             await asyncio.sleep(RETRY_TIME_OUT)
-            message = await client.get_messages(  # type: ignore
-                chat_id=message.chat.id,  # type: ignore
-                message_ids=message.id,
-            )
+            message = await fetch_message(client, message)
             if _check_timeout(retry, message.id):
                 # pylint: disable = C0301
                 logger.error(
@@ -376,7 +383,8 @@ async def download_media(
                 )
         except pyrogram.errors.exceptions.flood_420.FloodWait as wait_err:
             await asyncio.sleep(wait_err.value)
-            logger.warning("Message[{}]: FlowWait {}", message.id, wait_err.value)
+            logger.warning("Message[{}]: FlowWait {}",
+                           message.id, wait_err.value)
             _check_timeout(retry, message.id)
         except TypeError:
             # pylint: disable = C0301
@@ -505,7 +513,8 @@ async def download_task(
             caption = validate_title(caption)
             app.set_caption_name(node.chat_id, message.media_group_id, caption)
         else:
-            caption = app.get_caption_name(node.chat_id, message.media_group_id)
+            caption = app.get_caption_name(
+                node.chat_id, message.media_group_id)
         meta_data.get_meta_data(message)
         meta_data.message_caption = caption
 
@@ -569,7 +578,8 @@ def main():
             target=get_flask_app().run, daemon=True, args=(app.web_host, app.web_port)
         ).start()
 
-        set_max_concurrent_transmissions(client, app.max_concurrent_transmissions)
+        set_max_concurrent_transmissions(
+            client, app.max_concurrent_transmissions)
 
         client.start()
         logger.success("Successfully started (Press Ctrl+C to stop)")

@@ -65,7 +65,8 @@ def _get_file_type(file_id: str):
     try:
         file_type = FileType(file_type)
     except ValueError as exc:
-        raise ValueError(f"Unknown file_type {file_type} of file_id {file_id}") from exc
+        raise ValueError(
+            f"Unknown file_type {file_type} of file_id {file_id}") from exc
 
     return file_type
 
@@ -112,40 +113,53 @@ async def upload_telegram_chat(
         file_name (str): The name of the file to upload.
     """
     if message.video:
-        video = message.video
         # Download thumbnail
-        thumbnail = video.thumbs[0] if video.thumbs else None
         thumbnail_file = None
 
-        if thumbnail:
-            message = await client.get_messages(  # type: ignore
-                chat_id=message.chat.id,  # type: ignore
-                message_ids=message.id,
-            )
-            video = message.video
-
+        if message.video.thumbs:
+            message = await fetch_message(client, message)
+            thumbnail = message.video.thumbs[0] if message.video.thumbs else None
             unique_name = os.path.join(
                 app.temp_save_path,
                 "thumbnail",
                 f"thumb-{int(time.time())}-{secrets.token_hex(8)}.jpg",
             )
 
-            try:
-                thumbnail_file = await client.download_media(
-                    thumbnail, file_name=unique_name
-                )
-            except Exception as e:
-                thumbnail = None
-                logger.exception(e)
+            max_attempts = 3
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    thumbnail_file = await client.download_media(
+                        thumbnail, file_name=unique_name
+                    )
+                    if os.path.getsize(thumbnail_file) == thumbnail.file_size:
+                        break
+                    else:
+                        raise ValueError(
+                            f"Thumbnail file size is {os.path.getsize(thumbnail_file)} bytes, actual {thumbnail.file_size}: {thumbnail_file}")
+
+                except Exception as e:
+                    if attempt == max_attempts:
+                        logger.exception(
+                            f"Failed to download thumbnail after {max_attempts} attempts: {e}")
+                    else:
+                        message = await fetch_message(client, message)
+                        logger.warning(
+                            f"Attempt {attempt} to download thumbnail failed: {e}")
+                        # Wait 2 seconds before retrying
+                        await asyncio.sleep(2)
+
+                    thumbnail = None
+                    thumbnail_file = None
+
         try:
             # Send video to the destination chat
             await client.send_video(
                 chat_id=upload_telegram_chat_id,
                 video=file_name,
                 thumb=thumbnail_file,
-                width=video.width,
-                height=video.height,
-                duration=video.duration,
+                width=message.video.width,
+                height=message.video.height,
+                duration=message.video.duration,
                 caption=message.caption or "",
                 parse_mode=pyrogram.enums.ParseMode.HTML,
             )
@@ -253,3 +267,10 @@ def set_max_concurrent_transmissions(
         client.get_file_semaphore = asyncio.Semaphore(
             client.max_concurrent_transmissions
         )
+
+
+async def fetch_message(client: pyrogram.Client, message: pyrogram.types.Message):
+    return await client.get_messages(  # type: ignore
+        chat_id=message.chat.id,  # type: ignore
+        message_ids=message.id,
+    )
