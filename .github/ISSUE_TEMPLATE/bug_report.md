@@ -1,43 +1,91 @@
----
-name: Bug report
-about: Create a report to help us improve by fixing bugs
-title: ''
-labels: ''
-assignees: ''
-
----
-
-**Describe the bug**
-A clear and concise description of what the bug is.
-
-**To Reproduce**
-Share the config: `Please don't share your api_hash & api_id`
-```yaml
-chat_id: telegram_chat_id
-last_read_message_id: 0
-media_types:
-- audio
-- photo
-- video
-- document
-- voice
-file_formats:
-  audio:
-  - all
-  document:
-  - all
-  video:
-  - all
-```
-
-**Python Version**
-Python: [e.g. 3.7.7]
-
-**OS:**
-The OS and its version: [e.g. Ubuntu 20.04]
-
-**Logs**
-Logs showing the exception
-
-**Additional context**
-Add any other context about the problem here.
+name: 🐞 Bug Report
+description: File a bug report
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees:
+  - octocat
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: input
+    id: opencommit-version
+    attributes:
+      label: Opencommit Version
+      description: What version of our software are you running?
+      placeholder: ex. 1.1.22
+    validations:
+      required: true
+  - type: input
+    id: node-version
+    attributes:
+      label: Node Version
+      description: What version of node are you running?
+      placeholder: ex. 19.8.1
+    validations:
+      required: true
+  - type: input
+    id: npm-version
+    attributes:
+      label: NPM Version
+      description: What version of npm are you running?
+      placeholder: ex. 9.6.2
+    validations:
+      required: true
+  - type: dropdown
+    id: OS
+    attributes:
+      label: What OS are you seeing the problem on?
+      multiple: true
+      options:
+        - Mac
+        - Windows
+        - Other Linux Distro
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+      value: "A bug happened!"
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you expected to happen!
+    validations:
+      required: true   
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current Behavior
+      description: Also tell us, what is currently happening?
+      placeholder: Tell us what is happening now.
+    validations:
+      required: true
+  - type: textarea
+    id: possible-solution
+    attributes:
+      label: Possible Solution
+      description: Do you have a solution for the issue?
+      placeholder: Tell us what the solution could look like.
+    validations:
+      required: false
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Tell us how to reproduce the issue?
+      placeholder: Tell us how to reproduce the issue?
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: shell
