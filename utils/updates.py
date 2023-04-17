@@ -9,26 +9,40 @@ from . import __version__
 
 
 # pylint: disable = C0301
-def check_for_updates() -> None:
+def get_latest_release() -> dict:
+    """Retrieve the latest version information from the Github repository for the Telegram Media Downloader.
+
+    Returns:
+        dict: A dictionary containing the latest release information, including the version tag.
+    """
+
+    headers: dict = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36",
+    }
+    conn = http.client.HTTPSConnection("api.github.com")
+    conn.request(
+        method="GET",
+        url="/repos/tangyoha/telegram_media_downloader/releases/latest",
+        headers=headers,
+    )
+    res = conn.getresponse()
+    latest_release: dict = json.loads(res.read().decode("utf-8"))
+    if f"v{__version__}" != latest_release["tag_name"]:
+        return latest_release
+
+    return {}
+
+
+def check_for_updates():
     """Checks for new releases.
 
     Using Github API checks for new release and prints information of new release if available.
     """
     console = Console()
     try:
-        headers: dict = {
-            "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36",
-        }
-        conn = http.client.HTTPSConnection("api.github.com")
-        conn.request(
-            method="GET",
-            url="/repos/tangyoha/telegram_media_downloader/releases/latest",
-            headers=headers,
-        )
-        res = conn.getresponse()
-        latest_release: dict = json.loads(res.read().decode("utf-8"))
-        if f"v{__version__}" != latest_release["tag_name"]:
+        latest_release = get_latest_release()
+        if latest_release:
             update_message: str = (
                 f"## New version of Telegram-Media-Downloader is available - {latest_release['name']}\n"
                 f"You are using an outdated version v{__version__} please pull in the changes using `git pull` or download the latest release.\n\n"
