@@ -585,7 +585,8 @@ def main():
     except Exception as e:
         logger.exception("{}", e)
     finally:
-        client.stop()
+        if client.is_connected:
+            client.stop()
         app.is_running = False
         for task in tasks:
             task.cancel()
