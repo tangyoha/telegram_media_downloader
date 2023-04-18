@@ -1,5 +1,6 @@
-from pyrogram import Client
 import logging
+
+from pyrogram import Client
 from pyrogram import raw
 
 from pyrogramhook.HookSession import HookSession

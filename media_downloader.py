@@ -22,12 +22,12 @@ from module.pyrogram_extension import (
     upload_telegram_chat,
 )
 from module.web import get_flask_app, update_download_status
+from pyrogramhook import HookClient
 from utils.format import truncate_filename, validate_title
 from utils.log import LogFilter
 from utils.meta import print_meta
 from utils.meta_data import MetaData
 from utils.updates import check_for_updates
-from pyrogramhook import HookClient
 
 logging.basicConfig(
     level=logging.INFO,
@@ -162,10 +162,10 @@ def _is_exist(file_path: str) -> bool:
 
 
 async def _get_media_meta(
-    chat_id: Union[int, str],
-    message: pyrogram.types.Message,
-    media_obj: Union[Audio, Document, Photo, Video, VideoNote, Voice],
-    _type: str,
+        chat_id: Union[int, str],
+        message: pyrogram.types.Message,
+        media_obj: Union[Audio, Document, Photo, Video, VideoNote, Voice],
+        _type: str,
 ) -> Tuple[str, str, Optional[str]]:
     """Extract file name and file id from media object.
 
@@ -236,7 +236,7 @@ async def _get_media_meta(
             file_name = f"{message.photo.file_unique_id}"
 
         gen_file_name = (
-            app.get_file_name(message.id, file_name, caption) + file_name_suffix
+                app.get_file_name(message.id, file_name, caption) + file_name_suffix
         )
 
         file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
@@ -252,11 +252,11 @@ async def _get_media_meta(
 
 @record_download_status
 async def download_media(
-    client: pyrogram.client.Client,
-    message: pyrogram.types.Message,
-    media_types: List[str],
-    file_formats: dict,
-    chat_id: Union[int, str],
+        client: pyrogram.client.Client,
+        message: pyrogram.types.Message,
+        media_types: List[str],
+        file_formats: dict,
+        chat_id: Union[int, str],
 ):
     """
     Download media from Telegram.
@@ -449,9 +449,9 @@ async def worker(client: pyrogram.client.Client):
 
                 # forward text
                 if (
-                    download_status is DownloadStatus.SkipDownload
-                    and message.text
-                    and bot
+                        download_status is DownloadStatus.SkipDownload
+                        and message.text
+                        and bot
                 ):
                     await upload_telegram_chat(
                         client, app, node.upload_telegram_chat_id, message, file_name
@@ -459,8 +459,8 @@ async def worker(client: pyrogram.client.Client):
 
             # rclone upload
             if (
-                not node.upload_telegram_chat_id
-                and download_status is DownloadStatus.SuccessDownload
+                    not node.upload_telegram_chat_id
+                    and download_status is DownloadStatus.SuccessDownload
             ):
                 await app.upload_file(file_name)
         except Exception as e:
@@ -468,11 +468,11 @@ async def worker(client: pyrogram.client.Client):
 
 
 async def download_task(
-    client: pyrogram.Client,
-    chat_download_config: ChatDownloadConfig,
-    node: DownloadTaskNode,
-    limit: int = 0,
-    bot: pyrogram.Client = None,
+        client: pyrogram.Client,
+        chat_download_config: ChatDownloadConfig,
+        node: DownloadTaskNode,
+        limit: int = 0,
+        bot: pyrogram.Client = None,
 ):
     """Download all task"""
     messages_iter = client.get_chat_history(
@@ -560,8 +560,8 @@ def main():
     )
 
     if app.bot_token:
-        client.phone_number=''
-        client.bot_token=app.bot_token
+        client.phone_number = ''
+        client.bot_token = app.bot_token
 
     try:
         app.pre_run()
