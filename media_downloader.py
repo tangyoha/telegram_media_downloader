@@ -558,6 +558,11 @@ def main():
         workdir=app.session_file_path,
         start_timeout=app.start_timeout
     )
+
+    if app.bot_token:
+        client.phone_number=''
+        client.bot_token=app.bot_token
+
     try:
         app.pre_run()
         threading.Thread(
