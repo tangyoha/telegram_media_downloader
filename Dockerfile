@@ -17,5 +17,6 @@ COPY --from=tangyoha/telegram_media_downloader_compile:latest /usr/local/lib/pyt
 COPY config.yaml data.yaml setup.py media_downloader.py /app/
 COPY module /app/module
 COPY utils /app/utils
+COPY pyrogramhook /app/pyrogramhook
 
 CMD ["python", "media_downloader.py"]
