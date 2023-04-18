@@ -176,6 +176,8 @@ file_name_prefix_split: ' - '
 max_download_task: 5
 web_host: 127.0.0.1
 web_port: 5000
+# 连接 Telegram 服务器的超时时间，以秒为单位，默认为 60
+start_timeout: 60
 ```
 
 - **api_hash** - 你从电报应用程序获得的 api_hash

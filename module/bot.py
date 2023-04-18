@@ -19,6 +19,8 @@ from module.filter import Filter
 from module.pyrogram_extension import report_bot_status
 from utils.format import extract_info_from_link, replace_date_time, validate_title
 from utils.meta_data import MetaData
+from pyrogramhook import HookClient
+
 
 # from pyrogram.types import (ReplyKeyboardMarkup, InlineKeyboardMarkup,
 #                             InlineKeyboardButton)
@@ -79,13 +81,14 @@ class DownloadBot:
         download_chat_task: Callable,
     ):
         """Start bot"""
-        self.bot = pyrogram.Client(
+        self.bot = HookClient.HookClient(
             app.application_name + "_bot",
             api_hash=app.api_hash,
             api_id=app.api_id,
             bot_token=app.bot_token,
             workdir=app.session_file_path,
             proxy=app.proxy,
+            start_timeout=app.start_timeout
         )
 
         # 命令列表

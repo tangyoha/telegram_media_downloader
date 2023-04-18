@@ -172,6 +172,8 @@ class Application:
         self.language = Language.EN
         self.after_upload_telegram_delete: bool = True
 
+        self.start_timeout = None
+
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
@@ -327,6 +329,8 @@ class Application:
                 self.config["chat"][0]["download_filter"] = download_filter_dict[
                     self._chat_id
                 ]
+
+        self.start_timeout = _config.get("start_timeout", None)
 
         # pylint: disable = R1733
         for key, value in self.chat_download_config.items():

@@ -181,6 +181,8 @@ file_name_prefix_split: ' - '
 max_download_task: 5
 web_host: 127.0.0.1
 web_port: 5000
+# Timeout to connect to Telegram server, based on second. (default is 60)
+start_timeout: 60
 language: EN
 ```
 

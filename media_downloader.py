@@ -27,6 +27,7 @@ from utils.log import LogFilter
 from utils.meta import print_meta
 from utils.meta_data import MetaData
 from utils.updates import check_for_updates
+from pyrogramhook import HookClient
 
 logging.basicConfig(
     level=logging.INFO,
@@ -549,12 +550,13 @@ def _exec_loop():
 def main():
     """Main function of the downloader."""
     tasks = []
-    client = pyrogram.Client(
+    client = HookClient.HookClient(
         "media_downloader",
         api_id=app.api_id,
         api_hash=app.api_hash,
         proxy=app.proxy,
         workdir=app.session_file_path,
+        start_timeout=app.start_timeout
     )
     try:
         app.pre_run()
