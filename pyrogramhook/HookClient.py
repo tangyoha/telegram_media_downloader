@@ -10,16 +10,18 @@ log = logging.getLogger(__name__)
 
 class HookClient(Client):
 
+    START_TIME_OUT = 60
+
     def __init__(
             self,
             name: str,
             **kwargs
     ):
-        if kwargs.get("start_timeout"):
-            self.START_TIME_OUT = kwargs.get("start_timeout")
+        if "start_timeout" in kwargs:
+            value = kwargs.get("start_timeout")
+            if value:
+                self.START_TIMEOUT = value
             kwargs.pop("start_timeout")
-        else:
-            self.START_TIME_OUT = 60
 
         super().__init__(
             name,
