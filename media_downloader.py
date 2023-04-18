@@ -571,7 +571,7 @@ def main():
 
         set_max_concurrent_transmissions(client, app.max_concurrent_transmissions)
 
-        client.start()
+        asyncio.run(client.start())
         logger.success("Successfully started (Press Ctrl+C to stop)")
 
         if app.bot_token:
@@ -591,7 +591,7 @@ def main():
         logger.exception("{}", e)
     finally:
         if client.is_connected:
-            client.stop()
+            asyncio.run(client.stop())
         app.is_running = False
         for task in tasks:
             task.cancel()

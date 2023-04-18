@@ -20,7 +20,7 @@ class HookClient(Client):
         if "start_timeout" in kwargs:
             value = kwargs.get("start_timeout")
             if value:
-                self.START_TIMEOUT = value
+                self.START_TIME_OUT = value
             kwargs.pop("start_timeout")
 
         super().__init__(
