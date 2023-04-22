@@ -374,7 +374,7 @@ async def download_media(
 
                         return DownloadStatus.SkipDownload, None
             else:
-                return DownloadStatus.SkipDownload, message
+                return DownloadStatus.SkipDownload, None
 
             break
     except Exception as e:
@@ -475,7 +475,6 @@ async def worker(client: pyrogram.client.Client):
     while app.is_running:
         try:
             item = await queue.get()
-            print(item)
             message = item[0]
             node: TaskNode = item[1]
 
