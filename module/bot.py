@@ -1,7 +1,8 @@
 """Bot for media downloader"""
 
+import asyncio
 import os
-from typing import Callable, List
+from typing import Callable, List, Union
 
 import pyrogram
 from pyrogram import types
@@ -11,12 +12,18 @@ from ruamel import yaml
 from module.app import (
     Application,
     ChatDownloadConfig,
-    DownloadStatus,
-    DownloadTaskNode,
+    ForwardStatus,
     Language,
+    TaskNode,
+    TaskType,
 )
 from module.filter import Filter
-from module.pyrogram_extension import report_bot_status
+from module.pyrogram_extension import (
+    check_user_permission,
+    get_message_with_retry,
+    report_bot_forward_status,
+    report_bot_status,
+)
 from utils.format import extract_info_from_link, replace_date_time, validate_title
 from utils.meta_data import MetaData
 
@@ -32,7 +39,7 @@ class DownloadBot:
     def __init__(self):
         self.bot = None
         self.client = None
-        self.download_task: Callable = None
+        self.add_download_task: Callable = None
         self.download_chat_task: Callable = None
         self.app = None
         self.listen_forward_chat: dict = {}
@@ -41,11 +48,40 @@ class DownloadBot:
         self.config_path = os.path.join(os.path.abspath("."), "bot.yaml")
         self.download_command: dict = {}
         self.filter = Filter()
+        self.bot_info = None
+        self.task_node: dict = {}
+        self.is_running = True
 
         meta = MetaData("2022/03/08 10:00:00", 0, "", 0, 0, 0, "", 0)
         self.filter.set_meta_data(meta)
 
         self.download_filter: List[str] = []
+        self.task_id: int = 0
+
+    def gen_task_id(self) -> int:
+        """Gen task id"""
+        self.task_id += 1
+        return self.task_id
+
+    def add_task_node(self, node: TaskNode):
+        """Add task node"""
+        self.task_node[node.task_id] = node
+
+    def remove_task_node(self, task_id: int):
+        """Remove task node"""
+        self.task_node.pop(task_id)
+
+    async def update_reply_message(self):
+        """Update reply message"""
+        while self.is_running:
+            for key, value in self.task_node.copy().items():
+                if value.is_running:
+                    await report_bot_status(self.bot, value)
+
+            for key, value in self.task_node.copy().items():
+                if value.is_running and value.is_finish():
+                    self.task_node.pop(key)
+            await asyncio.sleep(3)
 
     def assign_config(self, _config: dict):
         """assign config from str.
@@ -75,7 +111,7 @@ class DownloadBot:
         self,
         app: Application,
         client: pyrogram.Client,
-        download_task: Callable,
+        add_download_task: Callable,
         download_chat_task: Callable,
     ):
         """Start bot"""
@@ -162,7 +198,7 @@ class DownloadBot:
 
         self.client.add_handler(MessageHandler(listen_forward_msg))
 
-        self.download_task = download_task
+        self.add_download_task = add_download_task
         self.download_chat_task = download_chat_task
 
         self.app = app
@@ -177,10 +213,14 @@ class DownloadBot:
 
         await self.bot.start()
 
+        self.bot_info = self.bot.get_me()
+
         # 添加命令列表
         await self.bot.set_bot_commands(commands)
         # TODO: add admin
         # self.bot.set_my_commands(commands, scope=types.BotCommandScopeChatAdministrators(self.app.))
+
+        # _bot.app.loop.create_task(_bot.update_reply_message())
 
 
 _bot = DownloadBot()
@@ -189,16 +229,17 @@ _bot = DownloadBot()
 async def start_download_bot(
     app: Application,
     client: pyrogram.Client,
-    download_task: Callable,
+    add_download_task: Callable,
     download_chat_task: Callable,
 ):
     """Start download bot"""
-    await _bot.start(app, client, download_task, download_chat_task)
+    await _bot.start(app, client, add_download_task, download_chat_task)
 
 
 def stop_download_bot():
     """Stop download bot"""
     _bot.update_config()
+    _bot.is_running = False
 
 
 async def help_command(client: pyrogram.Client, message: pyrogram.types.Message):
@@ -323,6 +364,39 @@ async def add_filter(client: pyrogram.Client, message: pyrogram.types.Message):
     return
 
 
+async def direct_download(
+    download_bot: DownloadBot,
+    chat_id: Union[str, int],
+    message: pyrogram.types.Message,
+    download_message: pyrogram.types.Message,
+):
+    """Direct Download"""
+
+    replay_message = "Direct download..."
+    last_reply_message = await download_bot.bot.send_message(
+        message.from_user.id, replay_message, reply_to_message_id=message.id
+    )
+
+    node = TaskNode(
+        chat_id=chat_id,
+        from_user_id=message.from_user.id,
+        reply_message_id=last_reply_message.id,
+        replay_message=replay_message,
+        limit=1,
+        bot=download_bot.bot,
+        task_id=_bot.gen_task_id(),
+    )
+
+    _bot.add_task_node(node)
+
+    await _bot.add_download_task(
+        download_message,
+        node,
+    )
+
+    node.is_running = True
+
+
 async def download_forward_media(
     client: pyrogram.Client, message: pyrogram.types.Message
 ):
@@ -342,24 +416,9 @@ async def download_forward_media(
     else:
         msg = "1. Direct download, directly forward the message to your robot\n\n"
 
-    if message.media:
-        if getattr(message, message.media.value):
-            download_status, _ = await _bot.download_task(
-                client,
-                message,
-                _bot.app.media_types,
-                _bot.app.file_formats,
-                client.name,
-            )
-
-            await _bot.bot.send_message(
-                message.from_user.id,
-                f"from `{message.from_user.first_name}`\n"
-                f"* message id : `{message.id}`\n"
-                f"* status: **{download_status.name}**",
-            )
-
-            return
+    if message.media and getattr(message, message.media.value):
+        await direct_download(_bot, message.from_user.id, message, message)
+        return
 
     await client.send_message(
         message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML
@@ -400,38 +459,19 @@ async def download_from_link(client: pyrogram.Client, message: pyrogram.types.Me
     if chat_id:
         entity = await _bot.client.get_chat(chat_id)
     if entity:
-        chat_title = entity.title
-        reply_message = f"from {chat_title} "
-        chat_download_config = ChatDownloadConfig()
         if message_id:
-            # download signal message
-            limit = 1
-            chat_download_config.last_read_message_id = message_id
-            reply_message += f"download message id = {message_id} !\n......"
-            last_reply_message = await client.send_message(
-                message.from_user.id, reply_message
+            download_message = await get_message_with_retry(
+                _bot.client, chat_id, message_id
             )
-            node = DownloadTaskNode(
-                chat_id=entity.id,
-                from_user_id=message.from_user.id,
-                reply_message_id=last_reply_message.id,
-                replay_message=reply_message,
-            )
-
-            await _bot.download_chat_task(
-                _bot.client,
-                chat_download_config,
-                node,
-                limit,
-                _bot.bot,
-            )
-            await client.edit_message_text(
-                message.from_user.id,
-                last_reply_message.id,
-                f"{node.reply_message}\n"
-                f"total task is {chat_download_config.total_task}",
-            )
-            return
+            if download_message:
+                await direct_download(_bot, entity.id, message, download_message)
+            else:
+                client.send_message(
+                    message.from_user.id,
+                    f"From {entity.title} download {message_id} error!",
+                    reply_to_message_id=message.id,
+                )
+        return
 
     await client.send_message(
         message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML
@@ -510,19 +550,16 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
             last_reply_message = await client.send_message(
                 message.from_user.id, reply_message, reply_to_message_id=message.id
             )
-            node = DownloadTaskNode(
+            node = TaskNode(
                 chat_id=entity.id,
                 from_user_id=message.from_user.id,
                 reply_message_id=last_reply_message.id,
                 replay_message=reply_message,
+                limit=limit,
+                bot=_bot.bot,
+                task_id=_bot.gen_task_id(),
             )
-            await _bot.download_chat_task(
-                _bot.client,
-                chat_download_config,
-                node,
-                limit,
-                _bot.bot,
-            )
+            await _bot.download_chat_task(_bot.client, chat_download_config, node)
     except Exception as e:
         if _bot.app.language is Language.CN:
             await client.send_message(
@@ -539,7 +576,123 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
         return
 
 
+async def get_forward_task_node(
+    client: pyrogram.Client,
+    message: pyrogram.types.Message,
+    src_chat_link: str,
+    dst_chat_link: str,
+    offset_id: int,
+    limit: int,
+    download_filter: str,
+    task_type: TaskType,
+):
+    """Get task node"""
+
+    if limit:
+        if limit < offset_id:
+            raise ValueError("limit id > offset id")
+
+        limit = limit - offset_id + 1
+
+    src_chat_id, _ = extract_info_from_link(src_chat_link)
+    dst_chat_id, _ = extract_info_from_link(dst_chat_link)
+
+    if not src_chat_id or not dst_chat_id:
+        if _bot.app.language is Language.CN:
+            await client.send_message(
+                message.from_user.id, "无效的聊天链接", reply_to_message_id=message.id
+            )
+        else:
+            await client.send_message(
+                message.from_user.id,
+                "Invalid chat link",
+                reply_to_message_id=message.id,
+            )
+        return None
+
+    try:
+        src_chat = await _bot.client.get_chat(src_chat_id)
+        dst_chat = await _bot.client.get_chat(dst_chat_id)
+    except Exception:
+        if _bot.app.language is Language.CN:
+            await client.send_message(
+                message.from_user.id, "无效的聊天链接", reply_to_message_id=message.id
+            )
+        else:
+            await client.send_message(
+                message.from_user.id,
+                "Invalid chat link",
+                reply_to_message_id=message.id,
+            )
+        return None
+
+    me = await client.get_me()
+    if dst_chat.id == me.id:
+        if _bot.app.language is Language.CN:
+            # TODO: when bot receive message judge if download
+            await client.send_message(
+                message.from_user.id,
+                "不能转发给该机器人，会导致无限循环",
+                reply_to_message_id=message.id,
+            )
+        else:
+            await client.send_message(
+                message.from_user.id,
+                "Can not forward to self",
+                reply_to_message_id=message.id,
+            )
+        return None
+
+    if download_filter:
+        download_filter = replace_date_time(download_filter)
+        res, err = _bot.filter.check_filter(download_filter)
+        if not res:
+            await client.send_message(
+                message.from_user.id, err, reply_to_message_id=message.id
+            )
+
+    last_reply_message = await client.send_message(
+        message.from_user.id,
+        "Forwarding message, please wait...",
+        reply_to_message_id=message.id,
+    )
+
+    node = TaskNode(
+        chat_id=src_chat.id,
+        from_user_id=message.from_user.id,
+        upload_telegram_chat_id=dst_chat_id,
+        reply_message_id=last_reply_message.id,
+        replay_message=last_reply_message.text,
+        has_protected_content=src_chat.has_protected_content,
+        download_filter=download_filter,
+        limit=limit,
+        bot=_bot.bot,
+        task_id=_bot.gen_task_id(),
+        task_type=task_type,
+    )
+    _bot.add_task_node(node)
+
+    node.upload_user = _bot.client
+    if not dst_chat.type is pyrogram.enums.ChatType.BOT:
+        has_permission = await check_user_permission(_bot.client, me.id, dst_chat.id)
+        if has_permission:
+            node.upload_user = _bot.bot
+
+    if node.upload_user is _bot.client:
+        await client.edit_message_text(
+            message.from_user.id,
+            last_reply_message.id,
+            "Note that the robot may not be in the target group,"
+            " use the user account to forward",
+            reply_to_message_id=message.id,
+        )
+
+    return node
+
+
 # pylint: disable = R0914
+
+
 async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Message):
     """
     Forwards messages from one chat to another.
@@ -586,149 +739,94 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
         await report_error(client, message)
         return
 
-    if limit:
-        if limit < offset_id:
-            raise ValueError("limit id > offset id")
-
-        limit = limit - offset_id + 1
-
     download_filter = args[5] if len(args) > 5 else None
 
-    src_chat_id, _ = extract_info_from_link(src_chat_link)
-    dst_chat_id, _ = extract_info_from_link(dst_chat_link)
-
-    if not src_chat_id or not dst_chat_id:
-        if _bot.app.language is Language.CN:
-            await client.send_message(
-                message.from_user.id, "无效的聊天链接", reply_to_message_id=message.id
-            )
-        else:
-            await client.send_message(
-                message.from_user.id,
-                "Invalid chat link",
-                reply_to_message_id=message.id,
-            )
-        return
-
-    try:
-        src_chat = await _bot.client.get_chat(src_chat_id)
-        dst_chat = await _bot.client.get_chat(dst_chat_id)
-    except Exception:
-        if _bot.app.language is Language.CN:
-            await client.send_message(
-                message.from_user.id, "无效的聊天链接", reply_to_message_id=message.id
-            )
-        else:
-            await client.send_message(
-                message.from_user.id,
-                "Invalid chat link",
-                reply_to_message_id=message.id,
-            )
-        return
-
-    me = await client.get_me()
-    if dst_chat.id == me.id:
-        if _bot.app.language is Language.CN:
-            # TODO: when bot receive message judge if download
-            await client.send_message(
-                message.from_user.id,
-                "不能转发给该机器人，会导致无限循环",
-                reply_to_message_id=message.id,
-            )
-        else:
-            await client.send_message(
-                message.from_user.id,
-                "Can not forward to self",
-                reply_to_message_id=message.id,
-            )
-        return
-
-    if download_filter:
-        download_filter = replace_date_time(download_filter)
-        res, err = _bot.filter.check_filter(download_filter)
-        if not res:
-            await client.send_message(
-                message.from_user.id, err, reply_to_message_id=message.id
-            )
-
-    last_reply_message = await client.send_message(
-        message.from_user.id,
-        "Forwarding message, please wait...",
-        reply_to_message_id=message.id,
+    node = await get_forward_task_node(
+        client,
+        message,
+        src_chat_link,
+        dst_chat_link,
+        offset_id,
+        limit,
+        download_filter,
+        TaskType.Forward,
     )
 
-    node = DownloadTaskNode(
-        chat_id=src_chat_id,
-        from_user_id=message.from_user.id,
-        upload_telegram_chat_id=dst_chat_id,
-        reply_message_id=last_reply_message.id,
-        replay_message=last_reply_message.text,
-    )
+    if not node:
+        return
 
-    if not src_chat.has_protected_content:
+    if not node.has_protected_content:
         last_read_message_id = offset_id
         try:
             async for item in _bot.client.get_chat_history(
-                src_chat.id,
+                node.chat_id,
                 limit=limit,
                 offset_id=offset_id,
                 reverse=True,
             ):
-                # TODO if not exist filter forward 10 per
-                # await _bot.client.forward_messages(dst_chat_id, src_chat_id, list(range(i, i + 10)))
-                if download_filter:
-                    meta_data = MetaData()
-                    caption = item.caption
-                    if caption:
-                        caption = validate_title(caption)
-                        _bot.app.set_caption_name(
-                            src_chat_id, item.media_group_id, caption
-                        )
-                    else:
-                        caption = _bot.app.get_caption_name(
-                            src_chat_id, item.media_group_id
-                        )
-
-                    meta_data.get_meta_data(item)
-                    if not _bot.filter.exec(download_filter):
-                        continue
-                status = DownloadStatus.SuccessDownload
-                try:
-                    await _bot.client.forward_messages(
-                        dst_chat.id, src_chat.id, item.id
-                    )
-                except Exception:
-                    status = DownloadStatus.FailedDownload
-
-                await report_bot_status(client, node, item, status)
-                last_read_message_id = item.id
-
+                if (
+                    forward_normal_content(client, node, item)
+                    is ForwardStatus.SuccessForward
+                ):
+                    last_read_message_id = item.id
         except Exception as e:
             if _bot.app.language is Language.CN:
                 await client.edit_message_text(
                     message.from_user.id,
-                    last_reply_message.id,
-                    f"转发消息 {last_read_message_id} - {offset_id + limit} 失败 : {e}",
+                    node.reply_message_id,
+                    f"转发消息 {last_read_message_id}" f" - {offset_id + limit} 失败 : {e}",
                 )
             else:
                 await client.edit_message_text(
                     message.from_user.id,
-                    last_reply_message.id,
-                    f"Error forwarding message {last_read_message_id} - {offset_id + limit} {e}",
+                    node.reply_message_id,
+                    f"Error forwarding message {last_read_message_id}"
+                    f" - {offset_id + limit} {e}",
                 )
 
+        await report_bot_status(client, node, immediate_reply=True)
     else:
-        chat_download_config = ChatDownloadConfig()
-        chat_download_config.last_read_message_id = offset_id
-        chat_download_config.download_filter = download_filter
+        await forward_msg(node, offset_id)
 
-        await _bot.download_chat_task(
-            _bot.client,
-            chat_download_config,
-            node,
-            limit,
-            _bot.bot,
+
+async def forward_normal_content(
+    client: pyrogram.Client, node: TaskNode, message: pyrogram.types.Message
+):
+    """Forward normal content"""
+
+    forward_ret = ForwardStatus.SuccessForward
+    if node.download_filter:
+        meta_data = MetaData()
+        caption = message.caption
+        if caption:
+            caption = validate_title(caption)
+            _bot.app.set_caption_name(node.chat_id, message.media_group_id, caption)
+        else:
+            caption = _bot.app.get_caption_name(node.chat_id, message.media_group_id)
+        meta_data.get_meta_data(message)
+        if not _bot.filter.exec(node.download_filter):
+            forward_ret = ForwardStatus.SkipForward
+            await report_bot_forward_status(client, node, forward_ret)
+            return
+    try:
+        await _bot.client.forward_messages(
+            node.upload_telegram_chat_id, node.chat_id, message.id
         )
+    except Exception:
+        forward_ret = ForwardStatus.FailedForward
+
+    await report_bot_forward_status(client, node, forward_ret)
+    return forward_ret
+
+
+async def forward_msg(node: TaskNode, message_id: int):
+    """Forward normal message"""
+
+    chat_download_config = ChatDownloadConfig()
+    chat_download_config.last_read_message_id = message_id
+    chat_download_config.download_filter = node.download_filter
+
+    await _bot.download_chat_task(_bot.client, chat_download_config, node)
 
 
 async def set_listen_forward_msg(
@@ -764,29 +862,27 @@ async def set_listen_forward_msg(
     src_chat_link = args[1]
     dst_chat_link = args[2]
 
-    src_chat_id, _ = extract_info_from_link(src_chat_link)
-    dst_chat_id, _ = extract_info_from_link(dst_chat_link)
+    download_filter = args[3] if len(args) > 3 else None
 
-    try:
-        src_chat = await _bot.client.get_chat(src_chat_id)
-        dst_chat = await _bot.client.get_chat(dst_chat_id)
-    except Exception:
-        if _bot.app.language is Language.CN:
-            await client.send_message(
-                message.from_user.id, "无效的聊天链接", reply_to_message_id=message.id
-            )
-        else:
-            await client.send_message(
-                message.from_user.id,
-                "Invalid chat link",
-                reply_to_message_id=message.id,
-            )
+    node = await get_forward_task_node(
+        client,
+        message,
+        src_chat_link,
+        dst_chat_link,
+        0,
+        1,
+        download_filter,
+        task_type=TaskType.ListenForward,
+    )
+
+    if not node:
         return
 
-    _bot.listen_forward_chat[src_chat.id] = (
-        dst_chat.id,
-        replace_date_time(args[3]) if len(args) > 3 else None,
-    )
+    if node.chat_id in _bot.listen_forward_chat:
+        _bot.remove_task_node(_bot.listen_forward_chat[node.chat_id].task_id)
+
+    node.is_running = True
+    _bot.listen_forward_chat[node.chat_id] = node
 
 
 async def listen_forward_msg(client: pyrogram.Client, message: pyrogram.types.Message):
@@ -800,30 +896,14 @@ async def listen_forward_msg(client: pyrogram.Client, message: pyrogram.types.Me
     """
 
     if message.chat and message.chat.id in _bot.listen_forward_chat:
-        chat_id, download_filter = _bot.listen_forward_chat[message.chat.id]
+        node = _bot.listen_forward_chat[message.chat.id]
 
-        last_reply_message = await client.send_message(
-            message.from_user.id, "Forwarding message, please wait..."
-        )
-        if not message.chat.has_protected_content:
-            await _bot.client.forward_messages(
-                chat_id=chat_id, from_chat_id=message.chat.id, message_ids=message.id
-            )
+        # TODO(tangyoha):fix run time change protected content
+        if not node.has_protected_content:
+            await forward_normal_content(client, node, message)
+            await report_bot_status(client, node, immediate_reply=True)
         else:
-            chat_download_config = ChatDownloadConfig()
-            chat_download_config.last_read_message_id = message.id
-            chat_download_config.download_filter = download_filter
-            node = DownloadTaskNode(
-                chat_id=message.chat.id,
-                from_user_id=message.from_user.id,
-                upload_telegram_chat_id=chat_id,
-                reply_message_id=last_reply_message.id,
-                replay_message=last_reply_message.text,
-            )
-            await _bot.download_chat_task(
-                _bot.client,
-                chat_download_config,
+            await _bot.add_download_task(
+                message,
                 node,
-                1,
-                _bot.bot,
             )

@@ -12,17 +12,18 @@ from loguru import logger
 from pyrogram.types import Audio, Document, Photo, Video, VideoNote, Voice
 from rich.logging import RichHandler
 
-from module.app import Application, ChatDownloadConfig, DownloadStatus, DownloadTaskNode
+from module.app import Application, ChatDownloadConfig, DownloadStatus, TaskNode
 from module.bot import start_download_bot, stop_download_bot
+from module.download_stat import update_download_status
 from module.pyrogram_extension import (
     fetch_message,
     get_extension,
     record_download_status,
-    report_bot_status,
+    report_bot_download_status,
     set_max_concurrent_transmissions,
     upload_telegram_chat,
 )
-from module.web import get_flask_app, update_download_status
+from module.web import get_flask_app
 from utils.format import truncate_filename, validate_title
 from utils.log import LogFilter
 from utils.meta import print_meta
@@ -49,7 +50,7 @@ logger.add(
 )
 
 queue: asyncio.Queue = asyncio.Queue()
-RETRY_TIME_OUT = 1
+RETRY_TIME_OUT = 3
 
 logging.getLogger("pyrogram.session.session").addFilter(LogFilter())
 logging.getLogger("pyrogram.client").addFilter(LogFilter())
@@ -74,8 +75,12 @@ def _check_download_finish(media_size: int, download_path: str, ui_file_name: st
     if media_size == download_size:
         logger.success("Media downloaded - {}", ui_file_name)
     else:
-        logger.warning("Media downloaded with wrong size: {}, actual: {}, file name: {}",
-                       download_size, media_size, ui_file_name)
+        logger.warning(
+            "Media downloaded with wrong size: {}, actual: {}, file name: {}",
+            download_size,
+            media_size,
+            ui_file_name,
+        )
         os.remove(download_path)
         raise pyrogram.errors.exceptions.bad_request_400.BadRequest()
 
@@ -184,8 +189,7 @@ async def _get_media_meta(
     """
     if _type in ["audio", "document", "video"]:
         # pylint: disable = C0301
-        file_format: Optional[str] = media_obj.mime_type.split(
-            "/")[-1]  # type: ignore
+        file_format: Optional[str] = media_obj.mime_type.split("/")[-1]  # type: ignore
     else:
         file_format = None
 
@@ -203,8 +207,7 @@ async def _get_media_meta(
     if _type in ["voice", "video_note"]:
         # pylint: disable = C0209
         file_format = media_obj.mime_type.split("/")[-1]  # type: ignore
-        file_save_path = app.get_file_save_path(
-            _type, dirname, datetime_dir_name)
+        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
         file_name = "{} - {}_{}.{}".format(
             message.id,
             _type,
@@ -226,10 +229,8 @@ async def _get_media_meta(
             )
         else:
             # file_name = file_name.split(".")[0]
-            _, file_name_without_suffix = os.path.split(
-                os.path.normpath(file_name))
-            file_name, file_name_suffix = os.path.splitext(
-                file_name_without_suffix)
+            _, file_name_without_suffix = os.path.split(os.path.normpath(file_name))
+            file_name, file_name_suffix = os.path.splitext(file_name_without_suffix)
 
         if caption:
             caption = validate_title(caption)
@@ -241,18 +242,58 @@ async def _get_media_meta(
             file_name = f"{message.photo.file_unique_id}"
 
         gen_file_name = (
-            app.get_file_name(message.id, file_name,
-                              caption) + file_name_suffix
+            app.get_file_name(message.id, file_name, caption) + file_name_suffix
         )
 
-        file_save_path = app.get_file_save_path(
-            _type, dirname, datetime_dir_name)
+        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
 
-        temp_file_name = os.path.join(
-            app.temp_save_path, dirname, gen_file_name)
+        temp_file_name = os.path.join(app.temp_save_path, dirname, gen_file_name)
 
         file_name = os.path.join(file_save_path, gen_file_name)
     return truncate_filename(file_name), truncate_filename(temp_file_name), file_format
+
+
+async def add_download_task(message: pyrogram.types.Message, node: TaskNode):
+    """Add Download task"""
+    await queue.put((message, node))
+    node.total_task += 1
+
+
+async def download_task(
+    client: pyrogram.Client, message: pyrogram.types.Message, node: TaskNode
+):
+    """Download and Forward media"""
+
+    download_status, file_name = await download_media(
+        client, message, app.media_types, app.file_formats, node.chat_id, node.task_id
+    )
+
+    if not node.bot:
+        app.set_download_id(node.chat_id, message.id, download_status)
+
+    await upload_telegram_chat(
+        client,
+        node.upload_user if node.upload_user else client,
+        app,
+        node,
+        message,
+        file_name,
+        download_status,
+    )
+
+    await report_bot_download_status(
+        node.bot,
+        node,
+        download_status,
+        os.path.getsize(file_name) if file_name else 0,
+    )
+
+    # rclone upload
+    if (
+        not node.upload_telegram_chat_id
+        and download_status is DownloadStatus.SuccessDownload
+    ):
+        await app.upload_file(file_name)
 
 
 # pylint: disable = R0915,R0914
@@ -265,6 +306,7 @@ async def download_media(
     media_types: List[str],
     file_formats: dict,
     chat_id: Union[int, str],
+    task_id: int = 0,
 ):
     """
     Download media from Telegram.
@@ -322,7 +364,6 @@ async def download_media(
 
             if _can_download(_type, file_formats, file_format):
                 if _is_exist(file_name):
-
                     file_size = os.path.getsize(file_name)
                     if file_size or file_size == media_size:
                         logger.info(
@@ -330,9 +371,10 @@ async def download_media(
                             message.id,
                             ui_file_name,
                         )
+
                         return DownloadStatus.SkipDownload, None
             else:
-                return DownloadStatus.SkipDownload, None
+                return DownloadStatus.SkipDownload, message
 
             break
     except Exception as e:
@@ -360,6 +402,7 @@ async def download_media(
                     total_byte,
                     ui_file_name,
                     task_start_time,
+                    task_id,
                 ),
             )
 
@@ -383,8 +426,7 @@ async def download_media(
                 )
         except pyrogram.errors.exceptions.flood_420.FloodWait as wait_err:
             await asyncio.sleep(wait_err.value)
-            logger.warning("Message[{}]: FlowWait {}",
-                           message.id, wait_err.value)
+            logger.warning("Message[{}]: FlowWait {}", message.id, wait_err.value)
             _check_timeout(retry, message.id)
         except TypeError:
             # pylint: disable = C0301
@@ -433,65 +475,24 @@ async def worker(client: pyrogram.client.Client):
     while app.is_running:
         try:
             item = await queue.get()
+            print(item)
             message = item[0]
-            bot: pyrogram.Client = item[1]
-            node: DownloadTaskNode = item[2]
-            download_status, file_name = await download_media(
-                client, message, app.media_types, app.file_formats, node.chat_id
-            )
+            node: TaskNode = item[1]
 
-            if not bot:
-                app.set_download_id(node.chat_id, message.id, download_status)
-            elif node.reply_message_id:
-                await report_bot_status(bot, node, message, download_status, os.path.getsize(file_name) if file_name else 0)
-
-            # upload telegram
-            if node.upload_telegram_chat_id:
-                if download_status is DownloadStatus.SuccessDownload:
-                    try:
-                        await upload_telegram_chat(
-                            client,
-                            app,
-                            node.upload_telegram_chat_id,
-                            message,
-                            file_name,
-                        )
-                    except Exception as e:
-                        logger.exception(f"Upload file {file_name} error: {e}")
-                    if app.after_upload_telegram_delete:
-                        os.remove(file_name)
-
-                # forward text
-                # if (
-                #     download_status is DownloadStatus.SkipDownload
-                #     and message.text
-                #     and bot
-                # ):
-                #     await upload_telegram_chat(
-                #         client, app, node.upload_telegram_chat_id, message, file_name
-                #     )
-
-            # rclone upload
-            if (
-                not node.upload_telegram_chat_id
-                and download_status is DownloadStatus.SuccessDownload
-            ):
-                await app.upload_file(file_name)
+            await download_task(client, message, node)
         except Exception as e:
             logger.exception(f"{e}")
 
 
-async def download_task(
+async def download_chat_task(
     client: pyrogram.Client,
     chat_download_config: ChatDownloadConfig,
-    node: DownloadTaskNode,
-    limit: int = 0,
-    bot: pyrogram.Client = None,
+    node: TaskNode,
 ):
     """Download all task"""
     messages_iter = client.get_chat_history(
         node.chat_id,
-        limit=limit,
+        limit=node.limit,
         offset_id=chat_download_config.last_read_message_id,
         reverse=True,
     )
@@ -502,7 +503,7 @@ async def download_task(
         )
 
         for message in skipped_messages:
-            await queue.put((message, bot, node))
+            await add_download_task(message, node)
             chat_download_config.total_task += 1
 
     async for message in messages_iter:  # type: ignore
@@ -513,26 +514,26 @@ async def download_task(
             caption = validate_title(caption)
             app.set_caption_name(node.chat_id, message.media_group_id, caption)
         else:
-            caption = app.get_caption_name(
-                node.chat_id, message.media_group_id)
+            caption = app.get_caption_name(node.chat_id, message.media_group_id)
         meta_data.get_meta_data(message)
         meta_data.message_caption = caption
 
         if not app.need_skip_message(chat_download_config, message.id, meta_data):
-            await queue.put((message, bot, node))
+            await add_download_task(message, node)
             chat_download_config.total_task += 1
         else:
             chat_download_config.downloaded_ids.append(message.id)
 
     chat_download_config.need_check = True
+    node.is_running = True
 
 
 async def download_all_chat(client: pyrogram.Client):
     """Download All chat"""
     for key, value in app.chat_download_config.items():
-        node = DownloadTaskNode(chat_id=key)
+        node = TaskNode(chat_id=key)
         try:
-            await download_task(client, value, node)
+            await download_chat_task(client, value, node)
         except Exception as e:
             logger.exception(f"{e}")
         finally:
@@ -578,22 +579,20 @@ def main():
             target=get_flask_app().run, daemon=True, args=(app.web_host, app.web_port)
         ).start()
 
-        set_max_concurrent_transmissions(
-            client, app.max_concurrent_transmissions)
+        set_max_concurrent_transmissions(client, app.max_concurrent_transmissions)
 
         client.start()
         logger.success("Successfully started (Press Ctrl+C to stop)")
-
-        if app.bot_token:
-            app.loop.create_task(
-                start_download_bot(app, client, download_media, download_task)
-            )
 
         app.loop.create_task(download_all_chat(client))
         for _ in range(app.max_download_task):
             task = app.loop.create_task(worker(client))
             tasks.append(task)
 
+        if app.bot_token:
+            app.loop.create_task(
+                start_download_bot(app, client, add_download_task, download_chat_task)
+            )
         _exec_loop()
     except KeyboardInterrupt:
         logger.info("KeyboardInterrupt!")

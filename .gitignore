@@ -64,3 +64,5 @@ parsetab.py
 local_test/
 .vscode
 TODO.md
+log/
+temp/
