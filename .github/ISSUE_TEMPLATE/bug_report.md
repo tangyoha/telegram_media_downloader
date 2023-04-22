@@ -58,7 +58,7 @@ body:
       description: Also tell us, what did you expect to happen?
       placeholder: Tell us what you expected to happen!
     validations:
-      required: true   
+      required: true
   - type: textarea
     id: current-behavior
     attributes:
