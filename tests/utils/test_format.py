@@ -11,6 +11,7 @@ from utils.format import (
     replace_date_time,
     truncate_filename,
     validate_title,
+    create_progress_bar
 )
 
 sys.path.append("..")  # Adds higher directory to python modules path.
@@ -133,6 +134,17 @@ class FormatTestCase(unittest.TestCase):
         for link, expected_output in test_cases:
             result = extract_info_from_link(link)
             self.assertEqual(result, expected_output)
+
+    def test_create_progress_bar(self):
+        progress = 50
+        progress_bar = create_progress_bar(progress)
+        self.assertEqual(progress_bar, "█████░░░░░")
+
+    def test_create_progress_bar_with_custom_bars(self):
+        progress = 75
+        total_bars = 20
+        progress_bar = create_progress_bar(progress, total_bars)
+        self.assertEqual(progress_bar, "███████████████░░░░░")
 
 
 class TestTruncateFilename(unittest.TestCase):
