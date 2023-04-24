@@ -212,7 +212,7 @@ web_port: 5000
 - **hide_file_name** - 是否隐藏web界面文件名称，默认`false`
 - **web_host** - web界面地址
 - **web_port** - web界面端口
-- **language** - 应用语言，默认为英文(`EN`),可选`CN`（中文）。
+- **language** - 应用语言，默认为英文(`EN`),可选`ZH`（中文）,`RU`,`UA`
 
 ## 执行
 

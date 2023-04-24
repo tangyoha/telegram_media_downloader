@@ -9,15 +9,16 @@ from pyrogram import types
 from pyrogram.handlers import MessageHandler
 from ruamel import yaml
 
+import utils
 from module.app import (
     Application,
     ChatDownloadConfig,
     ForwardStatus,
-    Language,
     TaskNode,
     TaskType,
 )
 from module.filter import Filter
+from module.language import Language, _t
 from module.pyrogram_extension import (
     check_user_permission,
     get_message_with_retry,
@@ -125,36 +126,32 @@ class DownloadBot:
         )
 
         # 命令列表
-        if app.language == Language.CN:
-            commands = [
-                types.BotCommand("help", "帮助"),
-                types.BotCommand("download", "下载视频，使用方法直接输入/download查看"),
-                types.BotCommand("forward", "转发视频，使用方法直接输入/forward查看"),
-                types.BotCommand("listen_forward", "监控转发，使用方法直接输入/listen_forward查看"),
-                types.BotCommand("add_filter", "添加下载过滤器"),
-                types.BotCommand("set_language", "设置语言"),
-            ]
-        else:
-            commands = [
-                types.BotCommand("help", "Help"),
-                types.BotCommand(
-                    "download",
-                    "To download the video, use the method to directly enter /download to view",
+        commands = [
+            types.BotCommand("help", _t("Help")),
+            types.BotCommand(
+                "download",
+                _t(
+                    "To download the video, use the method to directly enter /download to view"
                 ),
-                types.BotCommand(
-                    "forward",
-                    "Forward video, use the method to directly enter /forward to view",
+            ),
+            types.BotCommand(
+                "forward",
+                _t("Forward video, use the method to directly enter /forward to view"),
+            ),
+            types.BotCommand(
+                "listen_forward",
+                _t(
+                    "Listen forward, use the method to directly enter /listen_forward to view"
                 ),
-                types.BotCommand(
-                    "listen_forward",
-                    "Listen forward, use the method to directly enter /listen_forward to view",
+            ),
+            types.BotCommand(
+                "add_filter",
+                _t(
+                    "Add download filter, use the method to directly enter /add_filter to view"
                 ),
-                types.BotCommand(
-                    "add_filter",
-                    "Add download filter, use the method to directly enter /add_filter to view",
-                ),
-                types.BotCommand("set_language", "Set language"),
-            ]
+            ),
+            types.BotCommand("set_language", _t("Set language")),
+        ]
 
         self.bot.add_handler(
             MessageHandler(
@@ -217,10 +214,18 @@ class DownloadBot:
 
         # 添加命令列表
         await self.bot.set_bot_commands(commands)
+
+        admin = await self.client.get_me()
+
+        await self.bot.send_message(
+            admin.id,
+            f"```\n🤖 {_t('Telegram Media Downloader')}\n"
+            f"└─ 🌐 {_t('Version')}: {utils.__version__}```\n",
+        )
         # TODO: add admin
         # self.bot.set_my_commands(commands, scope=types.BotCommandScopeChatAdministrators(self.app.))
 
-        # _bot.app.loop.create_task(_bot.update_reply_message())
+        _bot.app.loop.create_task(_bot.update_reply_message())
 
 
 _bot = DownloadBot()
@@ -253,32 +258,18 @@ async def help_command(client: pyrogram.Client, message: pyrogram.types.Message)
     Returns:
         None
     """
-
-    if _bot.app.language is Language.CN:
-        msg = (
-            "可用命令:\n"
-            "/help - 显示可用命令\n"
-            # "/add_filter - 添加下载的过滤器\n"
-            "/download - 下载消息\n"
-            "/forward - 转发消息\n"
-            "/listen_forward - 监听转发消息\n"
-            "/set_language - 设置语言\n"
-            "**注意**：1表示整个聊天的开始，"
-            "0表示整个聊天的结束\n`[` `]` 表示可选项，非必填\n"
-        )
-    else:
-        msg = (
-            "Available commands:\n"
-            "/help - Show available commands\n"
-            # "/add_filter - Add download filter\n"
-            "/download - Download messages\n"
-            "/forward - Forward messages\n"
-            "/listen_forward - Listen for forwarded messages\n"
-            "/set_language - Set language\n"
-            "Note: 1 means the start of the entire chat,"
-            "0 means the end of the entire chat\n"
-            "`[` `]` means optional, not required\n"
-        )
+    msg = (
+        f"{_t('Available commands:')}\n"
+        f"/help - {_t('Show available commands')}\n"
+        # f"/add_filter - {_t('Add download filter')}\n"
+        f"/download - {_t('Download messages')}\n"
+        f"/forward - {_t('Forward messages')}\n"
+        f"/listen_forward - {_t('Listen for forwarded messages')}\n"
+        f"/set_language - {_t('Set language')}\n"
+        f"{_t('**Note**: 1 means the start of the entire chat')},"
+        f"{_t('0 means the end of the entire chat')}\n"
+        f"`[` `]` {_t('means optional, not required')}\n"
+    )
 
     await client.send_message(message.chat.id, msg)
 
@@ -296,32 +287,28 @@ async def set_language(client: pyrogram.Client, message: pyrogram.types.Message)
     """
 
     if len(message.text.split()) != 2:
-        if _bot.app.language is Language.CN:
-            await client.send_message(
-                message.from_user.id, "无效的命令格式。请使用 /set_language cn/en"
-            )
-        else:
-            await client.send_message(
-                message.from_user.id,
-                "Invalid command format. Please use /set_language cn/en",
-            )
+        await client.send_message(
+            message.from_user.id,
+            _t("Invalid command format. Please use /set_language en/ru/zh/ua"),
+        )
         return
 
     language = message.text.split()[1]
 
-    if language.lower() == "cn":
-        _bot.app.language = Language.CN
-        await client.send_message(message.from_user.id, "语言设置为中文")
+    if language.upper() in Language:
+        _bot.app.set_language(language.upper())
+    if language.lower() == "zh":
+        _bot.app.set_language(Language.ZH)
     elif language.lower() == "en":
-        _bot.app.language = Language.EN
-        await client.send_message(message.from_user.id, "Language set to English")
+        _bot.app.set_language(Language.EN)
+
+    if language.lower() == "zh" or language.lower() == "en":
+        await client.send_message(message.from_user.id, _t("Language set to English"))
     else:
-        if _bot.app.language is Language.CN:
-            await client.send_message(message.from_user.id, "无效的语言选项。请使用 cn/en")
-        else:
-            await client.send_message(
-                message.from_user.id, "Invalid language option. Please use cn/en"
-            )
+        await client.send_message(
+            message.from_user.id,
+            _t("Invalid command format. Please use /set_language en/ru/zh/ua"),
+        )
 
 
 async def add_filter(client: pyrogram.Client, message: pyrogram.types.Message):
@@ -338,15 +325,10 @@ async def add_filter(client: pyrogram.Client, message: pyrogram.types.Message):
 
     args = message.text.split(maxsplit=1)
     if len(args) != 2:
-        if _bot.app.language is Language.CN:
-            await client.send_message(
-                message.from_user.id, "无效的命令格式。请使用 /add_filter 你的过滤规则"
-            )
-        else:
-            await client.send_message(
-                message.from_user.id,
-                "Invalid command format. Please use /add_filter your filter",
-            )
+        await client.send_message(
+            message.from_user.id,
+            _t("Invalid command format. Please use /add_filter your filter"),
+        )
         return
 
     filter_str = replace_date_time(args[1])
@@ -354,13 +336,12 @@ async def add_filter(client: pyrogram.Client, message: pyrogram.types.Message):
     if res:
         _bot.app.down = args[1]
         await client.send_message(
-            message.from_user.id, f"Add download filter : {args[1]}"
+            message.from_user.id, f"{_t('Add download filter')} : {args[1]}"
         )
     else:
-        if _bot.app.language is Language.CN:
-            await client.send_message(message.from_user.id, f"{err}\n检验错误,请重新添加!")
-        else:
-            await client.send_message(message.from_user.id, f"{err}\nPlease try again!")
+        await client.send_message(
+            message.from_user.id, f"{err}\n{_t('Check error, please add again!')}"
+        )
     return
 
 
@@ -411,17 +392,14 @@ async def download_forward_media(
         None
     """
 
-    if _bot.app.language is Language.CN:
-        msg = "1. 直接下载，直接转发消息给你的机器人\n\n"
-    else:
-        msg = "1. Direct download, directly forward the message to your robot\n\n"
-
     if message.media and getattr(message, message.media.value):
         await direct_download(_bot, message.from_user.id, message, message)
         return
 
     await client.send_message(
-        message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML
+        message.from_user.id,
+        f"1. {_t('Direct download, directly forward the message to your robot')}\n\n",
+        parse_mode=pyrogram.enums.ParseMode.HTML,
     )
 
 
@@ -439,13 +417,11 @@ async def download_from_link(client: pyrogram.Client, message: pyrogram.types.Me
 
     if not message.text or not message.text.startswith("https://t.me"):
         return
-    if _bot.app.language is Language.CN:
-        msg = "1. 直接下载单条消息\n<i>https://t.me/12000000/1</i>\n\n"
-    else:
-        msg = (
-            "1. Directly download a single message\n"
-            "<i>https://t.me/12000000/1</i>\n\n"
-        )
+
+    msg = (
+        f"1. {_t('Directly download a single message')}\n"
+        "<i>https://t.me/12000000/1</i>\n\n"
+    )
 
     text = message.text.split()
     if len(text) != 1:
@@ -468,7 +444,7 @@ async def download_from_link(client: pyrogram.Client, message: pyrogram.types.Me
             else:
                 client.send_message(
                     message.from_user.id,
-                    f"From {entity.title} download {message_id} error!",
+                    f"{_t('From')} {entity.title} {_t('download')} {message_id} {_t('error')}!",
                     reply_to_message_id=message.id,
                 )
         return
@@ -483,26 +459,16 @@ async def download_from_link(client: pyrogram.Client, message: pyrogram.types.Me
 
 async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Message):
     """Download from bot"""
-    if _bot.app.language is Language.CN:
-        msg = (
-            "参数错误，请按照参考格式输入:\n\n"
-            "1.下载普通群组所有消息\n"
-            "<i>/download https://t.me/fkdhlg 1 0</i>\n\n"
-            "私密群组(频道) 链接为随便复制一条群组消息链接\n\n"
-            "2.下载从第N条消息开始的到第M条信息结束，"
-            "M为0的时候表示到最后一条信息,过滤器为可选\n"
-            "<i>/download https://t.me/12000000 N M [过滤器]</i>\n\n"
-        )
-    else:
-        msg = (
-            "Parameter error, please enter according to the reference format:\n\n"
-            "1. Download all messages of common group\n"
-            "<i>/download https://t.me/fkdhlg 1 0</i>\n\n"
-            "The private group (channel) link is a random group message link\n\n"
-            "2. The download starts from the N message to the end of the M message. "
-            "When M is 0, it means the last message. The filter is optional\n"
-            "<i>/download https://t.me/12000000 N M [filter]</i>\n\n"
-        )
+
+    msg = (
+        f"{_t('Parameter error, please enter according to the reference format')}:\n\n"
+        f"1. {_t('Download all messages of common group')}\n"
+        "<i>/download https://t.me/fkdhlg 1 0</i>\n\n"
+        f"{_t('The private group (channel) link is a random group message link')}\n\n"
+        f"2. {_t('The download starts from the N message to the end of the M message')}. "
+        f"{_t('When M is 0, it means the last message. The filter is optional')}\n"
+        f"<i>/{_t('download')} https://t.me/12000000 N M [filter]</i>\n\n"
+    )
 
     args = message.text.split(maxsplit=4)
     if not message.text or len(args) < 4:
@@ -561,18 +527,12 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
             )
             await _bot.download_chat_task(_bot.client, chat_download_config, node)
     except Exception as e:
-        if _bot.app.language is Language.CN:
-            await client.send_message(
-                message.from_user.id,
-                "chat输入错误，请输入频道或群组的链接\n\n" f"错误类型：{e.__class__}" f"异常消息：{e}",
-            )
-        else:
-            await client.send_message(
-                message.from_user.id,
-                "chat input error, please enter the channel or group link\n\n"
-                f"Error type: {e.__class__}"
-                f"Exception message: {e}",
-            )
+        await client.send_message(
+            message.from_user.id,
+            f"{_t('chat input error, please enter the channel or group link')}\n\n"
+            f"{_t('Error type')}: {e.__class__}"
+            f"{_t('Exception message')}: {e}",
+        )
         return
 
 
@@ -598,49 +558,32 @@ async def get_forward_task_node(
     dst_chat_id, _ = extract_info_from_link(dst_chat_link)
 
     if not src_chat_id or not dst_chat_id:
-        if _bot.app.language is Language.CN:
-            await client.send_message(
-                message.from_user.id, "无效的聊天链接", reply_to_message_id=message.id
-            )
-        else:
-            await client.send_message(
-                message.from_user.id,
-                "Invalid chat link",
-                reply_to_message_id=message.id,
-            )
+        await client.send_message(
+            message.from_user.id,
+            _t("Invalid chat link"),
+            reply_to_message_id=message.id,
+        )
         return None
 
     try:
         src_chat = await _bot.client.get_chat(src_chat_id)
         dst_chat = await _bot.client.get_chat(dst_chat_id)
     except Exception:
-        if _bot.app.language is Language.CN:
-            await client.send_message(
-                message.from_user.id, "无效的聊天链接", reply_to_message_id=message.id
-            )
-        else:
-            await client.send_message(
-                message.from_user.id,
-                "Invalid chat link",
-                reply_to_message_id=message.id,
-            )
+        await client.send_message(
+            message.from_user.id,
+            _t("Invalid chat link"),
+            reply_to_message_id=message.id,
+        )
         return None
 
     me = await client.get_me()
     if dst_chat.id == me.id:
-        if _bot.app.language is Language.CN:
-            # TODO: when bot receive message judge if download
-            await client.send_message(
-                message.from_user.id,
-                "不能转发给该机器人，会导致无限循环",
-                reply_to_message_id=message.id,
-            )
-        else:
-            await client.send_message(
-                message.from_user.id,
-                "Can not forward to self",
-                reply_to_message_id=message.id,
-            )
+        # TODO: when bot receive message judge if download
+        await client.send_message(
+            message.from_user.id,
+            _t("Cannot be forwarded to this bot, will cause an infinite loop"),
+            reply_to_message_id=message.id,
+        )
         return None
 
     if download_filter:
@@ -684,7 +627,6 @@ async def get_forward_task_node(
             last_reply_message.id,
             "Note that the robot may not be in the target group,"
             " use the user account to forward",
-            reply_to_message_id=message.id,
         )
 
     return node
@@ -708,21 +650,13 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
     async def report_error(client: pyrogram.Client, message: pyrogram.types.Message):
         """Report error"""
 
-        if _bot.app.language is Language.CN:
-            await client.send_message(
-                message.from_user.id,
-                "无效的命令格式。请使用 "
-                "/forward https://t.me/c/src_chat https://t.me/c/dst_chat "
-                "1 400 `[`过滤器`]`\n",
-            )
-        else:
-            await client.send_message(
-                message.from_user.id,
-                "Invalid command format. "
-                "Please use /forward https://t.me/c/src_chat https://t.me/c/dst_chat "
-                "1 400 `[`filter`]`",
-            )
-        return
+        await client.send_message(
+            message.from_user.id,
+            f"{_t('Invalid command format')}."
+            f"{_t('Please use')} "
+            "/forward https://t.me/c/src_chat https://t.me/c/dst_chat "
+            f"1 400 `[`{_t('Filter')}`]`\n",
+        )
 
     args = message.text.split(maxsplit=5)
     if len(args) < 5:
@@ -770,19 +704,12 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
                 ):
                     last_read_message_id = item.id
         except Exception as e:
-            if _bot.app.language is Language.CN:
-                await client.edit_message_text(
-                    message.from_user.id,
-                    node.reply_message_id,
-                    f"转发消息 {last_read_message_id}" f" - {offset_id + limit} 失败 : {e}",
-                )
-            else:
-                await client.edit_message_text(
-                    message.from_user.id,
-                    node.reply_message_id,
-                    f"Error forwarding message {last_read_message_id}"
-                    f" - {offset_id + limit} {e}",
-                )
+            await client.edit_message_text(
+                message.from_user.id,
+                node.reply_message_id,
+                f"{_t('Error forwarding message')} {last_read_message_id}"
+                f" - {offset_id + limit} {e}",
+            )
 
         await report_bot_status(client, node, immediate_reply=True)
     else:
@@ -845,18 +772,11 @@ async def set_listen_forward_msg(
     args = message.text.split(maxsplit=3)
 
     if len(args) < 3:
-        if _bot.app.language is Language.CN:
-            await client.send_message(
-                message.from_user.id,
-                "无效的命令格式。请使用 /listen_forward "
-                "https://t.me/c/src_chat https://t.me/c/dst_chat [过滤器]",
-            )
-        else:
-            await client.send_message(
-                message.from_user.id,
-                "Invalid command format. Please use /listen_forward "
-                "https://t.me/c/src_chat https://t.me/c/dst_chat [filter]\n",
-            )
+        await client.send_message(
+            message.from_user.id,
+            f"{_t('Invalid command format')}. {_t('Please use')} /listen_forward "
+            f"https://t.me/c/src_chat https://t.me/c/dst_chat [{_t('Filter')}]\n",
+        )
         return
 
     src_chat_link = args[1]

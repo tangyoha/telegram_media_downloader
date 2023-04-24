@@ -15,6 +15,7 @@ from rich.logging import RichHandler
 from module.app import Application, ChatDownloadConfig, DownloadStatus, TaskNode
 from module.bot import start_download_bot, stop_download_bot
 from module.download_stat import update_download_status
+from module.language import _t
 from module.pyrogram_extension import (
     fetch_message,
     get_extension,
@@ -73,13 +74,12 @@ def _check_download_finish(media_size: int, download_path: str, ui_file_name: st
     """
     download_size = os.path.getsize(download_path)
     if media_size == download_size:
-        logger.success("Media downloaded - {}", ui_file_name)
+        logger.success(f"{_t('Successfully downloaded')} - {ui_file_name}")
     else:
         logger.warning(
-            "Media downloaded with wrong size: {}, actual: {}, file name: {}",
-            download_size,
-            media_size,
-            ui_file_name,
+            f"{_t('Media downloaded with wrong size')}: "
+            f"{download_size}, {_t('actual')}: "
+            f"{media_size}, {_t('file name')}: {ui_file_name}"
         )
         os.remove(download_path)
         raise pyrogram.errors.exceptions.bad_request_400.BadRequest()
@@ -231,6 +231,10 @@ async def _get_media_meta(
             # file_name = file_name.split(".")[0]
             _, file_name_without_suffix = os.path.split(os.path.normpath(file_name))
             file_name, file_name_suffix = os.path.splitext(file_name_without_suffix)
+            if not file_name_suffix:
+                file_name_suffix = get_extension(
+                    media_obj.file_id, getattr(media_obj, "mime_type", "")
+                )
 
         if caption:
             caption = validate_title(caption)
@@ -271,6 +275,8 @@ async def download_task(
     if not node.bot:
         app.set_download_id(node.chat_id, message.id, download_status)
 
+    file_size = os.path.getsize(file_name) if file_name else 0
+
     await upload_telegram_chat(
         client,
         node.upload_user if node.upload_user else client,
@@ -285,7 +291,7 @@ async def download_task(
         node.bot,
         node,
         download_status,
-        os.path.getsize(file_name) if file_name else 0,
+        file_size,
     )
 
     # rclone upload
@@ -367,9 +373,8 @@ async def download_media(
                     file_size = os.path.getsize(file_name)
                     if file_size or file_size == media_size:
                         logger.info(
-                            "id={} {} already download,download skipped.\n",
-                            message.id,
-                            ui_file_name,
+                            f"id={message.id} {ui_file_name} "
+                            f"{_t('already download,download skipped')}.\n"
                         )
 
                         return DownloadStatus.SkipDownload, None
@@ -379,9 +384,8 @@ async def download_media(
             break
     except Exception as e:
         logger.error(
-            "Message[{}]: could not be downloaded due to following exception:\n[{}].",
-            message.id,
-            e,
+            f"Message[{message.id}]: "
+            f"{_t('could not be downloaded due to following exception')}:\n[{e}].",
             exc_info=True,
         )
         return DownloadStatus.FailedDownload, None
@@ -407,22 +411,22 @@ async def download_media(
             )
 
             if temp_download_path and isinstance(temp_download_path, str):
+                _check_download_finish(media_size, temp_download_path, ui_file_name)
+                await asyncio.sleep(0.5)
                 _move_to_download_path(temp_download_path, file_name)
                 # TODO: if not exist file size or media
-                _check_download_finish(media_size, file_name, ui_file_name)
                 return DownloadStatus.SuccessDownload, file_name
         except pyrogram.errors.exceptions.bad_request_400.BadRequest:
             logger.warning(
-                "Message[{}]: file reference expired, refetching...",
-                message.id,
+                f"Message[{message.id}]: {_t('file reference expired, refetching')}..."
             )
             await asyncio.sleep(RETRY_TIME_OUT)
             message = await fetch_message(client, message)
             if _check_timeout(retry, message.id):
                 # pylint: disable = C0301
                 logger.error(
-                    "Message[{}]: file reference expired for 3 retries, download skipped.",
-                    message.id,
+                    f"Message[{message.id}]: "
+                    f"{_t('file reference expired for 3 retries, download skipped.')}"
                 )
         except pyrogram.errors.exceptions.flood_420.FloodWait as wait_err:
             await asyncio.sleep(wait_err.value)
@@ -431,21 +435,19 @@ async def download_media(
         except TypeError:
             # pylint: disable = C0301
             logger.warning(
-                "Timeout Error occurred when downloading Message[{}], retrying after 5 seconds",
-                message.id,
+                f"{_t('Timeout Error occurred when downloading Message')}[{message.id}], "
+                f"{_t('retrying after')} {RETRY_TIME_OUT} {_t('seconds')}"
             )
             await asyncio.sleep(RETRY_TIME_OUT)
             if _check_timeout(retry, message.id):
                 logger.error(
-                    "Message[{}]: Timing out after 3 reties, download skipped.",
-                    message.id,
+                    f"Message[{message.id}]: {_t('Timing out after 3 reties, download skipped.')}"
                 )
         except Exception as e:
             # pylint: disable = C0301
             logger.error(
-                "Message[{}]: could not be downloaded due to following exception:\n[{}].",
-                message.id,
-                e,
+                f"Message[{message.id}]: "
+                f"{_t('could not be downloaded due to following exception')}:\n[{e}].",
                 exc_info=True,
             )
             break
@@ -496,7 +498,7 @@ async def download_chat_task(
         reverse=True,
     )
     if chat_download_config.ids_to_retry:
-        logger.info("Downloading files failed during last run...")
+        logger.info(f"{_t('Downloading files failed during last run')}...")
         skipped_messages: list = await client.get_messages(  # type: ignore
             chat_id=node.chat_id, message_ids=chat_download_config.ids_to_retry
         )
@@ -515,7 +517,8 @@ async def download_chat_task(
         else:
             caption = app.get_caption_name(node.chat_id, message.media_group_id)
         meta_data.get_meta_data(message)
-        meta_data.message_caption = caption
+        if caption:
+            meta_data.message_caption = caption
 
         if not app.need_skip_message(chat_download_config, message.id, meta_data):
             await add_download_task(message, node)
@@ -581,7 +584,7 @@ def main():
         set_max_concurrent_transmissions(client, app.max_concurrent_transmissions)
 
         client.start()
-        logger.success("Successfully started (Press Ctrl+C to stop)")
+        logger.success(_t("Successfully started (Press Ctrl+C to stop)"))
 
         app.loop.create_task(download_all_chat(client))
         for _ in range(app.max_download_task):
@@ -594,7 +597,7 @@ def main():
             )
         _exec_loop()
     except KeyboardInterrupt:
-        logger.info("KeyboardInterrupt!")
+        logger.info(_t("KeyboardInterrupt"))
     except Exception as e:
         logger.exception("{}", e)
     finally:
@@ -602,17 +605,17 @@ def main():
         app.is_running = False
         for task in tasks:
             task.cancel()
-        print("Stopped!")
+        logger.info(_t("Stopped!"))
         check_for_updates()
-        logger.info("update config......")
+        logger.info(f"{_t('update config')}......")
         app.update_config()
         if app.bot_token:
             stop_download_bot()
         logger.success(
-            "Updated last read message_id to config file,"
-            "total download {}, total upload file {}",
-            app.total_download_task,
-            app.cloud_drive_config.total_upload_success_file_count,
+            f"{_t('Updated last read message_id to config file')},"
+            f"{_t('total download')} {app.total_download_task}, "
+            f"{_t('total upload file')} "
+            f"{app.cloud_drive_config.total_upload_success_file_count}"
         )
 
 

@@ -23,9 +23,9 @@ from pyrogram.file_id import (
 )
 from pyrogram.mime_types import mime_types
 
-import utils
-from module.app import Application, DownloadStatus, ForwardStatus, Language, TaskNode
+from module.app import Application, DownloadStatus, ForwardStatus, TaskNode
 from module.download_stat import get_download_result
+from module.language import Language, _t
 from utils.format import create_progress_bar, format_byte, truncate_filename
 
 _mimetypes = MimeTypes()
@@ -271,6 +271,7 @@ async def _upload_telegram_chat_message(
         # Download thumbnail
         thumbnail_file = await download_thumbnail(client, app.temp_save_path, message)
         try:
+            # TODO(tangyoha): add more log when upload video more than 2000MB failed
             # Send video to the destination chat
             await upload_user.send_video(
                 chat_id=upload_telegram_chat_id,
@@ -283,8 +284,6 @@ async def _upload_telegram_chat_message(
                 parse_mode=pyrogram.enums.ParseMode.HTML,
             )
         except Exception as e:
-            if thumbnail_file:
-                os.remove(str(thumbnail_file))
             raise e
         finally:
             if thumbnail_file:
@@ -402,11 +401,11 @@ async def report_bot_status(
     if immediate_reply or node.can_reply():
         if node.upload_telegram_chat_id:
             node.forward_msg_detail_str = (
-                "\n📥 Forward\n"
-                f"├─ 📁 Total: {node.total_forward_task}\n"
-                f"├─ ✅ Success:{node.success_forward_task}\n"
-                f"├─ ❌ Failed: {node.failed_forward_task}\n"
-                f"└─ ⏩ Skipped: {node.skip_forward_task}\n"
+                f"\n📥 {_t('Forward')}\n"
+                f"├─ 📁 {_t('Total')}: {node.total_forward_task}\n"
+                f"├─ ✅ {_t('Success')}: {node.success_forward_task}\n"
+                f"├─ ❌ {_t('Failed')}: {node.failed_forward_task}\n"
+                f"└─ ⏩ {_t('Skipped')}: {node.skip_forward_task}\n"
             )
 
         download_result_str = ""
@@ -423,11 +422,11 @@ async def report_bot_status(
                 )
                 progress = int(value["down_byte"] / value["total_size"] * 100)
                 download_result_str += (
-                    f" ├─ 🆔 Message ID: {idx}\n"
+                    f" ├─ 🆔 {_t('Message ID')}: {idx}\n"
                     f" │   ├─ 📁 : {temp_file_name}\n"
                     f" │   ├─ 📏 : {format_byte(value['total_size'])}\n"
                     f" │   ├─ 🚀 : {format_byte(value['download_speed'])}/s\n"
-                    f" │   └─ 📊 : {create_progress_bar(progress)}]"
+                    f" │   └─ 📊 : [{create_progress_bar(progress)}]"
                     f" ({progress}%)\n"
                 )
 
@@ -435,13 +434,12 @@ async def report_bot_status(
                 download_result_str = "\n📈 Download Progresses:\n" + download_result_str
 
         new_msg_str = (
-            "```\n🤖 Telegram Media Downloader\n"
-            f"└─ 🌐 Version: {utils.__version__}\n\n"
-            f"📥 Downloading: {format_byte(node.total_download_byte)}\n"
-            f"├─ 📁 Total: {node.total_download_task}\n"
-            f"├─ ✅ Success:{node.success_download_task}\n"
-            f"├─ ❌ Failed: {node.failed_download_task}\n"
-            f"└─ ⏩ Skipped: {node.skip_download_task}\n"
+            f"```\n"
+            f"📥 {_t('Downloading')}: {format_byte(node.total_download_byte)}\n"
+            f"├─ 📁 {_t('Total')}: {node.total_download_task}\n"
+            f"├─ ✅ {_t('Success')}: {node.success_download_task}\n"
+            f"├─ ❌ {_t('Failed')}: {node.failed_download_task}\n"
+            f"└─ ⏩ {_t('Skipped')}: {node.skip_download_task}\n"
             f"{node.forward_msg_detail_str}"
             f"{download_result_str}\n```"
         )
@@ -537,6 +535,8 @@ async def check_user_permission(
         return member and (
             not member.permissions or member.permissions.can_send_media_messages
         )
-    except Exception as e:
-        logger.exception(e)
-        return False
+    except Exception:
+        # logger.exception(e)
+        pass
+
+    return False
