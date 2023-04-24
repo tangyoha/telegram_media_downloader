@@ -5,13 +5,13 @@ import unittest
 from unittest.mock import patch
 
 from utils.format import (
+    create_progress_bar,
     extract_info_from_link,
     format_byte,
     get_byte_from_str,
     replace_date_time,
     truncate_filename,
     validate_title,
-    create_progress_bar
 )
 
 sys.path.append("..")  # Adds higher directory to python modules path.
