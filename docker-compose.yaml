@@ -9,15 +9,15 @@ services:
       - "5000:5000"
     volumes:
       # Here is what you need to edit
-      # - "/root/downloads/:/app/downloads/"
+      - "./downloads/:/app/downloads/"
 
       # The following is what you don't need to edit
       - "./config.yaml:/app/config.yaml"
       - "./data.yaml:/app/data.yaml"
       - "./log/:/app/log/"
-      - "sessions:/app/sessions"
-      - "temp:/app/temp"
+      - "./sessions/:/app/sessions"
+      - "./temp/:/app/temp"
 
-volumes:
-  sessions:
-  temp:
+# volumes:
+#   sessions:
+#   temp:

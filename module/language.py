@@ -102,6 +102,11 @@ translations = {
         "Выбран английский язык",
         "Обрано англійську мову",
     ],
+    "Language set to": [
+        "语言设置为",
+        "Выбран язык",
+        "Обрано мову",
+    ],
     "Invalid command format. Please use /add_filter your filter": [
         "无效的命令格式。请使用 /add_filter 你的过滤规则",
         "Неверный формат команды. Пожалуйста, используйте /add_filter ВашФильтр",

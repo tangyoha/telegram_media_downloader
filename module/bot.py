@@ -295,16 +295,13 @@ async def set_language(client: pyrogram.Client, message: pyrogram.types.Message)
 
     language = message.text.split()[1]
 
-    if language.upper() in Language:
-        _bot.app.set_language(language.upper())
-    if language.lower() == "zh":
-        _bot.app.set_language(Language.ZH)
-    elif language.lower() == "en":
-        _bot.app.set_language(Language.EN)
-
-    if language.lower() == "zh" or language.lower() == "en":
-        await client.send_message(message.from_user.id, _t("Language set to English"))
-    else:
+    try:
+        language = Language[language.upper()]
+        _bot.app.set_language(language)
+        await client.send_message(
+            message.from_user.id, f"{_t('Language set to')} {language.name}"
+        )
+    except KeyError:
         await client.send_message(
             message.from_user.id,
             _t("Invalid command format. Please use /set_language en/ru/zh/ua"),
