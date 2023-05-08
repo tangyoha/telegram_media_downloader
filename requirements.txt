@@ -5,6 +5,6 @@ rich==12.5.1
 TgCrypto==1.2.5
 loguru==0.6.0
 # aligo==5.4.0
-flask==2.2.2
+flask==2.3.2
 ply==3.11
 ruamel.yaml==0.17.21
