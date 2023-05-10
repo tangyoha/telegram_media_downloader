@@ -266,6 +266,7 @@ proxy:
 
 ### 赞助
 
-<img alt="Code style: black" style="width:40%" src="./screenshot/alipay.JPG">
-
-<img alt="Code style: black" style="width:40%" src="./screenshot/wechat.JPG">
+<p>
+<img alt="Code style: black" style="width:30%" src="./screenshot/alipay.JPG">
+<img alt="Code style: black" style="width:30%" src="./screenshot/wechat.JPG">
+</p>
