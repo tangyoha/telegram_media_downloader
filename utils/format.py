@@ -180,7 +180,7 @@ def get_byte_from_str(byte_str: str) -> Optional[int]:
     return None
 
 
-def truncate_filename(path: str, limit: int = 240) -> str:
+def truncate_filename(path: str, limit: int = 230) -> str:
     """Truncate filename to the max len.
 
     Parameters
