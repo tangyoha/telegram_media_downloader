@@ -75,7 +75,9 @@ class CloudDrive:
         Zip local file
         """
 
-        zip_file_name = local_file_path.split(".")[0] + ".zip"
+        file_path_without_extension = os.path.splitext(local_file_path)[0]
+        zip_file_name = file_path_without_extension + ".zip"
+
         with ZipFile(zip_file_name, "w") as zip_writer:
             zip_writer.write(local_file_path)
 

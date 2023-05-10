@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import patch
 
 from utils.format import (
+    create_progress_bar,
     extract_info_from_link,
     format_byte,
     get_byte_from_str,
@@ -134,6 +135,17 @@ class FormatTestCase(unittest.TestCase):
             result = extract_info_from_link(link)
             self.assertEqual(result, expected_output)
 
+    def test_create_progress_bar(self):
+        progress = 50
+        progress_bar = create_progress_bar(progress)
+        self.assertEqual(progress_bar, "█████░░░░░")
+
+    def test_create_progress_bar_with_custom_bars(self):
+        progress = 75
+        total_bars = 20
+        progress_bar = create_progress_bar(progress, total_bars)
+        self.assertEqual(progress_bar, "███████████████░░░░░")
+
 
 class TestTruncateFilename(unittest.TestCase):
     def test_truncate_filename(self):
@@ -155,7 +167,7 @@ class TestTruncateFilename(unittest.TestCase):
                 f.write("test")
 
         long_filename = "a" * 265 + ".txt"
-        long_filename = truncate_filename(long_filename)
+        long_filename = truncate_filename(long_filename) + ".temp"
         try:
             with open(long_filename, "w") as f:
                 f.write("test")
@@ -171,7 +183,7 @@ class TestTruncateFilename(unittest.TestCase):
                 f.write("test")
 
         long_filename = "a" * 265 + ".txt"
-        long_filename = truncate_filename(long_filename)
+        long_filename = truncate_filename(long_filename) + ".temp"
         try:
             with open(long_filename, "w") as f:
                 f.write("test")

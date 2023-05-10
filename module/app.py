@@ -11,18 +11,12 @@ from ruamel import yaml
 
 from module.cloud_drive import CloudDrive, CloudDriveConfig
 from module.filter import Filter
+from module.language import Language, set_language
 from utils.format import replace_date_time, validate_title
 from utils.meta_data import MetaData
 
 _yaml = yaml.YAML()
 # pylint: disable = R0902
-
-
-class Language(Enum):
-    """Language for ui"""
-
-    CN = 1
-    EN = 2
 
 
 class DownloadStatus(Enum):
@@ -34,9 +28,27 @@ class DownloadStatus(Enum):
     Downloading = 4
 
 
-class DownloadTaskNode:
-    """Download task node"""
+class ForwardStatus(Enum):
+    """Forward status"""
 
+    SkipForward = 1
+    SuccessForward = 2
+    FailedForward = 3
+    Forwarding = 4
+
+
+class TaskType(Enum):
+    """Task Type"""
+
+    Download = 1
+    Forward = 2
+    ListenForward = 3
+
+
+class TaskNode:
+    """Task node"""
+
+    # pylint: disable = R0913
     def __init__(
         self,
         chat_id: Union[int, str],
@@ -44,18 +56,46 @@ class DownloadTaskNode:
         reply_message_id: int = 0,
         replay_message: str = None,
         upload_telegram_chat_id: Union[int, str] = None,
+        has_protected_content: bool = False,
+        download_filter: str = "",
+        limit: int = 0,
+        bot=None,
+        task_type: TaskType = TaskType.Download,
+        task_id: int = 0,
     ):
         self.chat_id = chat_id
         self.from_user_id = from_user_id
         self.upload_telegram_chat_id = upload_telegram_chat_id
         self.reply_message_id = reply_message_id
         self.reply_message = replay_message
+        self.has_protected_content = has_protected_content
+        self.download_filter = download_filter
+        self.limit = limit
+        self.bot = bot
+        self.task_id = task_id
+        self.task_type = task_type
+        self.total_task = 0
         self.total_download_task = 0
         self.failed_download_task = 0
         self.success_download_task = 0
         self.skip_download_task = 0
         self.last_reply_time = time.time()
         self.last_edit_msg: str = ""
+        self.total_download_byte = 0
+        self.forward_msg_detail_str: str = ""
+        self.upload_user = None
+        self.total_forward_task: int = 0
+        self.success_forward_task: int = 0
+        self.failed_forward_task: int = 0
+        self.skip_forward_task: int = 0
+        self.is_running: bool = False
+
+    def is_finish(self):
+        """If is finish"""
+        return (
+            self.task_type != TaskType.ListenForward
+            and self.total_task == self.total_download_task
+        )
 
     def stat(self, status: DownloadStatus):
         """
@@ -74,6 +114,16 @@ class DownloadTaskNode:
             self.skip_download_task += 1
         else:
             self.failed_download_task += 1
+
+    def stat_forward(self, status: ForwardStatus):
+        """Stat upload"""
+        self.total_forward_task += 1
+        if status is ForwardStatus.SuccessForward:
+            self.success_forward_task += 1
+        elif status is ForwardStatus.SkipForward:
+            self.skip_forward_task += 1
+        else:
+            self.failed_forward_task += 1
 
     def can_reply(self):
         """
@@ -263,13 +313,12 @@ class Application:
             "max_download_task", self.max_download_task
         )
 
-        language = _config.get("language")
+        language = _config.get("language", "EN")
 
-        if language:
-            if language == "CN":
-                self.language = Language.CN
-            elif language == "EN":
-                self.language = Language.EN
+        try:
+            self.language = Language[language.upper()]
+        except KeyError:
+            pass
 
         self.after_upload_telegram_delete = _config.get(
             "after_upload_telegram_delete", self.after_upload_telegram_delete
@@ -559,6 +608,11 @@ class Application:
             with open(self.app_data_file, "w", encoding="utf-8") as yaml_file:
                 _yaml.dump(self.app_data, yaml_file)
 
+    def set_language(self, language: Language):
+        """Set Language"""
+        self.language = language
+        set_language(language)
+
     def load_config(self):
         """Load user config"""
         with open(
@@ -584,6 +638,7 @@ class Application:
         self.cloud_drive_config.pre_run()
         if not os.path.exists(self.session_file_path):
             os.makedirs(self.session_file_path)
+        set_language(self.language)
 
     def set_caption_name(
         self, chat_id: Union[int, str], media_group_id: Optional[str], caption: str

@@ -203,6 +203,37 @@ class FilterTestCase(unittest.TestCase):
             filter_exec(download_filter, "1024 * 1024 * 1024 * 11 == 11GB"), True
         )
 
+        # test caption
+        self.assertEqual(filter_exec(download_filter, "caption == r'.*#test.*'"), False)
+
+    def test_null_obj(self):
+        download_filter = Filter()
+
+        meta = MetaData()
+
+        message = MockMessage(
+            id=5,
+            media=True,
+            date=datetime(2022, 8, 5, 14, 35, 12),
+            chat_title="test2",
+            caption=None,
+            video=MockPhoto(
+                file_size=1024 * 1024 * 10,
+                date=datetime(2019, 8, 5, 14, 35, 12),
+                file_unique_id="ADAVKJYIFV",
+            ),
+        )
+
+        meta.get_meta_data(message)
+
+        download_filter.set_meta_data(meta)
+
+        # test media_duration
+        self.assertEqual(filter_exec(download_filter, "media_duration < 1"), False)
+        self.assertEqual(filter_exec(download_filter, "media_duration <= 1"), False)
+        self.assertEqual(filter_exec(download_filter, "media_duration != 1"), False)
+        self.assertEqual(filter_exec(download_filter, "media_duration == 1"), False)
+
     def test_str_obj(self):
         download_filter = Filter()
         self.assertRaises(ValueError, filter_exec, download_filter, "213")

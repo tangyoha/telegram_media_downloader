@@ -216,7 +216,7 @@ language: EN
 - **hide_file_name** - Whether to hide the web interface file name, default `false`
 - **web_host** - Web host
 - **web_port** - Web port
-- **language** - Application language, the default is English (`EN`), optional `CN`(Chinese).
+- **language** - Application language, the default is English (`EN`), optional `ZH`(Chinese),`RU`,`UA`
 
 
 

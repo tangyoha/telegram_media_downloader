@@ -180,7 +180,7 @@ def get_byte_from_str(byte_str: str) -> Optional[int]:
     return None
 
 
-def truncate_filename(path: str, limit: int = 240) -> str:
+def truncate_filename(path: str, limit: int = 230) -> str:
     """Truncate filename to the max len.
 
     Parameters
@@ -238,3 +238,16 @@ def validate_title(title: str) -> str:
     r_str = r"[/\\:*?\"<>|\n]"  # '/ \ : * ? " < > |'
     new_title = re.sub(r_str, "_", title)
     return new_title
+
+
+def create_progress_bar(progress, total_bars=10):
+    """
+    example
+    progress = 50
+    progress_bar = create_progress_bar(progress)
+    print(f'Progress: [{progress_bar}] ({progress}%)')
+    """
+    completed_bars = int(progress * total_bars / 100)
+    remaining_bars = total_bars - completed_bars
+    progress_bar = "█" * completed_bars + "░" * remaining_bars
+    return progress_bar
