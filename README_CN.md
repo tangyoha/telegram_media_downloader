@@ -262,3 +262,10 @@ proxy:
 ### 行为守则
 
 帮助我们保持 Telegram Media Downloader 的开放性和包容性。请阅读并遵守我们的[行为准则](./CODE_OF_CONDUCT.md)。
+
+
+### 赞助
+
+<img alt="Code style: black" style="width:40%" src="./screenshot/alipay.JPG">
+
+<img alt="Code style: black" style="width:40%" src="./screenshot/wechat.JPG">

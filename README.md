@@ -261,3 +261,10 @@ Want to file a bug, contribute some code, or improve documentation? Excellent! R
 ### Code of Conduct
 
 Help us keep Telegram Media Downloader open and inclusive. Please read and follow our [Code of Conduct](https://github.com/tangyoha/telegram_media_downloader/blob/master/CODE_OF_CONDUCT.md).
+
+
+### Sponsor
+
+<img alt="Code style: black" style="width:40%" src="./screenshot/alipay.JPG">
+
+<img alt="Code style: black" style="width:40%" src="./screenshot/wechat.JPG">
