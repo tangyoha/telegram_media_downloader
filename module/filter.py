@@ -171,7 +171,7 @@ class BaseFilter:
             return
 
         if p[1] is None or p[3] is None:
-            p[0] = True
+            p[0] = False
             return
         if p[2] == ">":
             p[0] = p[1] > p[3]
@@ -190,7 +190,7 @@ class BaseFilter:
             return
 
         if p[1] is None or p[3] is None:
-            p[0] = True
+            p[0] = False
             return
 
         p[0] = p[1] >= p[3]
@@ -204,7 +204,7 @@ class BaseFilter:
             return
 
         if p[1] is None or p[3] is None:
-            p[0] = True
+            p[0] = False
             return
 
         p[0] = p[1] <= p[3]
@@ -218,7 +218,7 @@ class BaseFilter:
             return
 
         if p[1] is None or p[3] is None:
-            p[0] = True
+            p[0] = False
             return
 
         if isinstance(p[3], ReString):
@@ -245,7 +245,7 @@ class BaseFilter:
             return
 
         if p[1] is None or p[3] is None:
-            p[0] = True
+            p[0] = False
             return
         if isinstance(p[3], ReString):
             if not isinstance(p[1], str):

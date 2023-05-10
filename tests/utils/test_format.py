@@ -169,7 +169,7 @@ class TestTruncateFilename(unittest.TestCase):
         long_filename = "a" * 265 + ".txt"
         long_filename = truncate_filename(long_filename)
         try:
-            with open(long_filename, "w") as f:
+            with open(long_filename + ".temp", "w") as f:
                 f.write("test")
             os.remove(long_filename)
         except Exception:

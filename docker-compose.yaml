@@ -17,7 +17,7 @@ services:
       - "./log/:/app/log/"
       - "./sessions/:/app/sessions"
       - "./temp/:/app/temp"
-
+    #restart: "unless-stopped"
 # volumes:
 #   sessions:
 #   temp:
