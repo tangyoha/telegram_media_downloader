@@ -217,11 +217,14 @@ class DownloadBot:
 
         admin = await self.client.get_me()
 
-        await self.bot.send_message(
-            admin.id,
-            f"```\n🤖 {_t('Telegram Media Downloader')}\n"
-            f"└─ 🌐 {_t('Version')}: {utils.__version__}```\n",
-        )
+        try:
+            await self.bot.send_message(
+                admin.id,
+                f"```\n🤖 {_t('Telegram Media Downloader')}\n"
+                f"└─ 🌐 {_t('Version')}: {utils.__version__}```\n",
+            )
+        except Exception:
+            pass
         # TODO: add admin
         # self.bot.set_my_commands(commands, scope=types.BotCommandScopeChatAdministrators(self.app.))
 
