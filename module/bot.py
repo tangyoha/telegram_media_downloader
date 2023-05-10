@@ -696,7 +696,7 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
                 reverse=True,
             ):
                 if (
-                    forward_normal_content(client, node, item)
+                    await forward_normal_content(client, node, item)
                     is ForwardStatus.SuccessForward
                 ):
                     last_read_message_id = item.id
