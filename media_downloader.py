@@ -480,7 +480,10 @@ async def worker(client: pyrogram.client.Client):
             message = item[0]
             node: TaskNode = item[1]
 
-            await download_task(client, message, node)
+            if node.client:
+                await download_task(node.client, message, node)
+            else:
+                await download_task(client, message, node)
         except Exception as e:
             logger.exception(f"{e}")
 

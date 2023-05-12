@@ -350,6 +350,7 @@ async def direct_download(
     chat_id: Union[str, int],
     message: pyrogram.types.Message,
     download_message: pyrogram.types.Message,
+    client: pyrogram.Client = None,
 ):
     """Direct Download"""
 
@@ -367,6 +368,8 @@ async def direct_download(
         bot=download_bot.bot,
         task_id=_bot.gen_task_id(),
     )
+
+    node.client = client
 
     _bot.add_task_node(node)
 
@@ -393,7 +396,7 @@ async def download_forward_media(
     """
 
     if message.media and getattr(message, message.media.value):
-        await direct_download(_bot, message.from_user.id, message, message)
+        await direct_download(_bot, message.from_user.id, message, message, client)
         return
 
     await client.send_message(
