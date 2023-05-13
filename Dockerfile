@@ -13,8 +13,8 @@ RUN apk add --no-cache ca-certificates && \
     wget https://downloads.rclone.org/rclone-current-linux-amd64.zip && \
     unzip rclone-current-linux-amd64.zip && \
     mv rclone-*-linux-amd64/rclone /app/rclone && \
-    rm rclone-*-linux-amd64 && \
-    rm rclone-current-linux-amd64.zip
+    rm -rf rclone-*-linux-amd64 && \
+    rm -rf rclone-current-linux-amd64.zip
 
 FROM python:3.11.2-alpine As runtime-image
 
