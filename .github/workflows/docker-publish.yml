@@ -15,7 +15,7 @@ jobs:
     outputs:
       compile_image_exists: ${{ steps.check-image.outputs.exists }}
       requirements_modified: ${{ steps.check-requirements.outputs.modified }}
-      check-dockerfile: ${{ steps.check-dockerfile.outputs.modified }}
+      check-dockerfile: ${{ steps.check-dockerfile.outputs.dockerfile_modified }}
 
     steps:
     - name: Checkout
@@ -41,8 +41,8 @@ jobs:
       id: check-dockerfile
       run: |
         MODIFIED=$(git diff --name-only HEAD~1 HEAD | grep -w 'Dockerfile' && echo "true" || echo "false")
-        echo "modified=$MODIFIED" >> $GITHUB_ENV
-        echo "modified=$MODIFIED" >> $GITHUB_OUTPUT
+        echo "dockerfile_modified=$MODIFIED" >> $GITHUB_ENV
+        echo "dockerfile_modified=$MODIFIED" >> $GITHUB_OUTPUT
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
@@ -58,10 +58,10 @@ jobs:
       run: |
         echo ${{ steps.check-image.outputs.exists }}
         echo ${{ steps.check-requirements.outputs.modified }}
-        echo ${{ steps.check-dockerfile.outputs.modified }}
+        echo ${{ steps.check-dockerfile.outputs.dockerfile_modified }}
 
     - name: Build and push compile-image
-      if: ${{ !(steps.check-image.outputs.exists == 'true' && steps.check-requirements.outputs.modified == 'false' && steps.check-dockerfile.outputs.modified == 'false') }}
+      if: ${{ !(steps.check-image.outputs.exists == 'true' && steps.check-requirements.outputs.modified == 'false' && steps.check-dockerfile.outputs.dockerfile_modified == 'false') }}
       uses: docker/build-push-action@v4
       with:
         context: .
