@@ -20,9 +20,9 @@ FROM python:3.11.2-alpine As runtime-image
 
 WORKDIR /app
 
-COPY --from=tangyoha/telegram_media_downloader_compile:latest /app/rclone /app/rclone/rclone
+COPY --from=tangyoha/telegram_media_downloader_compile:master_fix_rclone_error /app/rclone /app/rclone/rclone
 
-COPY --from=tangyoha/telegram_media_downloader_compile:latest /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=tangyoha/telegram_media_downloader_compile:master_fix_rclone_error /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 
 COPY config.yaml data.yaml setup.py media_downloader.py /app/
 COPY module /app/module
