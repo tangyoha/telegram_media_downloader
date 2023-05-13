@@ -8,6 +8,7 @@ RUN apk add --no-cache --virtual .build-deps gcc musl-dev \
     && pip install --trusted-host pypi.python.org -r requirements.txt \
     && apk del .build-deps && rm -rf requirements.txt
 
+# install rclone
 RUN apk add --no-cache ca-certificates && \
     wget https://downloads.rclone.org/rclone-current-linux-amd64.zip && \
     unzip rclone-current-linux-amd64.zip && \
