@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - 'master_fix*'
     tags:
       - 'v*'
       - 'master_fix*'
