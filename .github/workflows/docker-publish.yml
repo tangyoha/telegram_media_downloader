@@ -40,9 +40,9 @@ jobs:
     - name: Check if Dockerfile has been modified
       id: check-dockerfile
       run: |
-        MODIFIED=$(git diff --name-only HEAD~1 HEAD | grep -w 'Dockerfile' && echo "true" || echo "false")
-        echo "dockerfile_modified=${MODIFIED}" >> $GITHUB_ENV
-        echo "dockerfile_modified=${MODIFIED}" >> $GITHUB_OUTPUT
+        DOCKERFILE_MODIFIED=$(git diff --name-only HEAD~1 HEAD | grep -w 'Dockerfile' && echo "true" || echo "false")
+        echo "dockerfile_modified=$DOCKERFILE_MODIFIED" >> $GITHUB_ENV
+        echo "dockerfile_modified=$DOCKERFILE_MODIFIED" >> $GITHUB_OUTPUT
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
