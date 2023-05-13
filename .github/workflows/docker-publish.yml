@@ -25,7 +25,7 @@ jobs:
     - name: Check if compile-image exists on Docker Hub
       id: check-image
       run: |
-        EXISTS=$(curl --silent --fail --head "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader_compile/tags/${{ github.ref_name }}" > /dev/null && echo "true" || echo "false")
+        EXISTS=$(curl --silent --fail --head "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader_compile/tags/latest" > /dev/null && echo "true" || echo "false")
         echo "exists=$EXISTS" >> $GITHUB_ENV
         echo "exists=$EXISTS" >> $GITHUB_OUTPUT
 
