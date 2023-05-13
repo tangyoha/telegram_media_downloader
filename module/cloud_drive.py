@@ -88,6 +88,7 @@ class CloudDrive:
         drive_config: CloudDriveConfig, save_path: str, local_file_path: str
     ):
         """Use Rclone upload file"""
+        upload_status: bool = False
         try:
             remote_dir = (
                 drive_config.remote_dir
@@ -125,16 +126,21 @@ class CloudDrive:
                             os.remove(local_file_path)
                         if drive_config.before_upload_file_zip:
                             os.remove(zip_file_path)
+                        upload_status = True
 
             await proc.wait()
         except Exception as e:
             logger.error(f"{e.__class__} {e}")
+            return False
+
+        return upload_status
 
     @staticmethod
     def aligo_upload_file(
         drive_config: CloudDriveConfig, save_path: str, local_file_path: str
     ):
         """aliyun upload file"""
+        upload_status: bool = False
         if not drive_config.aligo:
             logger.warning("please config aligo! see README.md")
             return
@@ -174,13 +180,18 @@ class CloudDrive:
                 if drive_config.before_upload_file_zip:
                     os.remove(zip_file_path)
 
+                upload_status = True
+
         except Exception as e:
             logger.error(f"{e.__class__} {e}")
+            return False
+
+        return upload_status
 
     @staticmethod
     async def upload_file(
         drive_config: CloudDriveConfig, save_path: str, local_file_path: str
-    ):
+    ) -> bool:
         """Upload file
         Parameters
         ----------
@@ -192,13 +203,20 @@ class CloudDrive:
 
         local_file_path: str
             Local file path
+
+        Returns
+        -------
+        bool
+            True or False
         """
         if not drive_config.enable_upload_file:
             return
 
         if drive_config.upload_adapter == "rclone":
-            await CloudDrive.rclone_upload_file(
+            return await CloudDrive.rclone_upload_file(
                 drive_config, save_path, local_file_path
             )
         elif drive_config.upload_adapter == "aligo":
-            CloudDrive.aligo_upload_file(drive_config, save_path, local_file_path)
+            return CloudDrive.aligo_upload_file(
+                drive_config, save_path, local_file_path
+            )

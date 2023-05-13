@@ -11,6 +11,9 @@ services:
       # Here is what you need to edit
       - "./downloads/:/app/downloads/"
 
+      # Rclone
+      - "$HOME/.config/rclone/:$HOME/.config/rclone/"
+
       # The following is what you don't need to edit
       - "./config.yaml:/app/config.yaml"
       - "./data.yaml:/app/data.yaml"

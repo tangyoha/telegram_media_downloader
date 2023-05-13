@@ -90,6 +90,7 @@ class TaskNode:
         self.skip_forward_task: int = 0
         self.is_running: bool = False
         self.client = None
+        self.upload_success_count: int = 0
 
     def is_finish(self):
         """If is finish"""
@@ -433,11 +434,11 @@ class Application:
             return
 
         if self.cloud_drive_config.upload_adapter == "rclone":
-            await CloudDrive.rclone_upload_file(
+            return await CloudDrive.rclone_upload_file(
                 self.cloud_drive_config, self.save_path, local_file_path
             )
         elif self.cloud_drive_config.upload_adapter == "aligo":
-            await self.loop.run_in_executor(
+            return await self.loop.run_in_executor(
                 self.executor,
                 CloudDrive.aligo_upload_file(
                     self.cloud_drive_config, self.save_path, local_file_path

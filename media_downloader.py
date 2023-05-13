@@ -287,19 +287,20 @@ async def download_task(
         download_status,
     )
 
+    # rclone upload
+    if (
+        not node.upload_telegram_chat_id
+        and download_status is DownloadStatus.SuccessDownload
+    ):
+        if await app.upload_file(file_name):
+            node.upload_success_count += 1
+
     await report_bot_download_status(
         node.bot,
         node,
         download_status,
         file_size,
     )
-
-    # rclone upload
-    if (
-        not node.upload_telegram_chat_id
-        and download_status is DownloadStatus.SuccessDownload
-    ):
-        await app.upload_file(file_name)
 
 
 # pylint: disable = R0915,R0914
