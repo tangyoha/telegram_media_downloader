@@ -6,6 +6,7 @@ on:
       - master
     tags:
       - 'v*'
+      - 'master_fix*'
 
 jobs:
   build-and-push:
@@ -23,7 +24,7 @@ jobs:
     - name: Check if compile-image exists on Docker Hub
       id: check-image
       run: |
-        EXISTS=$(curl --silent --fail --head "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader_compile/tags/latest" > /dev/null && echo "true" || echo "false")
+        EXISTS=$(curl --silent --fail --head "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader_compile/tags/${{ github.ref_name }}" > /dev/null && echo "true" || echo "false")
         echo "exists=$EXISTS" >> $GITHUB_ENV
         echo "exists=$EXISTS" >> $GITHUB_OUTPUT
 
@@ -57,7 +58,7 @@ jobs:
         push: true
         platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le,linux/s390x
         target: compile-image
-        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader_compile:latest
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader_compile:${{ github.ref_name }}
 
     - name: Build and push runtime-image
       uses: docker/build-push-action@v4
@@ -66,6 +67,4 @@ jobs:
         push: true
         platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le,linux/s390x
         target: runtime-image
-        tags: |
-          ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:latest
-          ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:${{ github.ref_name }}
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:${{ github.ref_name }}
