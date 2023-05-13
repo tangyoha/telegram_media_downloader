@@ -17,7 +17,7 @@ RUN apk add --no-cache --virtual .build-deps gcc musl-dev \
 
 FROM python:3.11.2-alpine As runtime-image
 
-ENV PATH=$PATH:/app/rclone
+ENV PATH=$PATH:/app/
 
 WORKDIR /app
 
