@@ -4,10 +4,8 @@ on:
   push:
     branches:
       - master
-      - 'master_fix*'
     tags:
       - 'v*'
-      - 'master_fix*'
 
 jobs:
   build-and-push:
@@ -68,7 +66,7 @@ jobs:
         push: true
         platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le,linux/s390x
         target: compile-image
-        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader_compile:${{ github.ref_name }}
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader_compile:latest
 
     - name: Build and push runtime-image
       uses: docker/build-push-action@v4
@@ -77,4 +75,6 @@ jobs:
         push: true
         platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le,linux/s390x
         target: runtime-image
-        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:${{ github.ref_name }}
+        tags: |
+          ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:latest
+          ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:${{ github.ref_name }}
