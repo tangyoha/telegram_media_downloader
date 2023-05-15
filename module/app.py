@@ -89,6 +89,8 @@ class TaskNode:
         self.failed_forward_task: int = 0
         self.skip_forward_task: int = 0
         self.is_running: bool = False
+        self.client = None
+        self.upload_success_count: int = 0
 
     def is_finish(self):
         """If is finish"""

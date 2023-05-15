@@ -287,19 +287,20 @@ async def download_task(
         download_status,
     )
 
+    # rclone upload
+    if (
+        not node.upload_telegram_chat_id
+        and download_status is DownloadStatus.SuccessDownload
+    ):
+        if await app.upload_file(file_name):
+            node.upload_success_count += 1
+
     await report_bot_download_status(
         node.bot,
         node,
         download_status,
         file_size,
     )
-
-    # rclone upload
-    if (
-        not node.upload_telegram_chat_id
-        and download_status is DownloadStatus.SuccessDownload
-    ):
-        await app.upload_file(file_name)
 
 
 # pylint: disable = R0915,R0914
@@ -480,7 +481,10 @@ async def worker(client: pyrogram.client.Client):
             message = item[0]
             node: TaskNode = item[1]
 
-            await download_task(client, message, node)
+            if node.client:
+                await download_task(node.client, message, node)
+            else:
+                await download_task(client, message, node)
         except Exception as e:
             logger.exception(f"{e}")
 

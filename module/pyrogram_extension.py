@@ -408,6 +408,14 @@ async def report_bot_status(
                 f"└─ ⏩ {_t('Skipped')}: {node.skip_forward_task}\n"
             )
 
+        upload_msg_detail_str: str = ""
+
+        if node.upload_success_count:
+            upload_msg_detail_str = (
+                f"\n📥 {_t('Upload')}\n"
+                f"└─ ✅ {_t('Success')}: {node.upload_success_count}\n"
+            )
+
         download_result_str = ""
         download_result = get_download_result()
         if node.chat_id in download_result:
@@ -441,6 +449,7 @@ async def report_bot_status(
             f"├─ ❌ {_t('Failed')}: {node.failed_download_task}\n"
             f"└─ ⏩ {_t('Skipped')}: {node.skip_download_task}\n"
             f"{node.forward_msg_detail_str}"
+            f"{upload_msg_detail_str}"
             f"{download_result_str}\n```"
         )
 
