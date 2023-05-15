@@ -86,7 +86,7 @@ class CloudDrive:
     @staticmethod
     async def rclone_upload_file(
         drive_config: CloudDriveConfig, save_path: str, local_file_path: str
-    ):
+    ) -> bool:
         """Use Rclone upload file"""
         upload_status: bool = False
         try:
@@ -143,7 +143,7 @@ class CloudDrive:
         upload_status: bool = False
         if not drive_config.aligo:
             logger.warning("please config aligo! see README.md")
-            return
+            return False
 
         try:
             remote_dir = (
@@ -210,13 +210,14 @@ class CloudDrive:
             True or False
         """
         if not drive_config.enable_upload_file:
-            return
+            return False
 
+        ret: bool = False
         if drive_config.upload_adapter == "rclone":
-            return await CloudDrive.rclone_upload_file(
+            ret = await CloudDrive.rclone_upload_file(
                 drive_config, save_path, local_file_path
             )
         elif drive_config.upload_adapter == "aligo":
-            return CloudDrive.aligo_upload_file(
-                drive_config, save_path, local_file_path
-            )
+            ret = CloudDrive.aligo_upload_file(drive_config, save_path, local_file_path)
+
+        return ret

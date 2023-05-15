@@ -434,11 +434,11 @@ class Application:
             return
 
         if self.cloud_drive_config.upload_adapter == "rclone":
-            return await CloudDrive.rclone_upload_file(
+            await CloudDrive.rclone_upload_file(
                 self.cloud_drive_config, self.save_path, local_file_path
             )
         elif self.cloud_drive_config.upload_adapter == "aligo":
-            return await self.loop.run_in_executor(
+            await self.loop.run_in_executor(
                 self.executor,
                 CloudDrive.aligo_upload_file(
                     self.cloud_drive_config, self.save_path, local_file_path

@@ -34,7 +34,7 @@ jobs:
         MODIFIED=$(git diff --name-only HEAD~1 HEAD | grep -w 'requirements.txt' > /dev/null && echo "true" || echo "false")
         echo "modified=$MODIFIED" >> $GITHUB_ENV
         echo "modified=$MODIFIED" >> $GITHUB_OUTPUT
-    
+
     - name: Check if Dockerfile has been modified
       id: check-dockerfile
       run: |
