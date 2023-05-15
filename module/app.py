@@ -427,23 +427,26 @@ class Application:
                             ] = True
         return True
 
-    async def upload_file(self, local_file_path: str):
+    async def upload_file(self, local_file_path: str) -> bool:
         """Upload file"""
 
         if not self.cloud_drive_config.enable_upload_file:
-            return
+            return False
 
+        ret: bool = False
         if self.cloud_drive_config.upload_adapter == "rclone":
-            await CloudDrive.rclone_upload_file(
+            ret = await CloudDrive.rclone_upload_file(
                 self.cloud_drive_config, self.save_path, local_file_path
             )
         elif self.cloud_drive_config.upload_adapter == "aligo":
-            await self.loop.run_in_executor(
+            ret = await self.loop.run_in_executor(
                 self.executor,
                 CloudDrive.aligo_upload_file(
                     self.cloud_drive_config, self.save_path, local_file_path
                 ),
             )
+
+        return ret
 
     def get_file_save_path(
         self, media_type: str, chat_title: str, media_datetime: str
