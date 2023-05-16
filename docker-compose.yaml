@@ -8,8 +8,8 @@ services:
       # Here is what you need to edit
       - "5000:5000"
     #environment:
-    # - http_proxy=http://192.168.101.30:10811
-    # - https_proxy=http://192.168.101.30:10811
+    #  - http_proxy=http://192.168.101.30:10811
+    #  - https_proxy=http://192.168.101.30:10811
     volumes:
       # Here is what you need to edit
       - "./downloads/:/app/downloads/"
