@@ -528,6 +528,7 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
                 bot=_bot.bot,
                 task_id=_bot.gen_task_id(),
             )
+            _bot.add_task_node(node)
             await _bot.download_chat_task(_bot.client, chat_download_config, node)
     except Exception as e:
         await client.send_message(
@@ -553,7 +554,11 @@ async def get_forward_task_node(
 
     if limit:
         if limit < offset_id:
-            raise ValueError("limit id > offset id")
+            await client.send_message(
+                message.from_user.id,
+                f"{limit} > {offset_id}",
+            )
+            return None
 
         limit = limit - offset_id + 1
 
