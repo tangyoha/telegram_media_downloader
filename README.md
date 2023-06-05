@@ -265,7 +265,4 @@ Help us keep Telegram Media Downloader open and inclusive. Please read and follo
 
 ### Sponsor
 
-<p>
-<img alt="Code style: black" style="width:30%" src="./screenshot/alipay.JPG">
-<img alt="Code style: black" style="width:30%" src="./screenshot/wechat.JPG">
-</p>
+[PayPal](https://paypal.me/tangyoha?country.x=C2&locale.x=zh_XC)
