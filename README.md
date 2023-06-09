@@ -41,7 +41,7 @@
 
 > Need to configure bot_token, please refer to [Documentation](https://github.com/tangyoha/telegram_media_downloader/wiki/How-to-Download-Using-Robots)
 
-<img alt="Code style: black" style="width:60% high:60% " src="./screenshot/bot.gif"/>
+<img alt="Code style: black" style="width:50% high:50% " src="./screenshot/bot.gif"/>
 
 ### Support
 
