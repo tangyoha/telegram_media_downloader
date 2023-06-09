@@ -37,14 +37,14 @@
 > 运行后打开浏览器访问`localhost:5000`
 > 如果是远程机器需要配置web_host: 0.0.0.0
 
-<img alt="Code style: black" style="width:60%  high:60%" src="./screenshot/web_ui.gif"/>
+<img alt="Code style: black" style="high:60%;" src="./screenshot/web_ui.gif"/>
 
 ### 机器人
 
 > 需要配置bot_token,具体参考[文档](https://github.com/tangyoha/telegram_media_downloader/wiki/%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8%E6%9C%BA%E5%99%A8%E4%BA%BA%E4%B8%8B%E8%BD%BD)
 
 
-<img alt="Code style: black" style="width:40% high:40% " src="./screenshot/bot.gif"/>
+<img alt="Code style: black" style="high:40%; " src="./screenshot/bot.gif"/>
 
 ### 支持
 
