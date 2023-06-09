@@ -27,11 +27,21 @@
 * The robot is running, and the command `download` or `forward` is issued from the robot
 
 * Download as a one-time download tool
+
 ### UI
+
+#### Web page
+
+> After running, open a browser and visit `localhost:5000`
+> If it is a remote machine, you need to configure web_host: 0.0.0.0
 
 ![web](./screenshot/web_ui.gif)
 
-After running, open the browser to visit `localhost:5000`
+### Robot
+
+> Need to configure bot_token, please refer to [Documentation](https://github.com/tangyoha/telegram_media_downloader/wiki/How-to-Download-Using-Robots)
+
+<img alt="Code style: black" style="width:50%" src="./screenshot/bot.gif">
 
 ### Support
 
