@@ -127,6 +127,7 @@ class FormatTestCase(unittest.TestCase):
             ("https://t.me/username/1234", ("username", 1234)),
             ("https://t.me/username", ("username", None)),
             ("https://t.me/c/213213/91011", (-100213213, 91011)),
+            ("https://t.me/test123/1/1234", ("test123", 1234)),
             ("me", ("me", None)),
             ("self", ("self", None)),
         ]

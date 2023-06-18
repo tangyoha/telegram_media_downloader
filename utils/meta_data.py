@@ -15,6 +15,8 @@ class NoneObj:
         pass
 
 
+# pylint: disable=R0902
+# pylint: disable=R0913
 class MetaData:
     """
     * `message_date` : - Date the message was sent
@@ -50,6 +52,8 @@ class MetaData:
         media_height: int = None,
         media_file_name: str = None,
         media_duration: int = None,
+        media_type: str = None,
+        file_extension: str = None,
     ):
         self.message_date = message_date
         self.message_id = message_id
@@ -59,6 +63,8 @@ class MetaData:
         self.media_height = media_height
         self.media_file_name = media_file_name
         self.media_duration = media_duration
+        self.media_type = media_type
+        self.file_extension = file_extension
 
     def data(self) -> dict:
         """Meta map"""
@@ -76,26 +82,6 @@ class MetaData:
             "caption": self.message_caption,
             "file_size": self.media_file_size,
             "file_name": self.media_file_name,
+            "media_type": self.media_type,
+            "file_extension": self.file_extension,
         }
-
-    def get_meta_data(self, meta_obj):
-        """Get all meta data"""
-        # message
-        self.message_date = getattr(meta_obj, "date", None)
-
-        self.message_caption = getattr(meta_obj, "caption", None) or ""
-        self.message_id = getattr(meta_obj, "id", None)
-
-        for kind in self.AVAILABLE_MEDIA:
-            media_obj = getattr(meta_obj, kind, None)
-
-            if media_obj is not None:
-                break
-        else:
-            return
-
-        self.media_file_name = getattr(media_obj, "file_name", None) or ""
-        self.media_file_size = getattr(media_obj, "file_size", None)
-        self.media_width = getattr(media_obj, "width", None)
-        self.media_height = getattr(media_obj, "height", None)
-        self.media_duration = getattr(media_obj, "duration", None)

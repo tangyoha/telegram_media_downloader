@@ -27,6 +27,7 @@ from module.app import Application, DownloadStatus, ForwardStatus, TaskNode
 from module.download_stat import get_download_result
 from module.language import Language, _t
 from utils.format import create_progress_bar, format_byte, truncate_filename
+from utils.meta_data import MetaData
 
 _mimetypes = MimeTypes()
 _mimetypes.readfp(StringIO(mime_types))
@@ -73,28 +74,35 @@ def _get_file_type(file_id: str):
     return file_type
 
 
-def get_extension(file_id: str, mime_type: str) -> str:
+def get_extension(file_id: str, mime_type: str, dot: bool = True) -> str:
     """Get extension"""
+
+    if not file_id:
+        if dot:
+            return ".unknown"
+        return "unknown"
 
     file_type = _get_file_type(file_id)
 
     guessed_extension = _guess_extension(mime_type)
 
     if file_type in PHOTO_TYPES:
-        extension = ".jpg"
+        extension = "jpg"
     elif file_type == FileType.VOICE:
-        extension = guessed_extension or ".ogg"
+        extension = guessed_extension or "ogg"
     elif file_type in (FileType.VIDEO, FileType.ANIMATION, FileType.VIDEO_NOTE):
-        extension = guessed_extension or ".mp4"
+        extension = guessed_extension or "mp4"
     elif file_type == FileType.DOCUMENT:
-        extension = guessed_extension or ".zip"
+        extension = guessed_extension or "zip"
     elif file_type == FileType.STICKER:
-        extension = guessed_extension or ".webp"
+        extension = guessed_extension or "webp"
     elif file_type == FileType.AUDIO:
-        extension = guessed_extension or ".mp3"
+        extension = guessed_extension or "mp3"
     else:
-        extension = ".unknown"
+        extension = "unknown"
 
+    if dot:
+        extension = "." + extension
     return extension
 
 
@@ -549,3 +557,31 @@ async def check_user_permission(
         pass
 
     return False
+
+
+def set_meta_data(
+    meta_data: MetaData, message: pyrogram.types.Message, caption: str = None
+):
+    """Get all meta data"""
+    # message
+    meta_data.message_date = getattr(message, "date", None)
+    if caption:
+        meta_data.message_caption = caption
+    else:
+        meta_data.message_caption = getattr(message, "caption", None) or ""
+    meta_data.message_id = getattr(message, "id", None)
+    for kind in meta_data.AVAILABLE_MEDIA:
+        media_obj = getattr(message, kind, None)
+        if media_obj is not None:
+            meta_data.media_type = kind
+            break
+    else:
+        return
+    meta_data.media_file_name = getattr(media_obj, "file_name", None) or ""
+    meta_data.media_file_size = getattr(media_obj, "file_size", None)
+    meta_data.media_width = getattr(media_obj, "width", None)
+    meta_data.media_height = getattr(media_obj, "height", None)
+    meta_data.media_duration = getattr(media_obj, "duration", None)
+    meta_data.file_extension = get_extension(
+        media_obj.file_id, getattr(media_obj, "mime_type", ""), False
+    )

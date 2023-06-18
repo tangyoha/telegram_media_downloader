@@ -22,6 +22,7 @@ from module.pyrogram_extension import (
     record_download_status,
     report_bot_download_status,
     set_max_concurrent_transmissions,
+    set_meta_data,
     upload_telegram_chat,
 )
 from module.web import get_flask_app
@@ -520,9 +521,7 @@ async def download_chat_task(
             app.set_caption_name(node.chat_id, message.media_group_id, caption)
         else:
             caption = app.get_caption_name(node.chat_id, message.media_group_id)
-        meta_data.get_meta_data(message)
-        if caption:
-            meta_data.message_caption = caption
+        set_meta_data(meta_data, message, caption)
 
         if not app.need_skip_message(chat_download_config, message.id, meta_data):
             await add_download_task(message, node)

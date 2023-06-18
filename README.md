@@ -282,4 +282,3 @@ Help us keep Telegram Media Downloader open and inclusive. Please read and follo
 <img alt="Code style: black" style="width:30%" src="./screenshot/alipay.JPG">
 <img alt="Code style: black" style="width:30%" src="./screenshot/wechat.JPG">
 </p>
-

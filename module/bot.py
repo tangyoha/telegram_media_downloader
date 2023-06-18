@@ -24,6 +24,7 @@ from module.pyrogram_extension import (
     get_message_with_retry,
     report_bot_forward_status,
     report_bot_status,
+    set_meta_data,
 )
 from utils.format import extract_info_from_link, replace_date_time, validate_title
 from utils.meta_data import MetaData
@@ -738,7 +739,7 @@ async def forward_normal_content(
             _bot.app.set_caption_name(node.chat_id, message.media_group_id, caption)
         else:
             caption = _bot.app.get_caption_name(node.chat_id, message.media_group_id)
-        meta_data.get_meta_data(message)
+        set_meta_data(meta_data, message, caption)
         if not _bot.filter.exec(node.download_filter):
             forward_ret = ForwardStatus.SkipForward
             await report_bot_forward_status(client, node, forward_ret)

@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from module.filter import Filter, MetaData
+from module.pyrogram_extension import set_meta_data
 from tests.test_common import MockMessage, MockVideo
 from utils.format import replace_date_time
 
@@ -28,7 +29,7 @@ message = MockMessage(
     ),
 )
 
-meta.get_meta_data(message)
+set_meta_data(meta, message)
 
 download_filter = Filter()
 

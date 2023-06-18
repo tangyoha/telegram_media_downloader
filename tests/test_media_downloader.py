@@ -10,7 +10,6 @@ from typing import List, Union
 
 import mock
 import pyrogram
-from pyrogram.file_id import PHOTO_TYPES, FileType
 
 from media_downloader import (
     _can_download,
@@ -38,6 +37,7 @@ from .test_common import (
     MockVideo,
     MockVideoNote,
     MockVoice,
+    get_extension,
     platform_generic_path,
 )
 
@@ -162,69 +162,6 @@ def raise_exception():
 
 def load_config():
     raise ValueError("error load config")
-
-
-def get_file_type(file_id: str):
-    if file_id == "THUMBNAIL":
-        return FileType.THUMBNAIL
-    elif file_id == "CHAT_PHOTO":
-        return FileType.CHAT_PHOTO
-    elif file_id == "PHOTO":
-        return FileType.PHOTO
-    elif file_id == "VOICE":
-        return FileType.VOICE
-    elif file_id == "VIDEO":
-        return FileType.VIDEO
-    elif file_id == "DOCUMENT":
-        return FileType.DOCUMENT
-    elif file_id == "ENCRYPTED":
-        return FileType.ENCRYPTED
-    elif file_id == "TEMP":
-        return FileType.TEMP
-    elif file_id == "STICKER":
-        return FileType.STICKER
-    elif file_id == "AUDIO":
-        return FileType.AUDIO
-    elif file_id == "ANIMATION":
-        return FileType.ANIMATION
-    elif file_id == "ENCRYPTED_THUMBNAIL":
-        return FileType.ENCRYPTED_THUMBNAIL
-    elif file_id == "WALLPAPER":
-        return FileType.WALLPAPER
-    elif file_id == "VIDEO_NOTE":
-        return FileType.VIDEO_NOTE
-    elif file_id == "SECURE_RAW":
-        return FileType.SECURE_RAW
-    elif file_id == "SECURE":
-        return FileType.SECURE
-    elif file_id == "BACKGROUND":
-        return FileType.BACKGROUND
-    elif file_id == "DOCUMENT_AS_FILE":
-        return FileType.DOCUMENT_AS_FILE
-
-    raise ValueError("error file id!")
-
-
-def get_extension(file_id: str, mime_type: str):
-    file_type = get_file_type(file_id=file_id)
-    guessed_extension = ""
-
-    if file_type in PHOTO_TYPES:
-        extension = ".jpg"
-    elif file_type == FileType.VOICE:
-        extension = guessed_extension or ".ogg"
-    elif file_type in (FileType.VIDEO, FileType.ANIMATION, FileType.VIDEO_NOTE):
-        extension = guessed_extension or ".mp4"
-    elif file_type == FileType.DOCUMENT:
-        extension = guessed_extension or ".zip"
-    elif file_type == FileType.STICKER:
-        extension = guessed_extension or ".webp"
-    elif file_type == FileType.AUDIO:
-        extension = guessed_extension or ".mp3"
-    else:
-        extension = ".unknown"
-
-    return extension
 
 
 class MyQueue:
