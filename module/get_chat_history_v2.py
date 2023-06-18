@@ -4,6 +4,8 @@ from datetime import datetime
 from typing import AsyncGenerator, Optional, Union
 
 import pyrogram
+
+# pylint: disable = W0611
 from pyrogram import raw, types, utils
 
 
@@ -54,8 +56,7 @@ async def get_chat_history_v2(
     offset_date: datetime = utils.zero_datetime(),
     reverse: bool = False,
 ) -> Optional[AsyncGenerator["types.Message", None]]:
-    """Get messages from a chat history.
-    """
+    """Get messages from a chat history."""
     current = 0
     total = limit or (1 << 31) - 1
     limit = min(100, total)
