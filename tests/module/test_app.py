@@ -27,20 +27,23 @@ class AppTestCase(unittest.TestCase):
         self.assertEqual(app.proxy, {})
         self.assertEqual(app.restart_program, False)
 
-        app.last_read_message_id = 3
         app.chat_download_config[123] = ChatDownloadConfig()
-        app.chat_download_config[123].failed_ids.append(1)
-        app.chat_download_config[123].ids_to_retry.append(2)
-        app.config["chat"] = [{"chat_id": 123, "last_read_message_id": 0}]
+        app.chat_download_config[123].last_read_message_id = 13
+        app.chat_download_config[123].failed_ids.append(6)
+        app.chat_download_config[123].ids_to_retry.append(7)
+        app.chat_download_config[123].downloaded_ids.append(8)
+        app.chat_download_config[123].downloaded_ids.append(10)
+        app.chat_download_config[123].downloaded_ids.append(13)
+        app.config["chat"] = [{"chat_id": 123, "last_read_message_id": 5}]
 
         app.update_config(False)
 
         self.assertEqual(
-            app.chat_download_config[123].last_read_message_id,
+            app.chat_download_config[123].last_read_message_id + 1,
             app.config["chat"][0]["last_read_message_id"],
         )
         self.assertEqual(
-            app.chat_download_config[123].ids_to_retry,
+            [5, 6, 7, 9, 11, 12],
             app.app_data["chat"][0]["ids_to_retry"],
         )
 

@@ -215,6 +215,36 @@ async def new_fetch_message(client: pyrogram.Client, message: pyrogram.types.Mes
     return message
 
 
+async def get_chat_history(client, *args, **kwargs):
+    items = [
+        MockMessage(
+            id=1213,
+            media=True,
+            voice=MockVoice(
+                mime_type="audio/ogg",
+                date=datetime(2019, 7, 25, 14, 53, 50),
+            ),
+        ),
+        MockMessage(
+            id=1214,
+            media=False,
+            text="test message 1",
+        ),
+        MockMessage(
+            id=1215,
+            media=False,
+            text="test message 2",
+        ),
+        MockMessage(
+            id=1216,
+            media=False,
+            text="test message 3",
+        ),
+    ]
+    for item in items:
+        yield item
+
+
 class MockClient:
     def __init__(self, *args, **kwargs):
         pass
@@ -227,35 +257,6 @@ class MockClient:
 
     async def stop(self):
         pass
-
-    async def get_chat_history(self, *args, **kwargs):
-        items = [
-            MockMessage(
-                id=1213,
-                media=True,
-                voice=MockVoice(
-                    mime_type="audio/ogg",
-                    date=datetime(2019, 7, 25, 14, 53, 50),
-                ),
-            ),
-            MockMessage(
-                id=1214,
-                media=False,
-                text="test message 1",
-            ),
-            MockMessage(
-                id=1215,
-                media=False,
-                text="test message 2",
-            ),
-            MockMessage(
-                id=1216,
-                media=False,
-                text="test message 3",
-            ),
-        ]
-        for item in items:
-            yield item
 
     async def get_messages(self, *args, **kwargs):
         if kwargs["message_ids"] == 7:
@@ -359,6 +360,7 @@ class MockClient:
 
 @mock.patch("media_downloader.get_extension", new=get_extension)
 @mock.patch("media_downloader.fetch_message", new=new_fetch_message)
+@mock.patch("media_downloader.get_chat_history_v2", new=get_chat_history)
 @mock.patch("media_downloader.RETRY_TIME_OUT", new=0)
 class MediaDownloaderTestCase(unittest.TestCase):
     @classmethod
