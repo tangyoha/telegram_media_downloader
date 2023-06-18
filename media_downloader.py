@@ -15,6 +15,7 @@ from rich.logging import RichHandler
 from module.app import Application, ChatDownloadConfig, DownloadStatus, TaskNode
 from module.bot import start_download_bot, stop_download_bot
 from module.download_stat import update_download_status
+from module.get_chat_history_v2 import get_chat_history_v2
 from module.language import _t
 from module.pyrogram_extension import (
     fetch_message,
@@ -496,7 +497,8 @@ async def download_chat_task(
     node: TaskNode,
 ):
     """Download all task"""
-    messages_iter = client.get_chat_history(
+    messages_iter = get_chat_history_v2(
+        client,
         node.chat_id,
         limit=node.limit,
         offset_id=chat_download_config.last_read_message_id,
