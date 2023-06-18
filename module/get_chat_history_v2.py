@@ -44,9 +44,7 @@ async def get_chunk_v2(
     return messages
 
 
-# pylint disable=C0301
-
-
+# pylint: disable = C0301
 async def get_chat_history_v2(
     self: pyrogram.Client,
     chat_id: Union[int, str],
@@ -57,42 +55,6 @@ async def get_chat_history_v2(
     reverse: bool = False,
 ) -> Optional[AsyncGenerator["types.Message", None]]:
     """Get messages from a chat history.
-
-    The messages are returned in reverse chronological order.
-
-    .. include:: /_includes/usable-by/users.rst
-
-    Parameters:
-        chat_id (``int`` | ``str``):
-            Unique identifier (int) or username (str) of the target chat.
-            For your personal cloud (Saved Messages) you can simply use "me" or "self".
-            For a contact that exists in your Telegram address book you can use his phone number (str).
-
-        limit (``int``, *optional*):
-            Limits the number of messages to be retrieved.
-            By default, no limit is applied and all messages are returned.
-
-        offset (``int``, *optional*):
-            Sequential number of the first message to be returned..
-            Negative values are also accepted and become useful in case you set offset_id or offset_date.
-
-        offset_id (``int``, *optional*):
-            Identifier of the first message to be returned.
-
-        offset_date (:py:obj:`~datetime.datetime`, *optional*):
-            Pass a date as offset to retrieve only older messages starting from that date.
-
-        reverse (``bool``, *optional*):
-            Pass True to retrieve the messages in reversed order (from older to most recent).
-
-    Returns:
-        ``Generator``: A generator yielding :obj:`~pyrogram.types.Message` objects.
-
-    Example:
-        .. code-block:: python
-
-            async for message in app.get_chat_history(chat_id):
-                print(message.text)
     """
     current = 0
     total = limit or (1 << 31) - 1
