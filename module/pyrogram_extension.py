@@ -80,8 +80,7 @@ def get_extension(file_id: str, mime_type: str, dot: bool = True) -> str:
     if not file_id:
         if dot:
             return ".unknown"
-        else:
-            return "unknown"
+        return "unknown"
 
     file_type = _get_file_type(file_id)
 
