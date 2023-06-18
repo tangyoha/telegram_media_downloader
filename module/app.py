@@ -568,17 +568,25 @@ class Application:
         # pylint: disable = R1733
         for key, value in self.chat_download_config.items():
             # pylint: disable = W0201
-            self.chat_download_config[key].ids_to_retry = (
-                list(set(value.ids_to_retry) - set(value.downloaded_ids))
-                + value.failed_ids
+            before_last_read_message_id = self.config["chat"][idx].get(
+                "last_read_message_id", 0
             )
+
+            unfinished_ids = set(value.ids_to_retry) | set(
+                range(before_last_read_message_id, value.last_read_message_id + 1)
+            )
+            unfinished_ids -= set(value.downloaded_ids)
+
+            self.chat_download_config[key].ids_to_retry = list(unfinished_ids)
 
             if idx >= len(self.app_data["chat"]):
                 self.app_data["chat"].append({})
 
-            self.config["chat"][idx][
-                "last_read_message_id"
-            ] = value.last_read_message_id
+            if len(value.downloaded_ids) > 0:
+                self.config["chat"][idx]["last_read_message_id"] = (
+                    value.last_read_message_id + 1
+                )
+
             self.app_data["chat"][idx]["chat_id"] = key
             self.app_data["chat"][idx]["ids_to_retry"] = value.ids_to_retry
             idx += 1
