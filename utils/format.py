@@ -210,13 +210,13 @@ def extract_info_from_link(link: str):
     if link in ("me", "self"):
         return link, None
 
-    channel_match = re.match(r"(?:https?://)?t\.me/c/(\w+)(?:/(\d+))?", link)
+    channel_match = re.match(r"(?:https?://)?t\.me/c/(\w+)(?:.*/(\d+)|/(\d+))?", link)
     if channel_match:
         chat_id = f"-100{channel_match.group(1)}"
         message_id = int(channel_match.group(2)) if channel_match.group(2) else None
         return int(chat_id), message_id
 
-    username_match = re.match(r"(?:https?://)?t\.me/(\w+)(?:/(\d+))?", link)
+    username_match = re.match(r"(?:https?://)?t\.me/(\w+)(?:.*/(\d+)|/(\d+))?", link)
     if username_match:
         username = username_match.group(1)
         message_id = int(username_match.group(2)) if username_match.group(2) else None
