@@ -261,6 +261,8 @@ async def _get_media_meta(
 
 async def add_download_task(message: pyrogram.types.Message, node: TaskNode):
     """Add Download task"""
+    if message.empty:
+        return
     await queue.put((message, node))
     node.total_task += 1
 
