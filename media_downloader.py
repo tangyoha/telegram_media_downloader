@@ -591,7 +591,7 @@ def main():
 
         set_max_concurrent_transmissions(client, app.max_concurrent_transmissions)
 
-        asyncio.run(client.start())
+        client.start()
         logger.success(_t("Successfully started (Press Ctrl+C to stop)"))
 
         app.loop.create_task(download_all_chat(client))
@@ -609,7 +609,7 @@ def main():
     except Exception as e:
         logger.exception("{}", e)
     finally:
-        asyncio.run(client.stop())
+        client.stop()
         app.is_running = False
         for task in tasks:
             task.cancel()
