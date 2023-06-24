@@ -267,6 +267,7 @@ async def add_download_task(message: pyrogram.types.Message, node: TaskNode):
     node.total_task += 1
     return True
 
+
 async def download_task(
     client: pyrogram.Client, message: pyrogram.types.Message, node: TaskNode
 ):
@@ -527,8 +528,9 @@ async def download_chat_task(
             caption = app.get_caption_name(node.chat_id, message.media_group_id)
         set_meta_data(meta_data, message, caption)
 
-        
-        if not app.need_skip_message(chat_download_config, message.id, meta_data) and await add_download_task(message, node):
+        if not app.need_skip_message(
+            chat_download_config, message.id, meta_data
+        ) and await add_download_task(message, node):
             chat_download_config.downloaded_ids.append(message.id)
 
     chat_download_config.need_check = True

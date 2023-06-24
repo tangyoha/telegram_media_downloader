@@ -25,7 +25,11 @@ from media_downloader import (
 )
 from module.app import Application, DownloadStatus, TaskNode
 from module.cloud_drive import CloudDriveConfig
-from module.pyrogram_extension import record_download_status, reset_download_cache, get_extension
+from module.pyrogram_extension import (
+    get_extension,
+    record_download_status,
+    reset_download_cache,
+)
 
 from .test_common import (
     Chat,
@@ -972,7 +976,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
 
         self.assertEqual(res, (DownloadStatus.SkipDownload, None))
-
 
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
     @mock.patch("media_downloader.RETRY_TIME_OUT", new=1)
