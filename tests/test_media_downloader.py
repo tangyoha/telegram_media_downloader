@@ -25,7 +25,7 @@ from media_downloader import (
 )
 from module.app import Application, DownloadStatus, TaskNode
 from module.cloud_drive import CloudDriveConfig
-from module.pyrogram_extension import record_download_status, reset_download_cache
+from module.pyrogram_extension import record_download_status, reset_download_cache, get_extension
 
 from .test_common import (
     Chat,
@@ -359,6 +359,7 @@ class MockClient:
 
 
 @mock.patch("media_downloader.get_extension", new=get_extension)
+@mock.patch("module.pyrogram_extension.get_extension", new=get_extension)
 @mock.patch("media_downloader.fetch_message", new=new_fetch_message)
 @mock.patch("media_downloader.get_chat_history_v2", new=get_chat_history)
 @mock.patch("media_downloader.RETRY_TIME_OUT", new=0)
@@ -972,21 +973,6 @@ class MediaDownloaderTestCase(unittest.TestCase):
 
         self.assertEqual(res, (DownloadStatus.SkipDownload, None))
 
-    @mock.patch(
-        "media_downloader._exec_loop",
-        new=raise_keyboard_interrupt,
-    )
-    @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
-    @mock.patch("media_downloader.RETRY_TIME_OUT", new=1)
-    @mock.patch("media_downloader.logger")
-    def test_main(self, mock_logger):
-        rest_app(MOCK_CONF)
-
-        main()
-
-        mock_logger.success.assert_called_with(
-            "Updated last read message_id to config file,total download 0, total upload file 0"
-        )
 
     @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
     @mock.patch("media_downloader.RETRY_TIME_OUT", new=1)

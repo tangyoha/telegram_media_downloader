@@ -31,8 +31,13 @@ class AppTestCase(unittest.TestCase):
         app.chat_download_config[123].last_read_message_id = 13
         app.chat_download_config[123].failed_ids.append(6)
         app.chat_download_config[123].ids_to_retry.append(7)
+        # download success
         app.chat_download_config[123].downloaded_ids.append(8)
+        app.chat_download_config[123].finish_task += 1
+        # download success
         app.chat_download_config[123].downloaded_ids.append(10)
+        app.chat_download_config[123].finish_task += 1
+        # not exist message
         app.chat_download_config[123].downloaded_ids.append(13)
         app.config["chat"] = [{"chat_id": 123, "last_read_message_id": 5}]
 

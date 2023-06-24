@@ -262,10 +262,10 @@ async def _get_media_meta(
 async def add_download_task(message: pyrogram.types.Message, node: TaskNode):
     """Add Download task"""
     if message.empty:
-        return
+        return False
     await queue.put((message, node))
     node.total_task += 1
-
+    return True
 
 async def download_task(
     client: pyrogram.Client, message: pyrogram.types.Message, node: TaskNode
@@ -513,8 +513,8 @@ async def download_chat_task(
         )
 
         for message in skipped_messages:
-            await add_download_task(message, node)
-            chat_download_config.total_task += 1
+            if not await add_download_task(message, node):
+                chat_download_config.downloaded_ids.append(message.id)
 
     async for message in messages_iter:  # type: ignore
         meta_data = MetaData()
@@ -527,13 +527,12 @@ async def download_chat_task(
             caption = app.get_caption_name(node.chat_id, message.media_group_id)
         set_meta_data(meta_data, message, caption)
 
-        if not app.need_skip_message(chat_download_config, message.id, meta_data):
-            await add_download_task(message, node)
-            chat_download_config.total_task += 1
-        else:
+        
+        if not app.need_skip_message(chat_download_config, message.id, meta_data) and await add_download_task(message, node):
             chat_download_config.downloaded_ids.append(message.id)
 
     chat_download_config.need_check = True
+    chat_download_config.total_task = node.total_task
     node.is_running = True
 
 
@@ -590,7 +589,7 @@ def main():
 
         set_max_concurrent_transmissions(client, app.max_concurrent_transmissions)
 
-        client.start()
+        asyncio.run(client.start())
         logger.success(_t("Successfully started (Press Ctrl+C to stop)"))
 
         app.loop.create_task(download_all_chat(client))
@@ -608,7 +607,7 @@ def main():
     except Exception as e:
         logger.exception("{}", e)
     finally:
-        client.stop()
+        asyncio.run(client.stop())
         app.is_running = False
         for task in tasks:
             task.cancel()
