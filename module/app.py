@@ -576,13 +576,14 @@ class Application:
                 range(before_last_read_message_id, value.last_read_message_id + 1)
             )
             unfinished_ids -= set(value.downloaded_ids)
+            unfinished_ids -= set({0})
 
             self.chat_download_config[key].ids_to_retry = list(unfinished_ids)
 
             if idx >= len(self.app_data["chat"]):
                 self.app_data["chat"].append({})
 
-            if len(value.downloaded_ids) > 0:
+            if value.finish_task:
                 self.config["chat"][idx]["last_read_message_id"] = (
                     value.last_read_message_id + 1
                 )
