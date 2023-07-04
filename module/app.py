@@ -572,9 +572,11 @@ class Application:
                 "last_read_message_id", 0
             )
 
-            unfinished_ids = set(value.ids_to_retry) | set(
-                range(before_last_read_message_id, value.last_read_message_id + 1)
-            )
+            unfinished_ids = set(value.ids_to_retry)
+            if before_last_read_message_id != value.last_read_message_id:
+                unfinished_ids = unfinished_ids | set(
+                    range(before_last_read_message_id, value.last_read_message_id + 1)
+                )
             unfinished_ids -= set(value.downloaded_ids)
             unfinished_ids -= set({0})
 
