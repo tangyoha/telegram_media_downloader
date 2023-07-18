@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Telegram Media Downloader</title>
   <link href="../static/layui/css/layui.css" rel="stylesheet">
+  <link href="./css/index.css" rel="stylesheet">
   <style>
     body {
       padding: 6px 16px;
@@ -14,13 +15,16 @@
 </head>
 
 <body>
-  <div class="layui-tab layui-tab-brief" lay-filter="telegram_media_downloader">
-    <ul class="layui-tab-title">
-      <li class="layui-this">Downloading</li>
-      <li>Downloaded</li>
-      <!-- <li>Config</li> -->
-    </ul>
-    <div class="layui-tab-content">
+  <div class="layui-tab" lay-filter="telegram_media_downloader">
+    <div class="header-title layui-tab-brief">
+      <ul class="layui-tab-title">
+        <li class="layui-this">Downloading</li>
+        <li>Downloaded</li>
+        <!-- <li>Config</li> -->
+      </ul>
+      <div class="stop-btn">puase</div>
+    </div>
+    <div class="layui-tab-content" style="padding: 0;">
       <div class="layui-tab-item layui-show">
         <table class="layui-hide" id="download_list" lay-filter="download_list"></table>
       </div>
@@ -143,14 +147,14 @@
                   var progress = download_list_table_data[j].download_progress
                   element.progress('down-' + result[i].chat + '-' + result[i].id, progress + '%');
 
-                  var download_speed_obj = $('div[lay-filter="down_speed-' +result[i].chat + '-' + result[i].id + '"]')
+                  var download_speed_obj = $('div[lay-filter="down_speed-' + result[i].chat + '-' + result[i].id + '"]')
                   download_speed_obj.html(result[i].download_speed)
 
                   if (progress == 100) {
                     var device_obj = $('div[lay-filter="down-' + result[i].chat + '-' + result[i].id + '"] div')
                     device_obj.removeClass("layui-bg-blue")
                     device_obj.addClass("layui-bg-green")
-                    obj = $('div[lay-id="download_list"]  tr[data-index="' +result[i].chat + '-' + result[i].id + '"]')
+                    obj = $('div[lay-id="download_list"]  tr[data-index="' + result[i].chat + '-' + result[i].id + '"]')
                     obj.remove()
                   }
                   find_iter = true
@@ -175,7 +179,7 @@
               }
               // not found
               obj = $('div[lay-id="download_list"]  .layui-table-body .layui-table tbody')
-              var tr = ' <tr data-index="' + result[i].chat + '-' + result[i].id  + '">' +
+              var tr = ' <tr data-index="' + result[i].chat + '-' + result[i].id + '">' +
                 '<td data-field="id" data-key="1-0-0" class=""><div class="layui-table-cell laytable-cell-1-0-0">' + result[i].chat + '</div></td>' +
                 '<td data-field="id" data-key="1-0-1" class=""><div class="layui-table-cell laytable-cell-1-0-1">' + result[i].id + '</div></td>' +
                 '<td data-field="filename" data-key="1-0-2" class=""><div class="layui-table-cell laytable-cell-1-0-2" align="center">' + result[i].filename + '</div></td>' +
