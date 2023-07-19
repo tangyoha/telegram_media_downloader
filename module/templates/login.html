@@ -5,14 +5,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>login</title>
-  <link href="./css/index.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='login/css/index.css') }}" rel="stylesheet">
 </head>
 
 <body>
   <div class="main">
     <div class="content">
       <div class="logo">
-        <img src="./images/login.svg" alt="">
+        <img src="{{ url_for('static', filename='login/images/login.svg') }}" alt="">
         <h1 class="title">Telegram Media Downloader</h1>
         <div class="tips">enter your password.</div>
       </div>

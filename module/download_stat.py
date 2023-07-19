@@ -1,11 +1,22 @@
 """Download Stat"""
+import asyncio
 import time
+from enum import Enum
 from typing import Union
+
+
+class DownloadState(Enum):
+    """Download state"""
+
+    Downloading = 1
+    StopDownload = 2
+
 
 _download_result: dict = {}
 _total_download_speed: int = 0
 _total_download_size: int = 0
 _last_download_time: float = time.time()
+_download_state: DownloadState = DownloadState.Downloading
 
 
 def get_download_result() -> dict:
@@ -18,11 +29,23 @@ def get_total_download_speed() -> int:
     return _total_download_speed
 
 
-def update_download_status(
-    chat_id: Union[int, str],
-    message_id: int,
+def get_download_state() -> DownloadState:
+    """get download state"""
+    return _download_state
+
+
+# pylint: disable = W0603
+def set_download_state(state: DownloadState):
+    """set download state"""
+    global _download_state
+    _download_state = state
+
+
+async def update_download_status(
     down_byte: int,
     total_size: int,
+    chat_id: Union[int, str],
+    message_id: int,
     file_name: str,
     start_time: float,
     task_id: int,
@@ -33,6 +56,9 @@ def update_download_status(
     global _total_download_speed
     global _total_download_size
     global _last_download_time
+
+    while get_download_state() == DownloadState.StopDownload:
+        await asyncio.sleep(1)
 
     if not _download_result.get(chat_id):
         _download_result[chat_id] = {}

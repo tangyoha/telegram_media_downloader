@@ -3,16 +3,95 @@
 import logging
 import os
 
-from flask import Flask, render_template, request
+from flask import Flask, jsonify, render_template, request
 
 import utils
-from module.download_stat import get_download_result, get_total_download_speed
+from flask_login import LoginManager, login_required, login_user
+from module.app import Application
+from module.download_stat import (
+    DownloadState,
+    get_download_result,
+    get_download_state,
+    get_total_download_speed,
+    set_download_state,
+)
 from utils.format import format_byte
 
 log = logging.getLogger("werkzeug")
 log.setLevel(logging.ERROR)
 
 _flask_app = Flask(__name__)
+
+_flask_app.secret_key = "tdl"
+
+_login_manager = LoginManager()
+_login_manager.login_view = "login"
+_login_manager.init_app(_flask_app)
+
+web_login_users: dict = {}
+
+
+class User:
+    """Web Login User"""
+
+    id = "root"
+
+
+@_login_manager.user_loader
+def load_user():
+    """
+    Load a user object from the user ID.
+
+    Returns:
+        User: The user object.
+    """
+    return User()
+
+
+# pylint: disable = W0603
+def init_web(app: Application):
+    """
+    Set the value of the users variable.
+
+    Args:
+        users: The list of users to set.
+
+    Returns:
+        None.
+    """
+    global web_login_users
+    if app.web_login_secret:
+        web_login_users = {"root": app.web_login_secret}
+    else:
+        _flask_app.config["LOGIN_DISABLED"] = True
+
+
+@_flask_app.route("/login", methods=["GET", "POST"])
+def login():
+    """
+    Function to handle the login route.
+
+    Parameters:
+    - No parameters
+
+    Returns:
+    - If the request method is "POST" and the username and
+      password match the ones in the web_login_users dictionary,
+      it returns a JSON response with a code of "1".
+    - Otherwise, it returns a JSON response with a code of "0".
+    - If the request method is not "POST", it returns the rendered "login.html" template.
+    """
+    if request.method == "POST":
+        username = "root"  # request.form['username']
+        password = request.form["password"]
+        if username in web_login_users and web_login_users[username] == password:
+            user = User()
+            login_user(user)
+            return jsonify({"code": "1"})
+
+        return jsonify({"code": "0"})
+
+    return render_template("login.html")
 
 
 def get_flask_app() -> Flask:
@@ -21,12 +100,19 @@ def get_flask_app() -> Flask:
 
 
 @_flask_app.route("/")
+@login_required
 def index():
     """Index html"""
-    return render_template("index.html")
+    return render_template(
+        "index.html",
+        download_state=(
+            "pause" if get_download_state() is DownloadState.Downloading else "pause"
+        ),
+    )
 
 
 @_flask_app.route("/get_download_status")
+@login_required
 def get_download_speed():
     """Get download speed"""
     return (
@@ -36,6 +122,23 @@ def get_download_speed():
     )
 
 
+@_flask_app.route("/set_download_state", methods=["POST"])
+@login_required
+def web_set_download_state():
+    """Set download state"""
+    state = request.args.get("state")
+
+    if state == "continue" and get_download_state() is DownloadState.StopDownload:
+        set_download_state(DownloadState.Downloading)
+        return "pause"
+
+    if state == "pause" and get_download_state() is DownloadState.Downloading:
+        set_download_state(DownloadState.StopDownload)
+        return "continue"
+
+    return state
+
+
 @_flask_app.route("/get_app_version")
 def get_app_version():
     """Get telegram_media_downloader version"""
@@ -43,6 +146,7 @@ def get_app_version():
 
 
 @_flask_app.route("/get_download_list")
+@login_required
 def get_download_list():
     """get download list"""
     if request.args.get("already_down") is None:

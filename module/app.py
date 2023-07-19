@@ -223,6 +223,7 @@ class Application:
         self.max_download_task: int = 5
         self.language = Language.EN
         self.after_upload_telegram_delete: bool = True
+        self.web_login_secret: str = ""
 
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
@@ -325,6 +326,8 @@ class Application:
         self.after_upload_telegram_delete = _config.get(
             "after_upload_telegram_delete", self.after_upload_telegram_delete
         )
+
+        self.web_login_secret = _config.get("web_login_secret", self.web_login_secret)
 
         if _config.get("chat"):
             chat = _config["chat"]

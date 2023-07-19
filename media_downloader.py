@@ -26,7 +26,7 @@ from module.pyrogram_extension import (
     set_meta_data,
     upload_telegram_chat,
 )
-from module.web import get_flask_app
+from module.web import get_flask_app, init_web
 from utils.format import truncate_filename, validate_title
 from utils.log import LogFilter
 from utils.meta import print_meta
@@ -405,11 +405,10 @@ async def download_media(
             temp_download_path = await client.download_media(
                 message,
                 file_name=temp_file_name,
-                progress=lambda down_byte, total_byte: update_download_status(
+                progress=update_download_status,
+                progress_args=(
                     chat_id,
                     message_id,
-                    down_byte,
-                    total_byte,
                     ui_file_name,
                     task_start_time,
                     task_id,
@@ -585,6 +584,7 @@ def main():
     )
     try:
         app.pre_run()
+        init_web(app)
         threading.Thread(
             target=get_flask_app().run, daemon=True, args=(app.web_host, app.web_port)
         ).start()

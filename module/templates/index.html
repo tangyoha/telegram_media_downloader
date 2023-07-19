@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Telegram Media Downloader</title>
-  <link href="../static/layui/css/layui.css" rel="stylesheet">
-  <link href="./css/index.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='layui/css/layui.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/index.css') }}" rel="stylesheet">
   <style>
     body {
       padding: 6px 16px;
@@ -22,7 +22,7 @@
         <li>Downloaded</li>
         <!-- <li>Config</li> -->
       </ul>
-      <div class="stop-btn">puase</div>
+      <div class="stop-btn" id="download_state" data-value="{{ download_state }}" onclick="download_state_change(this)"> pause </div>
     </div>
     <div class="layui-tab-content" style="padding: 0;">
       <div class="layui-tab-item layui-show">
@@ -64,6 +64,7 @@
 
   <script src="../static/layui/layui.js"></script>
   <script>
+
     layui.use(['table', 'element'], function () {
       var table = layui.table;
       var element = layui.element;
@@ -81,6 +82,19 @@
           $("#app_version").html(result)
         }
       });
+
+      download_state_change = function(e) {
+        $.ajax({
+        url: "set_download_state?state=" + e.dataset.value
+        , type: "post"
+        , async: false
+        , dataType: "text"
+        , success: function (result) {
+          $("#download_state").html(result)
+          e.dataset.value=result
+        }
+      });
+    }
 
       tableIns = table.render({
         elem: '#download_list'
