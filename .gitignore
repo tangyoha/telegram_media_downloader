@@ -68,5 +68,5 @@ log/
 temp/
 config.yaml
 data.yaml
-module/templates/css/index.scss
-module/templates/css/index.css.map
+*.scss
+*.css.map

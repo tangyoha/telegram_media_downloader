@@ -1,0 +1,73 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+.main {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+}
+.main .content {
+  position: absolute;
+  top: 150px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.main .content .logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.main .content .logo img {
+  width: 150px;
+  height: 150px;
+}
+.main .content .logo .title {
+  margin-top: 40px;
+  font-size: 24px;
+}
+.main .content .logo .tips {
+  margin-top: 8px;
+  font-size: 16px;
+  color: #707579;
+}
+.main .content .password-input {
+  position: relative;
+  width: 408px;
+  margin-top: 48px;
+}
+.main .content .password-input:hover .tip {
+  color: #3390ec !important;
+}
+.main .content .password-input .input-p {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 54px;
+  padding: 11px 13px;
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  font-size: 16px;
+  transition: transform 0.15s ease-out, color 0.15s ease-out;
+  outline: none;
+}
+.main .content .password-input .input-p:focus {
+  outline: 2px solid #3390ec;
+}
+.main .content .password-input .tip {
+  position: absolute;
+  left: 12px;
+  top: 15px;
+  padding: 0 4px;
+  background-color: #fff;
+  font-size: 16px;
+  font-weight: 400;
+  transition: transform 0.15s ease-out, color 0.15s ease-out;
+  transform-origin: left center;
+  color: #707579;
+  transform: scale(0.75) translate(-8px, -36px);
+}
+
+/*# sourceMappingURL=index.css.map */
