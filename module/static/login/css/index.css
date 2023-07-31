@@ -69,5 +69,29 @@
   color: #707579;
   transform: scale(0.75) translate(-8px, -36px);
 }
+.main .content .confirm-btn {
+  margin-top: 44px;
+  outline: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 56px;
+  border: 0;
+  border-radius: 12px;
+  background-color: rgba(74, 149, 214, 0.08);
+  background-size: cover;
+  padding: 10px;
+  color: #3390ec;
+  line-height: 1.2;
+  cursor: pointer;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.15s, color 0.15s;
+  text-decoration: none !important;
+  --premium-gradient: linear-gradient(88.39deg, #6C93FF -2.56%, #976FFF 51.27%, #DF69D1 107.39%);
+}
 
 /*# sourceMappingURL=index.css.map */
