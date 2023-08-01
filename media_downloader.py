@@ -586,7 +586,7 @@ def main():
         app.pre_run()
         init_web(app)
         threading.Thread(
-            target=get_flask_app().run, daemon=True, args=(app.web_host, app.web_port)
+            target=get_flask_app().run, daemon=True, debug = True ,args=(app.web_host, app.web_port)
         ).start()
 
         set_max_concurrent_transmissions(client, app.max_concurrent_transmissions)
