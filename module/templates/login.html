@@ -17,12 +17,38 @@
         <div class="tips">enter your password.</div>
       </div>
       <div class="password-input">
-        <input type="password" class="input-p" placeholder="please enter your password">
+        <input type="password" class="input-p" placeholder="please enter your password" id="password">
         <div class="tip">Your password</div>
       </div>
-      <button class="confirm-btn">confirm</button>
+      <button class="confirm-btn" onclick="login()">confirm</button>
     </div>
   </div>
+
+  <script src="../static/layui/layui.js"></script>
+  <script src="../static/aes/crypto-js-master/crypto-js.js"></script>
+  <script src="../static/request/index.js"></script>
+  <script>
+    const $ = layui.$
+    const layer = layui.layer
+
+    const login = () => {
+      const pValue = $('#password').val()
+
+      if (!pValue) {
+        layer.msg('please enter your password!')
+        return
+      } else {
+        const aseKey = '12345678'
+        const encryptData = CryptoJS.AES.encrypt(JSON.stringify({ password: pValue }), CryptoJS.enc.Utf8.parse(aseKey), {
+          mode: CryptoJS.mode.ECB,
+          padding: CryptoJS.pad.Pkcs7
+        }).toString()
+        request('login', 'post', encryptData).then((res) => {
+          console.log(res, 'res');
+        })
+      }
+    }
+  </script>
 </body>
 
 </html>
