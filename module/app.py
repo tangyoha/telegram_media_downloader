@@ -224,6 +224,7 @@ class Application:
         self.language = Language.EN
         self.after_upload_telegram_delete: bool = True
         self.web_login_secret: str = ""
+        self.debug_web : bool = False
 
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
@@ -328,6 +329,7 @@ class Application:
         )
 
         self.web_login_secret = str(_config.get("web_login_secret", self.web_login_secret))
+        self.debug_web = _config.get("debug_web", self.debug_web)
 
         if _config.get("chat"):
             chat = _config["chat"]
