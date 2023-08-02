@@ -33,11 +33,13 @@
 
     //加密方法
     const encrypt = (word) => {
-      const key = CryptoJS.enc.Utf8.parse("1234123412ABCDEF");  //十六位十六进制数作为密钥
-      const iv = CryptoJS.enc.Utf8.parse('ABCDEF1234123412');   //十六位十六进制数作为密钥偏移量
+      const key = CryptoJS.enc.Utf8.parse("1234123412ABCDEF");
+      const iv = CryptoJS.enc.Utf8.parse('ABCDEF1234123412');
       let srcs = CryptoJS.enc.Utf8.parse(word);
       let encrypted = CryptoJS.AES.encrypt(srcs, key, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 });
-      return encrypted.ciphertext.toString().toUpperCase();
+      let hexStr = encrypted.ciphertext.toString();
+      let base64Str = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Hex.parse(hexStr));
+      return base64Str;
     }
 
     const login = () => {
@@ -49,7 +51,13 @@
       } else {
         const encryptData = encrypt(pValue)
         request('login', 'post', { password: encryptData }).then((res) => {
-          console.log(res, 'res');
+          const hostname = window.location.hostname;
+          const port = window.location.port;
+          let url = 'http://' + hostname;
+          if (port) {
+            url += ':' + port;
+          }
+          window.location.href = url;
         })
       }
     }

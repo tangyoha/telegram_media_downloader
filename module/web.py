@@ -6,7 +6,7 @@ import os
 from flask import Flask, jsonify, render_template, request
 
 import utils
-from flask_login import LoginManager, login_required, login_user
+from flask_login import LoginManager, login_required, login_user, UserMixin
 from module.app import Application
 from module.download_stat import (
     DownloadState,
@@ -16,6 +16,7 @@ from module.download_stat import (
     set_download_state,
 )
 from utils.format import format_byte
+from utils.crypto import AesBase64
 
 log = logging.getLogger("werkzeug")
 log.setLevel(logging.ERROR)
@@ -29,16 +30,16 @@ _login_manager.login_view = "login"
 _login_manager.init_app(_flask_app)
 
 web_login_users: dict = {}
-
-
-class User:
+#deAesCrypt = DeAesCrypt("1234123412ABCDEF")
+deAesCrypt = AesBase64('1234123412ABCDEF', 'ABCDEF1234123412')
+class User(UserMixin):
     """Web Login User"""
 
     id = "root"
 
 
 @_login_manager.user_loader
-def load_user():
+def load_user(id):
     """
     Load a user object from the user ID.
 
@@ -83,7 +84,18 @@ def login():
     """
     if request.method == "POST":
         username = "root"  # request.form['username']
-        password = request.form["password"]
+        web_login_form = {}
+        for key, value in request.form.items():
+            if value:
+                #value = deAesCrypt.decrypt(value, 64)
+                #value = aes_cbc_decrypt_js_text(value,'1234123412ABCDEF', 'ABCDEF1234123412')
+                value = deAesCrypt.decrypt(value)
+            web_login_form[key] = value
+    
+        if not web_login_form.get("password"):
+            return jsonify({"code": "0"})
+
+        password = web_login_form["password"]
         if username in web_login_users and web_login_users[username] == password:
             user = User()
             login_user(user)

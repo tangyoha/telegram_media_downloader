@@ -327,7 +327,7 @@ class Application:
             "after_upload_telegram_delete", self.after_upload_telegram_delete
         )
 
-        self.web_login_secret = _config.get("web_login_secret", self.web_login_secret)
+        self.web_login_secret = str(_config.get("web_login_secret", self.web_login_secret))
 
         if _config.get("chat"):
             chat = _config["chat"]
