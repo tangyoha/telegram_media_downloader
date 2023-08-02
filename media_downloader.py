@@ -3,7 +3,6 @@ import asyncio
 import logging
 import os
 import shutil
-import threading
 import time
 from typing import List, Optional, Tuple, Union
 
@@ -571,14 +570,6 @@ def _exec_loop():
     else:
         app.loop.run_until_complete(run_until_all_task_finish())
 
-
-def run_web_server():
-    """
-    Runs a web server using the Flask framework.
-    """
-
-    get_flask_app().run(app.web_host, app.web_port, debug=app.debug_web, use_reloader=False)
-
 def main():
     """Main function of the downloader."""
     tasks = []
@@ -592,9 +583,6 @@ def main():
     try:
         app.pre_run()
         init_web(app)
-        threading.Thread(
-            target=run_web_server
-        ).start()
 
         set_max_concurrent_transmissions(client, app.max_concurrent_transmissions)
 

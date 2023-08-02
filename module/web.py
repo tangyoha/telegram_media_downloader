@@ -6,6 +6,7 @@ import os
 from flask import Flask, jsonify, render_template, request
 
 import utils
+import threading
 from flask_login import LoginManager, login_required, login_user, UserMixin
 from module.app import Application
 from module.download_stat import (
@@ -48,6 +49,16 @@ def load_user(id):
     """
     return User()
 
+def get_flask_app() -> Flask:
+    """get flask app instance"""
+    return _flask_app
+
+def run_web_server(app : Application):
+    """
+    Runs a web server using the Flask framework.
+    """
+
+    get_flask_app().run(app.web_host, app.web_port, debug=app.debug_web, use_reloader=False)
 
 # pylint: disable = W0603
 def init_web(app: Application):
@@ -65,6 +76,12 @@ def init_web(app: Application):
         web_login_users = {"root": app.web_login_secret}
     else:
         _flask_app.config["LOGIN_DISABLED"] = True
+    if  app.debug_web:
+        threading.Thread(target=run_web_server, args=(app,)).start()
+    else:
+        threading.Thread(
+            target=get_flask_app().run, daemon=True, args=(app.web_host, app.web_port)
+        ).start()
 
 
 @_flask_app.route("/login", methods=["GET", "POST"])
@@ -105,10 +122,6 @@ def login():
 
     return render_template("login.html")
 
-
-def get_flask_app() -> Flask:
-    """get flask app instance"""
-    return _flask_app
 
 
 @_flask_app.route("/")
