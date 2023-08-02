@@ -31,6 +31,15 @@
     const $ = layui.$
     const layer = layui.layer
 
+    //加密方法
+    const encrypt = (word) => {
+      const key = CryptoJS.enc.Utf8.parse("1234123412ABCDEF");  //十六位十六进制数作为密钥
+      const iv = CryptoJS.enc.Utf8.parse('ABCDEF1234123412');   //十六位十六进制数作为密钥偏移量
+      let srcs = CryptoJS.enc.Utf8.parse(word);
+      let encrypted = CryptoJS.AES.encrypt(srcs, key, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 });
+      return encrypted.ciphertext.toString().toUpperCase();
+    }
+
     const login = () => {
       const pValue = $('#password').val()
 
@@ -38,12 +47,8 @@
         layer.msg('please enter your password!')
         return
       } else {
-        const aseKey = '12345678'
-        const encryptData = CryptoJS.AES.encrypt(JSON.stringify({ password: pValue }), CryptoJS.enc.Utf8.parse(aseKey), {
-          mode: CryptoJS.mode.ECB,
-          padding: CryptoJS.pad.Pkcs7
-        }).toString()
-        request('login', 'post', encryptData).then((res) => {
+        const encryptData = encrypt(pValue)
+        request('login', 'post', { password: encryptData }).then((res) => {
           console.log(res, 'res');
         })
       }
