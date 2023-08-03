@@ -10,4 +10,4 @@ flask==2.2.2
 ply==3.11
 ruamel.yaml==0.17.21
 flask-login==0.6.2
-pycryptodome==1.4.1
+pycryptodome==3.18.0
