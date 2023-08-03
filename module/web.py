@@ -31,8 +31,8 @@ _login_manager.login_view = "login"
 _login_manager.init_app(_flask_app)
 
 web_login_users: dict = {}
-#deAesCrypt = DeAesCrypt("1234123412ABCDEF")
 deAesCrypt = AesBase64('1234123412ABCDEF', 'ABCDEF1234123412')
+
 class User(UserMixin):
     """Web Login User"""
 
@@ -100,12 +100,10 @@ def login():
     - If the request method is not "POST", it returns the rendered "login.html" template.
     """
     if request.method == "POST":
-        username = "root"  # request.form['username']
+        username = "root"
         web_login_form = {}
         for key, value in request.form.items():
             if value:
-                #value = deAesCrypt.decrypt(value, 64)
-                #value = aes_cbc_decrypt_js_text(value,'1234123412ABCDEF', 'ABCDEF1234123412')
                 value = deAesCrypt.decrypt(value)
             web_login_form[key] = value
     
