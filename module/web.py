@@ -2,12 +2,12 @@
 
 import logging
 import os
+import threading
 
 from flask import Flask, jsonify, render_template, request
 
 import utils
-import threading
-from flask_login import LoginManager, login_required, login_user, UserMixin
+from flask_login import LoginManager, UserMixin, login_required, login_user
 from module.app import Application
 from module.download_stat import (
     DownloadState,
@@ -16,8 +16,8 @@ from module.download_stat import (
     get_total_download_speed,
     set_download_state,
 )
-from utils.format import format_byte
 from utils.crypto import AesBase64
+from utils.format import format_byte
 
 log = logging.getLogger("werkzeug")
 log.setLevel(logging.ERROR)
@@ -31,16 +31,15 @@ _login_manager.login_view = "login"
 _login_manager.init_app(_flask_app)
 
 web_login_users: dict = {}
-deAesCrypt = AesBase64('1234123412ABCDEF', 'ABCDEF1234123412')
+deAesCrypt = AesBase64("1234123412ABCDEF", "ABCDEF1234123412")
+
 
 class User(UserMixin):
     """Web Login User"""
 
-    id = "root"
-
 
 @_login_manager.user_loader
-def load_user(id):
+def load_user(_):
     """
     Load a user object from the user ID.
 
@@ -49,16 +48,21 @@ def load_user(id):
     """
     return User()
 
+
 def get_flask_app() -> Flask:
     """get flask app instance"""
     return _flask_app
 
-def run_web_server(app : Application):
+
+def run_web_server(app: Application):
     """
     Runs a web server using the Flask framework.
     """
 
-    get_flask_app().run(app.web_host, app.web_port, debug=app.debug_web, use_reloader=False)
+    get_flask_app().run(
+        app.web_host, app.web_port, debug=app.debug_web, use_reloader=False
+    )
+
 
 # pylint: disable = W0603
 def init_web(app: Application):
@@ -76,7 +80,7 @@ def init_web(app: Application):
         web_login_users = {"root": app.web_login_secret}
     else:
         _flask_app.config["LOGIN_DISABLED"] = True
-    if  app.debug_web:
+    if app.debug_web:
         threading.Thread(target=run_web_server, args=(app,)).start()
     else:
         threading.Thread(
@@ -106,7 +110,7 @@ def login():
             if value:
                 value = deAesCrypt.decrypt(value)
             web_login_form[key] = value
-    
+
         if not web_login_form.get("password"):
             return jsonify({"code": "0"})
 
@@ -119,7 +123,6 @@ def login():
         return jsonify({"code": "0"})
 
     return render_template("login.html")
-
 
 
 @_flask_app.route("/")

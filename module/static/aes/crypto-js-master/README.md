@@ -248,14 +248,12 @@ In this version `Math.random()` has been replaced by the random methods of the n
 
 For this reason CryptoJS might does not run in some JavaScript environments without native crypto module. Such as IE 10 or before.
 
-If it's absolute required to run CryptoJS in such an environment, stay with `3.1.x` version. Encrypting and decrypting stays compatible. But keep in mind `3.1.x` versions still use `Math.random()` which is cryptographically not secure, as it's not random enough. 
+If it's absolute required to run CryptoJS in such an environment, stay with `3.1.x` version. Encrypting and decrypting stays compatible. But keep in mind `3.1.x` versions still use `Math.random()` which is cryptographically not secure, as it's not random enough.
 
-This version came along with `CRITICAL` `BUG`. 
+This version came along with `CRITICAL` `BUG`.
 
 DO NOT USE THIS VERSION! Please, go for a newer version!
 
 ### 3.1.x
 
 The `3.1.x` are based on the original CryptoJS, wrapped in CommonJS modules.
-
-

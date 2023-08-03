@@ -25,7 +25,7 @@ from module.pyrogram_extension import (
     set_meta_data,
     upload_telegram_chat,
 )
-from module.web import get_flask_app, init_web
+from module.web import init_web
 from utils.format import truncate_filename, validate_title
 from utils.log import LogFilter
 from utils.meta import print_meta
@@ -569,6 +569,7 @@ def _exec_loop():
         app.loop.run_forever()
     else:
         app.loop.run_until_complete(run_until_all_task_finish())
+
 
 def main():
     """Main function of the downloader."""
