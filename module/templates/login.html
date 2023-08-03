@@ -51,13 +51,14 @@
       } else {
         const encryptData = encrypt(pValue)
         request('login', 'post', { password: encryptData }).then((res) => {
-          const hostname = window.location.hostname;
-          const port = window.location.port;
-          let url = 'http://' + hostname;
-          if (port) {
-            url += ':' + port;
+          const { code } = res
+          if (code === '1') {
+            const { host } = window.location;
+            window.location.href = 'http://' + host
+          } else {
+            layer.msg('password error!')
           }
-          window.location.href = url;
+          $('#password').val('')
         })
       }
     }
