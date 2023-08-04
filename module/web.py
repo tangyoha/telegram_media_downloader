@@ -25,11 +25,9 @@ log.setLevel(logging.ERROR)
 _flask_app = Flask(__name__)
 
 _flask_app.secret_key = "tdl"
-
 _login_manager = LoginManager()
 _login_manager.login_view = "login"
 _login_manager.init_app(_flask_app)
-
 web_login_users: dict = {}
 deAesCrypt = AesBase64("1234123412ABCDEF", "ABCDEF1234123412")
 
