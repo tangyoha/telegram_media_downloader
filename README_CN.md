@@ -187,6 +187,7 @@ file_name_prefix_split: ' - '
 max_download_task: 5
 web_host: 127.0.0.1
 web_port: 5000
+web_login_secret: 123
 ```
 
 - **api_hash** - 你从电报应用程序获得的 api_hash
@@ -224,6 +225,7 @@ web_port: 5000
 - **web_host** - web界面地址
 - **web_port** - web界面端口
 - **language** - 应用语言，默认为英文(`EN`),可选`ZH`（中文）,`RU`,`UA`
+- **web_login_secret** - 网页登录密码，如果不配置则访问网页不需要登录
 
 ## 执行
 
