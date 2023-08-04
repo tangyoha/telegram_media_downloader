@@ -2,7 +2,7 @@
 #pyrogram==2.0.106
 https://github.com/tangyoha/pyrogram/archive/refs/heads/master_v2.0.69_1.zip
 PyYAML==6.0
-rich==12.5.1
+rich==13.3.5
 TgCrypto==1.2.5
 loguru==0.6.0
 # aligo==5.4.0
