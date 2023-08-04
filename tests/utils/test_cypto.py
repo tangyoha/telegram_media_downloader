@@ -1,5 +1,6 @@
 """Test Crypto"""
 
+import sys
 import unittest
 
 from utils.crypto import AesBase64
