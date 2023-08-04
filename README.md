@@ -193,6 +193,7 @@ max_download_task: 5
 web_host: 127.0.0.1
 web_port: 5000
 language: EN
+web_login_secret: 123
 ```
 
 - **api_hash**  - The api_hash you got from telegram apps
@@ -228,7 +229,7 @@ language: EN
 - **web_host** - Web host
 - **web_port** - Web port
 - **language** - Application language, the default is English (`EN`), optional `ZH`(Chinese),`RU`,`UA`
-
+- **web_login_secret** - Web page login password, if not configured, no login is required to access the web page
 
 
 ## Execution
