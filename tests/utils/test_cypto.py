@@ -9,7 +9,6 @@ sys.path.append("..")  # Adds higher directory to python modules path.
 
 
 class TestAesBase64(unittest.TestCase):
-
     def test_aes_base64_encryption(self):
         key = "This is a key123"
         iv = "This is an iv456"
