@@ -1,0 +1,97 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+.main {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+}
+.main .content {
+  position: absolute;
+  top: 150px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.main .content .logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.main .content .logo img {
+  width: 150px;
+  height: 150px;
+}
+.main .content .logo .title {
+  margin-top: 40px;
+  font-size: 24px;
+}
+.main .content .logo .tips {
+  margin-top: 8px;
+  font-size: 16px;
+  color: #707579;
+}
+.main .content .password-input {
+  position: relative;
+  width: 408px;
+  margin-top: 48px;
+}
+.main .content .password-input:hover .tip {
+  color: #3390ec !important;
+}
+.main .content .password-input .input-p {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 54px;
+  padding: 11px 13px;
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  font-size: 16px;
+  transition: transform 0.15s ease-out, color 0.15s ease-out;
+  outline: none;
+}
+.main .content .password-input .input-p:focus {
+  outline: 2px solid #3390ec;
+}
+.main .content .password-input .tip {
+  position: absolute;
+  left: 12px;
+  top: 15px;
+  padding: 0 4px;
+  background-color: #fff;
+  font-size: 16px;
+  font-weight: 400;
+  transition: transform 0.15s ease-out, color 0.15s ease-out;
+  transform-origin: left center;
+  color: #707579;
+  transform: scale(0.75) translate(-8px, -36px);
+}
+.main .content .confirm-btn {
+  margin-top: 44px;
+  outline: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 56px;
+  border: 0;
+  border-radius: 12px;
+  background-color: rgba(74, 149, 214, 0.08);
+  background-size: cover;
+  padding: 10px;
+  color: #3390ec;
+  line-height: 1.2;
+  cursor: pointer;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.15s, color 0.15s;
+  text-decoration: none !important;
+  --premium-gradient: linear-gradient(88.39deg, #6C93FF -2.56%, #976FFF 51.27%, #DF69D1 107.39%);
+}
+
+/*# sourceMappingURL=index.css.map */
