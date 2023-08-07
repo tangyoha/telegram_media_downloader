@@ -1,7 +1,7 @@
 #https://github.com/tangyoha/pyrogram/archive/refs/tags/v2.0.69.zip
 #pyrogram==2.0.106
 https://github.com/tangyoha/pyrogram/archive/refs/heads/master_v2.0.69_1.zip
-PyYAML==6.0
+PyYAML==5.3.1
 rich==12.5.1
 TgCrypto==1.2.5
 loguru==0.6.0
