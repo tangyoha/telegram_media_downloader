@@ -5,9 +5,9 @@ import os
 import threading
 
 from flask import Flask, jsonify, render_template, request
-from flask_login import LoginManager, UserMixin, login_required, login_user
 
 import utils
+from flask_login import LoginManager, UserMixin, login_required, login_user
 from module.app import Application
 from module.download_stat import (
     DownloadState,
@@ -34,6 +34,14 @@ deAesCrypt = AesBase64("1234123412ABCDEF", "ABCDEF1234123412")
 
 class User(UserMixin):
     """Web Login User"""
+
+    def __init__(self):
+        self.sid = "root"
+
+    @property
+    def id(self):
+        """ID"""
+        return self.sid
 
 
 @_login_manager.user_loader
