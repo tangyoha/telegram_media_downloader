@@ -28,6 +28,8 @@ class MetaData:
     * `media_file_name` : - file name
     * `message_caption` : - message_caption
     * `message_duration` : - message_duration
+    * `sender_id` : - Sender id, empty for messages sent to channels.
+    * `sender_name` : - Sender name, empty for messages sent to channels.
     """
 
     AVAILABLE_MEDIA = (
@@ -54,6 +56,8 @@ class MetaData:
         media_duration: int = None,
         media_type: str = None,
         file_extension: str = None,
+        sender_id: int = None,
+        sender_name: str = None,
     ):
         self.message_date = message_date
         self.message_id = message_id
@@ -65,6 +69,8 @@ class MetaData:
         self.media_duration = media_duration
         self.media_type = media_type
         self.file_extension = file_extension
+        self.sender_id = sender_id
+        self.sender_name = sender_name
 
     def data(self) -> dict:
         """Meta map"""
@@ -84,4 +90,6 @@ class MetaData:
             "file_name": self.media_file_name,
             "media_type": self.media_type,
             "file_extension": self.file_extension,
+            "sender_id": self.sender_id,
+            "sender_name": self.sender_name,
         }

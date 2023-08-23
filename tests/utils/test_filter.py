@@ -14,6 +14,7 @@ from tests.test_common import (
     MockDocument,
     MockMessage,
     MockPhoto,
+    MockUser,
     MockVideo,
     MockVideoNote,
     MockVoice,
@@ -55,6 +56,10 @@ class FilterTestCase(unittest.TestCase):
                 width=1920,
                 height=1080,
                 duration=35,
+            ),
+            from_user=MockUser(
+                username="coco",
+                id=123,
             ),
         )
 
@@ -238,6 +243,11 @@ class FilterTestCase(unittest.TestCase):
         self.assertEqual(
             filter_exec(download_filter, "file_extension != r'(mp4|mp3)'"), False
         )
+
+        # test sender
+        self.assertEqual(filter_exec(download_filter, "sender_name == 'coco'"), True)
+
+        self.assertEqual(filter_exec(download_filter, "sender_id == 1"), False)
 
     def test_null_obj(self):
         download_filter = Filter()

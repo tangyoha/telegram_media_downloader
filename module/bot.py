@@ -130,6 +130,9 @@ class DownloadBot:
         commands = [
             types.BotCommand("help", _t("Help")),
             types.BotCommand(
+                "get_info", _t("Get group and user info from message link")
+            ),
+            types.BotCommand(
                 "download",
                 _t(
                     "To download the video, use the method to directly enter /download to view"
@@ -182,6 +185,9 @@ class DownloadBot:
             MessageHandler(help_command, filters=pyrogram.filters.command(["help"]))
         )
         self.bot.add_handler(
+            MessageHandler(get_info, filters=pyrogram.filters.command(["get_info"]))
+        )
+        self.bot.add_handler(
             MessageHandler(help_command, filters=pyrogram.filters.command(["start"]))
         )
         self.bot.add_handler(
@@ -219,11 +225,7 @@ class DownloadBot:
         admin = await self.client.get_me()
 
         try:
-            await self.bot.send_message(
-                admin.id,
-                f"```\n🤖 {_t('Telegram Media Downloader')}\n"
-                f"└─ 🌐 {_t('Version')}: {utils.__version__}```\n",
-            )
+            await send_help_str(self.bot, admin.id)
         except Exception:
             pass
         # TODO: add admin
@@ -251,6 +253,40 @@ def stop_download_bot():
     _bot.is_running = False
 
 
+async def send_help_str(client: pyrogram.Client, chat_id):
+    """
+    Sends a help string to the specified chat ID using the provided client.
+
+    Parameters:
+        client (pyrogram.Client): The Pyrogram client used to send the message.
+        chat_id: The ID of the chat to which the message will be sent.
+
+    Returns:
+        str: The help string that was sent.
+
+    Note:
+        The help string includes information about the Telegram Media Downloader bot,
+        its version, and the available commands.
+    """
+    msg = (
+        f"```\n🤖 {_t('Telegram Media Downloader')}\n"
+        f"🌐 {_t('Version')}: {utils.__version__}```\n\n"
+        f"{_t('Available commands:')}\n"
+        f"/help - {_t('Show available commands')}\n"
+        f"/get_info - {_t('Get group and user info from message link')}\n"
+        # f"/add_filter - {_t('Add download filter')}\n"
+        f"/download - {_t('Download messages')}\n"
+        f"/forward - {_t('Forward messages')}\n"
+        f"/listen_forward - {_t('Listen for forwarded messages')}\n"
+        f"/set_language - {_t('Set language')}\n\n"
+        f"{_t('**Note**: 1 means the start of the entire chat')},"
+        f"{_t('0 means the end of the entire chat')}\n"
+        f"`[` `]` {_t('means optional, not required')}\n"
+    )
+
+    await client.send_message(chat_id, msg)
+
+
 async def help_command(client: pyrogram.Client, message: pyrogram.types.Message):
     """
     Sends a message with the available commands and their usage.
@@ -262,20 +298,8 @@ async def help_command(client: pyrogram.Client, message: pyrogram.types.Message)
     Returns:
         None
     """
-    msg = (
-        f"{_t('Available commands:')}\n"
-        f"/help - {_t('Show available commands')}\n"
-        # f"/add_filter - {_t('Add download filter')}\n"
-        f"/download - {_t('Download messages')}\n"
-        f"/forward - {_t('Forward messages')}\n"
-        f"/listen_forward - {_t('Listen for forwarded messages')}\n"
-        f"/set_language - {_t('Set language')}\n"
-        f"{_t('**Note**: 1 means the start of the entire chat')},"
-        f"{_t('0 means the end of the entire chat')}\n"
-        f"`[` `]` {_t('means optional, not required')}\n"
-    )
 
-    await client.send_message(message.chat.id, msg)
+    await send_help_str(client, message.chat.id)
 
 
 async def set_language(client: pyrogram.Client, message: pyrogram.types.Message):
@@ -310,6 +334,56 @@ async def set_language(client: pyrogram.Client, message: pyrogram.types.Message)
             message.from_user.id,
             _t("Invalid command format. Please use /set_language en/ru/zh/ua"),
         )
+
+
+async def get_info(client: pyrogram.Client, message: pyrogram.types.Message):
+    """
+    Async function that retrieves information from a group message link.
+    """
+
+    msg = _t("Invalid command format. Please use /get_info group_message_link")
+
+    args = message.text.split()
+    if len(args) != 2:
+        await client.send_message(
+            message.from_user.id,
+            msg,
+        )
+        return
+
+    chat_id, message_id = extract_info_from_link(args[1])
+
+    entity = None
+    if chat_id:
+        entity = await _bot.client.get_chat(chat_id)
+
+    if entity:
+        if message_id:
+            _message = await get_message_with_retry(_bot.client, chat_id, message_id)
+            if _message:
+                meta_data = MetaData()
+                set_meta_data(meta_data, _message)
+                msg = (
+                    f"```\n"
+                    f"{_t('Group/Channel')}\n"
+                    f"├─ {_t('id')}: {entity.id}\n"
+                    f"├─ {_t('first name')}: {entity.first_name}\n"
+                    f"├─ {_t('last name')}: {entity.last_name}\n"
+                    f"└─ {_t('name')}: {entity.username}\n"
+                    f"{_t('Message')}\n"
+                )
+
+                for key, value in meta_data.data().items():
+                    if key == "send_name":
+                        msg += f"└─ {key}: {value or None}\n"
+                    else:
+                        msg += f"├─ {key}: {value or None}\n"
+
+                msg += "```"
+    await client.send_message(
+        message.from_user.id,
+        msg,
+    )
 
 
 async def add_filter(client: pyrogram.Client, message: pyrogram.types.Message):

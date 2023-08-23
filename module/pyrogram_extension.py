@@ -570,6 +570,12 @@ def set_meta_data(
     else:
         meta_data.message_caption = getattr(message, "caption", None) or ""
     meta_data.message_id = getattr(message, "id", None)
+
+    from_user = getattr(message, "from_user")
+    meta_data.sender_id = from_user.id if from_user else 0
+    meta_data.sender_name = (from_user.username if from_user else "") or ""
+
+    # media
     for kind in meta_data.AVAILABLE_MEDIA:
         media_obj = getattr(message, kind, None)
         if media_obj is not None:

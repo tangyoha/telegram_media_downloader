@@ -32,6 +32,7 @@ class MockMessage:
         self.caption = kwargs.get("caption", None)
         self.text = None
         self.empty = kwargs.get("empty", False)
+        self.from_user = kwargs.get("from_user", None)
 
         if kwargs.get("dis_chat") == None:
             self.chat = Chat(
@@ -42,6 +43,12 @@ class MockMessage:
         self.date: datetime = None
         if kwargs.get("date") != None:
             self.date = kwargs["date"]
+
+
+class MockUser:
+    def __init__(self, **kwargs):
+        self.id = kwargs.get("id", 0)
+        self.username = kwargs.get("username", "")
 
 
 class MockAudio:
