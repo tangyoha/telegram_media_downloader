@@ -138,7 +138,7 @@ def index():
     return render_template(
         "index.html",
         download_state=(
-            "pause" if get_download_state() is DownloadState.Downloading else "pause"
+            "pause" if get_download_state() is DownloadState.Downloading else "continue"
         ),
     )
 
