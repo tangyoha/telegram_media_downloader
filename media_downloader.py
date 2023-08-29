@@ -542,8 +542,8 @@ async def download_all_chat(client: pyrogram.Client):
         node = TaskNode(chat_id=key)
         try:
             await download_chat_task(client, value, node)
-        except Exception:
-            logger.warning(f"Download {key} error")
+        except Exception as e:
+            logger.warning(f"Download {key} error: {e}")
         finally:
             value.need_check = True
 
