@@ -6,55 +6,117 @@ on:
       - 'v*'
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
+  build-tdl-binaries:
+    name: Build tdl binaries for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-20.04, windows-latest]
+        include:
+        - os: macos-latest
+          TARGET: macos
+        - os: ubuntu-20.04
+          TARGET: linux-amd64
+        - os: windows-latest
+          TARGET: win64
+    container: ${{ matrix.CONTAINER }}
+    env:
+      DISTPATH: tdl-${{ matrix.TARGET }}
     steps:
-      - name: Check out code
-        uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@master
+      - name: Set up Python 3.11
+        uses: actions/setup-python@master
         with:
-          fetch-depth: 0
-
-      - name: Get Release Date
-        id: release_date
+          python-version: 3.11
+      - name: Install dependencies
         run: |
-          RELEASE_DATE=$(date +%Y-%m-%d)
-          echo "RELEASE_DATE=$RELEASE_DATE" | tee -a $GITHUB_ENV
-          echo "release_date=$RELEASE_DATE" >> $GITHUB_OUTPUT
-
-      - name: Generate changelog
-        id: changelog
+          python -m pip install --upgrade pip setuptools
+          python3 -m pip install -r requirements.txt
+          pip install pyinstaller
+      - name: Build with PyInstaller
         run: |
-          PREVIOUS_TAG=$(git describe --abbrev=0 --tags `git rev-list --tags --skip=1 --max-count=1`)
-          CURRENT_TAG=${{ github.ref }}
-          LOG=$(git log --pretty=format:'* %s by @%an in %H' $PREVIOUS_TAG...$CURRENT_TAG)
-          echo "changelog=$LOG" >> $GITHUB_OUTPUT
+          pyinstaller --distpath ./${{ env.DISTPATH }} media_downloader.spec
+      - name: Add license and readme
+        shell: bash
+        run: mv README_CN.md README.md ./${{ env.DISTPATH }}
+      - name: Archive artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ env.DISTPATH }}
+          path: ${{ env.DISTPATH }}
 
-      - name: Create Release
+  # release:
+  #   needs: build-tdl-binaries
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Check out code
+  #       uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+
+  #     - name: Get Release Date
+  #       id: release_date
+  #       run: |
+  #         RELEASE_DATE=$(date +%Y-%m-%d)
+  #         echo "RELEASE_DATE=$RELEASE_DATE" | tee -a $GITHUB_ENV
+  #         echo "release_date=$RELEASE_DATE" >> $GITHUB_OUTPUT
+
+  #     - name: Generate changelog
+  #       id: changelog
+  #       run: |
+  #         PREVIOUS_TAG=$(git describe --abbrev=0 --tags `git rev-list --tags --skip=1 --max-count=1`)
+  #         CURRENT_TAG=${{ github.ref }}
+  #         LOG=$(git log --pretty=format:'* %s by @%an in %H' $PREVIOUS_TAG...$CURRENT_TAG)
+  #         echo "changelog=$LOG" >> $GITHUB_OUTPUT
+
+  create_release:
+    name: Create GitHub release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build-tdl-binaries
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      VERSION: ${{ steps.get_version.outputs.VERSION }}
+    steps:
+      - name: Create release
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
           release_name: ${{ github.ref }},${{ steps.release_date.outputs.release_date }}
-          body: |
-            ## What's Changed
-            ${{ steps.changelog.outputs.changelog }}
-
           draft: false
           prerelease: false
+      - name: Get version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        shell: bash
 
-      # docker
-      - name: Archive docker files
+  upload_assets:
+    name: Upload release assets
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: create_release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        TARGET: [macos, linux-amd64, win64]
+    env:
+      DISTPATH: tdl-${{ needs.create_release.outputs.VERSION }}-${{ matrix.TARGET }}
+    steps:
+      - name: Download built binaries
+        uses: actions/download-artifact@master
+      - name: Rename and package binaries
         run: |
-          tar -cvzf app.tar.gz docker-compose.yaml config.yaml data.yaml
-
-      - name: Upload assets
+          zip -r ${{ env.DISTPATH }}.zip ./${{ env.DISTPATH }}/*
+      - name: Upload release assets
+        id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: app.tar.gz
-          asset_name: app.tar.gz
-          asset_content_type: application/gzip
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: "${{ env.DISTPATH }}.zip"
+          asset_name: "${{ env.DISTPATH }}.zip"
+          asset_content_type: application/zip

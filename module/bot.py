@@ -545,7 +545,7 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
         f"{_t('The private group (channel) link is a random group message link')}\n\n"
         f"2. {_t('The download starts from the N message to the end of the M message')}. "
         f"{_t('When M is 0, it means the last message. The filter is optional')}\n"
-        f"<i>/{_t('download')} https://t.me/12000000 N M [filter]</i>\n\n"
+        f"<i>/download https://t.me/12000000 N M [filter]</i>\n\n"
     )
 
     args = message.text.split(maxsplit=4)
