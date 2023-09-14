@@ -8,7 +8,7 @@ a = Analysis(
     ['media_downloader.py'],
     pathex=[],
     binaries=[],
-    datas=[('./module/templates','templates'),('./module/static/','static'), ('./module/parsetab.py','./module/'),('./module/parser.out','./module/'),('./config.yaml','./'),('./data.yaml','./')],
+    datas=[('./module/templates','./module/templates'),('./module/static/','./module/static'), ('./module/parsetab.py','./module/'),('./module/parser.out','./module/'),('./config.yaml','./'),('./data.yaml','./')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
