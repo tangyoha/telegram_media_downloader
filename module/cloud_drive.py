@@ -96,7 +96,12 @@ class CloudDrive:
                 + os.path.dirname(local_file_path).replace(save_path, "")
                 + "/"
             ).replace("\\", "/")
-
+        """
+        avoid space error
+        """
+            remote_dir = remote_dir.replace(" ", "\ ") 
+            
+            
             if not drive_config.dir_cache.get(remote_dir):
                 CloudDrive.rclone_mkdir(drive_config, remote_dir)
                 drive_config.dir_cache[remote_dir] = True
