@@ -97,6 +97,9 @@ class CloudDrive:
                 + "/"
             ).replace("\\", "/")
 
+            remote_dir = remote_dir.replace(" ", "\ ") 
+            
+            
             if not drive_config.dir_cache.get(remote_dir):
                 CloudDrive.rclone_mkdir(drive_config, remote_dir)
                 drive_config.dir_cache[remote_dir] = True
@@ -118,7 +121,8 @@ class CloudDrive:
             )
             if proc.stdout:
                 async for output in proc.stdout:
-                    s = output.decode()
+                    s = output.decode(errors="replace")
+                    print(s)
                     if "Transferred" in s and "100%" in s and "1 / 1" in s:
                         logger.info(f"upload file {local_file_path} success")
                         drive_config.total_upload_success_file_count += 1
@@ -152,6 +156,8 @@ class CloudDrive:
                 + os.path.dirname(local_file_path).replace(save_path, "")
                 + "/"
             ).replace("\\", "/")
+
+            remote_dir = remote_dir.replace(" ", "\ ") 
             if not drive_config.dir_cache.get(remote_dir):
                 CloudDrive.aligo_mkdir(drive_config, remote_dir)
                 aligo_dir = drive_config.aligo.get_folder_by_path(remote_dir)

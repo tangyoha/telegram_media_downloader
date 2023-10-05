@@ -160,6 +160,7 @@ media_types:
 - photo
 - video
 - voice
+- animation #gif
 file_formats:
   audio:
   - all
