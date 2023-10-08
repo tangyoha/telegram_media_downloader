@@ -5,6 +5,7 @@ import os
 from typing import Callable, List, Union
 
 import pyrogram
+from loguru import logger
 from pyrogram import types
 from pyrogram.handlers import MessageHandler
 from ruamel import yaml
@@ -580,6 +581,7 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
             await client.send_message(
                 message.from_user.id, err, reply_to_message_id=message.id
             )
+            return
     try:
         chat_id, _ = extract_info_from_link(url)
         if chat_id:
@@ -804,7 +806,7 @@ async def forward_normal_content(
 ):
     """Forward normal content"""
 
-    forward_ret = ForwardStatus.SuccessForward
+    forward_ret = ForwardStatus.FailedForward
     if node.download_filter:
         meta_data = MetaData()
         caption = message.caption
@@ -818,12 +820,26 @@ async def forward_normal_content(
             forward_ret = ForwardStatus.SkipForward
             await report_bot_forward_status(client, node, forward_ret)
             return
-    try:
-        await _bot.client.forward_messages(
-            node.upload_telegram_chat_id, node.chat_id, message.id
-        )
-    except Exception:
-        forward_ret = ForwardStatus.FailedForward
+
+    timeout_count = 0
+    while timeout_count < 3:
+        timeout_count += 1
+        try:
+            await _bot.client.forward_messages(
+                node.upload_telegram_chat_id, node.chat_id, message.id
+            )
+            forward_ret = ForwardStatus.SuccessForward
+            break
+        except pyrogram.errors.exceptions.bad_request_400.MessageIdInvalid:
+            pass
+        except pyrogram.errors.exceptions.flood_420.FloodWait as wait_err:
+            logger.warning(
+                "bot task: forward message[{}]: FlowWait {}", message.id, wait_err.value
+            )
+            await asyncio.sleep(wait_err.value)
+        except Exception as e:
+            logger.warning("bot task: forward message[{}]: exception {}", message.id, e)
+            break
 
     await report_bot_forward_status(client, node, forward_ret)
     return forward_ret

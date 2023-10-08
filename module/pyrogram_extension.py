@@ -451,6 +451,7 @@ async def report_bot_status(
 
         new_msg_str = (
             f"```\n"
+            f"🆔 task id: {node.task_id}\n"
             f"📥 {_t('Downloading')}: {format_byte(node.total_download_byte)}\n"
             f"├─ 📁 {_t('Total')}: {node.total_download_task}\n"
             f"├─ ✅ {_t('Success')}: {node.success_download_task}\n"
@@ -574,6 +575,9 @@ def set_meta_data(
     from_user = getattr(message, "from_user")
     meta_data.sender_id = from_user.id if from_user else 0
     meta_data.sender_name = (from_user.username if from_user else "") or ""
+    meta_data.reply_to_message_id = getattr(
+        message, "reply_to_message_id", 1
+    )  # 1 for General
 
     # media
     for kind in meta_data.AVAILABLE_MEDIA:

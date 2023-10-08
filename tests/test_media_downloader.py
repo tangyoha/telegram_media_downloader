@@ -362,11 +362,16 @@ class MockClient:
         return True
 
 
+def check_for_updates():
+    pass
+
+
 @mock.patch("media_downloader.get_extension", new=get_extension)
 @mock.patch("module.pyrogram_extension.get_extension", new=get_extension)
 @mock.patch("media_downloader.fetch_message", new=new_fetch_message)
 @mock.patch("media_downloader.get_chat_history_v2", new=get_chat_history)
 @mock.patch("media_downloader.RETRY_TIME_OUT", new=0)
+@mock.patch("media_downloader.check_for_updates", new=check_for_updates)
 class MediaDownloaderTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

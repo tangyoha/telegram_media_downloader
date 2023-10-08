@@ -297,6 +297,7 @@ class FilterTestCase(unittest.TestCase):
                 height=1080,
                 duration=35,
             ),
+            reply_to_message_id=4,
         )
 
         set_meta_data(meta, message)
@@ -319,6 +320,12 @@ class FilterTestCase(unittest.TestCase):
         self.assertEqual(filter_exec(download_filter, "caption == r'.*#中文.*'"), True)
 
         self.assertEqual(filter_exec(download_filter, "caption == r'.*#中文啊.*'"), False)
+
+        self.assertEqual(filter_exec(download_filter, "reply_to_message_id == 4"), True)
+        self.assertEqual(
+            filter_exec(download_filter, "reply_to_message_id != 4"), False
+        )
+        self.assertEqual(filter_exec(download_filter, "reply_to_message_id >= 4"), True)
 
     def test_check_filter(self):
         download_filter = Filter()
