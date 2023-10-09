@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+from datetime import datetime
 from typing import Callable, List, Union
 
 import pyrogram
@@ -55,7 +56,7 @@ class DownloadBot:
         self.task_node: dict = {}
         self.is_running = True
 
-        meta = MetaData("2022/03/08 10:00:00", 0, "", 0, 0, 0, "", 0)
+        meta = MetaData(datetime(2022, 8, 5, 14, 35, 12), 0, "", 0, 0, 0, "", 0)
         self.filter.set_meta_data(meta)
 
         self.download_filter: List[str] = []
