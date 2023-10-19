@@ -8,7 +8,8 @@ from typing import Callable, List, Union
 import pyrogram
 from loguru import logger
 from pyrogram import types
-from pyrogram.handlers import MessageHandler
+from pyrogram.handlers import CallbackQueryHandler, MessageHandler
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from ruamel import yaml
 
 import utils
@@ -16,6 +17,8 @@ from module.app import (
     Application,
     ChatDownloadConfig,
     ForwardStatus,
+    QueryHandler,
+    QueryHandlerStr,
     TaskNode,
     TaskType,
 )
@@ -30,9 +33,6 @@ from module.pyrogram_extension import (
 )
 from utils.format import extract_info_from_link, replace_date_time, validate_title
 from utils.meta_data import MetaData
-
-# from pyrogram.types import (ReplyKeyboardMarkup, InlineKeyboardMarkup,
-#                             InlineKeyboardButton)
 
 # pylint: disable = C0301, R0902
 
@@ -61,6 +61,7 @@ class DownloadBot:
 
         self.download_filter: List[str] = []
         self.task_id: int = 0
+        self.reply_task = None
 
     def gen_task_id(self) -> int:
         """Gen task id"""
@@ -75,6 +76,19 @@ class DownloadBot:
         """Remove task node"""
         self.task_node.pop(task_id)
 
+    def stop_task(self, task_id: str):
+        """Stop task"""
+        if task_id == "all":
+            for value in self.task_node.values():
+                value.stop_transmission()
+        else:
+            try:
+                task = self.task_node.get(int(task_id))
+                if task:
+                    task.stop_transmission()
+            except Exception:
+                return
+
     async def update_reply_message(self):
         """Update reply message"""
         while self.is_running:
@@ -84,7 +98,7 @@ class DownloadBot:
 
             for key, value in self.task_node.copy().items():
                 if value.is_running and value.is_finish():
-                    self.task_node.pop(key)
+                    self.remove_task_node(key)
             await asyncio.sleep(3)
 
     def assign_config(self, _config: dict):
@@ -200,6 +214,13 @@ class DownloadBot:
         self.bot.add_handler(
             MessageHandler(add_filter, filters=pyrogram.filters.command(["add_filter"]))
         )
+
+        self.bot.add_handler(
+            MessageHandler(stop, filters=pyrogram.filters.command(["stop"]))
+        )
+
+        self.bot.add_handler(CallbackQueryHandler(on_query_handler))
+
         self.client = client
 
         self.client.add_handler(MessageHandler(listen_forward_msg))
@@ -219,7 +240,7 @@ class DownloadBot:
 
         await self.bot.start()
 
-        self.bot_info = self.bot.get_me()
+        self.bot_info = await self.bot.get_me()
 
         # 添加命令列表
         await self.bot.set_bot_commands(commands)
@@ -233,7 +254,7 @@ class DownloadBot:
         # TODO: add admin
         # self.bot.set_my_commands(commands, scope=types.BotCommandScopeChatAdministrators(self.app.))
 
-        _bot.app.loop.create_task(_bot.update_reply_message())
+        self.reply_task = _bot.app.loop.create_task(_bot.update_reply_message())
 
 
 _bot = DownloadBot()
@@ -249,10 +270,15 @@ async def start_download_bot(
     await _bot.start(app, client, add_download_task, download_chat_task)
 
 
-def stop_download_bot():
+async def stop_download_bot():
     """Stop download bot"""
     _bot.update_config()
     _bot.is_running = False
+    if _bot.reply_task:
+        _bot.reply_task.cancel()
+    _bot.stop_task("all")
+    if _bot.bot:
+        await _bot.bot.stop()
 
 
 async def send_help_str(client: pyrogram.Client, chat_id):
@@ -280,7 +306,8 @@ async def send_help_str(client: pyrogram.Client, chat_id):
         f"/download - {_t('Download messages')}\n"
         f"/forward - {_t('Forward messages')}\n"
         f"/listen_forward - {_t('Listen for forwarded messages')}\n"
-        f"/set_language - {_t('Set language')}\n\n"
+        f"/set_language - {_t('Set language')}\n"
+        f"/stop - {_t('Stop bot download or forward')}\n\n"
         f"{_t('**Note**: 1 means the start of the entire chat')},"
         f"{_t('0 means the end of the entire chat')}\n"
         f"`[` `]` {_t('means optional, not required')}\n"
@@ -577,6 +604,7 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
 
     if download_filter:
         download_filter = replace_date_time(download_filter)
+        print(download_filter)
         res, err = _bot.filter.check_filter(download_filter)
         if not res:
             await client.send_message(
@@ -607,7 +635,9 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
                 task_id=_bot.gen_task_id(),
             )
             _bot.add_task_node(node)
-            await _bot.download_chat_task(_bot.client, chat_download_config, node)
+            _bot.app.loop.create_task(
+                _bot.download_chat_task(_bot.client, chat_download_config, node)
+            )
     except Exception as e:
         await client.send_message(
             message.from_user.id,
@@ -784,11 +814,16 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
                 offset_id=offset_id,
                 reverse=True,
             ):
-                if (
-                    await forward_normal_content(client, node, item)
-                    is ForwardStatus.SuccessForward
-                ):
+                forward_ret = await forward_normal_content(client, node, item)
+                if forward_ret is ForwardStatus.SuccessForward:
                     last_read_message_id = item.id
+                elif forward_ret is ForwardStatus.StopForward:
+                    await client.edit_message_text(
+                        message.from_user.id,
+                        node.reply_message_id,
+                        f"{_t('Stop Forward')}",
+                    )
+                    break
         except Exception as e:
             await client.edit_message_text(
                 message.from_user.id,
@@ -796,8 +831,9 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
                 f"{_t('Error forwarding message')} {last_read_message_id}"
                 f" - {offset_id + limit} {e}",
             )
-
-        await report_bot_status(client, node, immediate_reply=True)
+        finally:
+            await report_bot_status(client, node, immediate_reply=True)
+            node.stop_transmission()
     else:
         await forward_msg(node, offset_id)
 
@@ -806,6 +842,8 @@ async def forward_normal_content(
     client: pyrogram.Client, node: TaskNode, message: pyrogram.types.Message
 ):
     """Forward normal content"""
+    if node.is_stop_transmission:
+        return ForwardStatus.StopForward
 
     forward_ret = ForwardStatus.FailedForward
     if node.download_filter:
@@ -820,7 +858,7 @@ async def forward_normal_content(
         if not _bot.filter.exec(node.download_filter):
             forward_ret = ForwardStatus.SkipForward
             await report_bot_forward_status(client, node, forward_ret)
-            return
+            return forward_ret
 
     timeout_count = 0
     while timeout_count < 3:
@@ -927,3 +965,103 @@ async def listen_forward_msg(client: pyrogram.Client, message: pyrogram.types.Me
                 message,
                 node,
             )
+
+
+async def stop(client: pyrogram.Client, message: pyrogram.types.Message):
+    """Stops listening for forwarded messages."""
+
+    await client.send_message(
+        message.chat.id,
+        _t("Please select:"),
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        _t("Stop Download"), callback_data="stop_download"
+                    ),
+                    InlineKeyboardButton(
+                        _t("Stop Forward"), callback_data="stop_forward"
+                    ),
+                ],
+                [  # Second row
+                    InlineKeyboardButton(
+                        _t("Stop Listen Forward"), callback_data="stop_listen_forward"
+                    )
+                ],
+            ]
+        ),
+    )
+
+
+async def stop_task(
+    client: pyrogram.Client,
+    query: pyrogram.types.CallbackQuery,
+    queryHandler: str,
+    task_type: TaskType,
+):
+    """Stop task"""
+    if query.data == queryHandler:
+        buttons: List[InlineKeyboardButton] = []
+        temp_buttons: List[InlineKeyboardButton] = []
+        for key, value in _bot.task_node.copy().items():
+            if not value.is_finish() and value.task_type is task_type:
+                if len(temp_buttons) == 3:
+                    buttons.append(temp_buttons)
+                    temp_buttons = []
+                temp_buttons.append(
+                    InlineKeyboardButton(
+                        f"{key}", callback_data=f"{queryHandler} task {key}"
+                    )
+                )
+        if temp_buttons:
+            buttons.append(temp_buttons)
+
+        if buttons:
+            buttons.insert(
+                0,
+                [
+                    InlineKeyboardButton(
+                        _t("all"), callback_data=f"{queryHandler} task all"
+                    )
+                ],
+            )
+            await client.edit_message_text(
+                query.message.from_user.id,
+                query.message.id,
+                f"{_t('Stop')} {_t(task_type.name)}...",
+                reply_markup=InlineKeyboardMarkup(buttons),
+            )
+        else:
+            await client.edit_message_text(
+                query.message.from_user.id,
+                query.message.id,
+                f"{_t('No Task')}",
+            )
+    else:
+        task_id = query.data.split(" ")[2]
+        await client.edit_message_text(
+            query.message.from_user.id,
+            query.message.id,
+            f"{_t('Stop')} {_t(task_type.name)}...",
+        )
+        _bot.stop_task(task_id)
+
+
+async def on_query_handler(
+    client: pyrogram.Client, query: pyrogram.types.CallbackQuery
+):
+    """
+    Asynchronous function that handles query callbacks.
+
+    Parameters:
+        client (pyrogram.Client): The Pyrogram client object.
+        query (pyrogram.types.CallbackQuery): The callback query object.
+
+    Returns:
+        None
+    """
+
+    for it in QueryHandler:
+        queryHandler = QueryHandlerStr.get_str(it.value)
+        if queryHandler in query.data:
+            await stop_task(client, query, queryHandler, TaskType(it.value))

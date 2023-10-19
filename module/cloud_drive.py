@@ -56,7 +56,7 @@ class CloudDrive:
     def rclone_mkdir(drive_config: CloudDriveConfig, remote_dir: str):
         """mkdir in remote"""
         with Popen(
-            f'"{drive_config.rclone_path}" mkdir {remote_dir}/',
+            f'"{drive_config.rclone_path}" mkdir "{remote_dir}/"',
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -97,9 +97,6 @@ class CloudDrive:
                 + "/"
             ).replace("\\", "/")
 
-            remote_dir = remote_dir.replace(" ", "\ ") 
-            
-            
             if not drive_config.dir_cache.get(remote_dir):
                 CloudDrive.rclone_mkdir(drive_config, remote_dir)
                 drive_config.dir_cache[remote_dir] = True
@@ -157,7 +154,6 @@ class CloudDrive:
                 + "/"
             ).replace("\\", "/")
 
-            remote_dir = remote_dir.replace(" ", "\ ") 
             if not drive_config.dir_cache.get(remote_dir):
                 CloudDrive.aligo_mkdir(drive_config, remote_dir)
                 aligo_dir = drive_config.aligo.get_folder_by_path(remote_dir)

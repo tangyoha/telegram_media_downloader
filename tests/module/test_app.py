@@ -6,7 +6,7 @@ import unittest
 from unittest import mock
 
 import module.app
-from module.app import Application, ChatDownloadConfig
+from module.app import Application, ChatDownloadConfig, DownloadStatus
 
 sys.path.append("..")  # Adds higher directory to python modules path.
 
@@ -29,16 +29,23 @@ class AppTestCase(unittest.TestCase):
 
         app.chat_download_config[123] = ChatDownloadConfig()
         app.chat_download_config[123].last_read_message_id = 13
+        app.chat_download_config[123].download_status[6] = DownloadStatus.Downloading
         app.chat_download_config[123].failed_ids.append(6)
         app.chat_download_config[123].ids_to_retry.append(7)
         # download success
-        app.chat_download_config[123].downloaded_ids.append(8)
+        app.chat_download_config[123].download_status[
+            8
+        ] = DownloadStatus.SuccessDownload
         app.chat_download_config[123].finish_task += 1
         # download success
-        app.chat_download_config[123].downloaded_ids.append(10)
+        app.chat_download_config[123].download_status[
+            10
+        ] = DownloadStatus.SuccessDownload
         app.chat_download_config[123].finish_task += 1
         # not exist message
-        app.chat_download_config[123].downloaded_ids.append(13)
+        app.chat_download_config[123].download_status[
+            13
+        ] = DownloadStatus.SuccessDownload
         app.config["chat"] = [{"chat_id": 123, "last_read_message_id": 5}]
 
         app.update_config(False)
@@ -48,7 +55,7 @@ class AppTestCase(unittest.TestCase):
             app.config["chat"][0]["last_read_message_id"],
         )
         self.assertEqual(
-            [5, 6, 7, 9, 11, 12],
+            [6, 7],
             app.app_data["chat"][0]["ids_to_retry"],
         )
 

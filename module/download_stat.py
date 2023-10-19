@@ -2,7 +2,10 @@
 import asyncio
 import time
 from enum import Enum
-from typing import Union
+
+from pyrogram import Client
+
+from module.app import TaskNode
 
 
 class DownloadState(Enum):
@@ -44,11 +47,11 @@ def set_download_state(state: DownloadState):
 async def update_download_status(
     down_byte: int,
     total_size: int,
-    chat_id: Union[int, str],
     message_id: int,
     file_name: str,
     start_time: float,
-    task_id: int,
+    node: TaskNode,
+    client: Client,
 ):
     """update_download_status"""
     cur_time = time.time()
@@ -57,7 +60,14 @@ async def update_download_status(
     global _total_download_size
     global _last_download_time
 
+    if node.is_stop_transmission:
+        client.stop_transmission()
+
+    chat_id = node.chat_id
+
     while get_download_state() == DownloadState.StopDownload:
+        if node.is_stop_transmission:
+            client.stop_transmission()
         await asyncio.sleep(1)
 
     if not _download_result.get(chat_id):
@@ -98,7 +108,7 @@ async def update_download_status(
             "end_time": cur_time,
             "download_speed": down_byte / (cur_time - start_time),
             "each_second_total_download": each_second_total_download,
-            "task_id": task_id,
+            "task_id": node.task_id,
         }
         _total_download_size += down_byte
 

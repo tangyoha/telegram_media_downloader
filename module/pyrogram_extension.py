@@ -326,19 +326,16 @@ def record_download_status(func):
         message: pyrogram.types.Message,
         media_types: List[str],
         file_formats: dict,
-        chat_id: Union[int, str],
-        task_id: int = 0,
+        node: TaskNode,
     ):
-        if _download_cache[(chat_id, message.id)] is DownloadStatus.Downloading:
+        if _download_cache[(node.chat_id, message.id)] is DownloadStatus.Downloading:
             return DownloadStatus.Downloading, None
 
-        _download_cache[(chat_id, message.id)] = DownloadStatus.Downloading
+        _download_cache[(node.chat_id, message.id)] = DownloadStatus.Downloading
 
-        status, file_name = await func(
-            client, message, media_types, file_formats, chat_id, task_id
-        )
+        status, file_name = await func(client, message, media_types, file_formats, node)
 
-        _download_cache[(chat_id, message.id)] = status
+        _download_cache[(node.chat_id, message.id)] = status
 
         return status, file_name
 

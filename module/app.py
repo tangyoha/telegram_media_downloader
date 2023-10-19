@@ -35,6 +35,7 @@ class ForwardStatus(Enum):
     SuccessForward = 2
     FailedForward = 3
     Forwarding = 4
+    StopForward = 5
 
 
 class TaskType(Enum):
@@ -43,6 +44,37 @@ class TaskType(Enum):
     Download = 1
     Forward = 2
     ListenForward = 3
+
+
+class QueryHandler(Enum):
+    """Query handler"""
+
+    StopDownload = 1
+    StopForward = 2
+    StopListenForward = 3
+
+
+class QueryHandlerStr:
+    """Query handler"""
+
+    _strMap = {
+        QueryHandler.StopDownload.value: "stop_download",
+        QueryHandler.StopForward.value: "stop_forward",
+        QueryHandler.StopListenForward.value: "stop_listen_forward",
+    }
+
+    @staticmethod
+    def get_str(value):
+        """
+        Get the string value associated with the given value.
+
+        Parameters:
+            value (any): The value for which to retrieve the string value.
+
+        Returns:
+            str: The string value associated with the given value.
+        """
+        return QueryHandlerStr._strMap[value]
 
 
 class TaskNode:
@@ -91,13 +123,19 @@ class TaskNode:
         self.is_running: bool = False
         self.client = None
         self.upload_success_count: int = 0
+        self.is_stop_transmission = False
 
     def is_finish(self):
         """If is finish"""
-        return (
-            self.task_type != TaskType.ListenForward
+        return self.is_stop_transmission or (
+            self.is_running
+            and self.task_type != TaskType.ListenForward
             and self.total_task == self.total_download_task
         )
+
+    def stop_transmission(self):
+        """Stop task"""
+        self.is_stop_transmission = True
 
     def stat(self, status: DownloadStatus):
         """
@@ -148,7 +186,7 @@ class ChatDownloadConfig:
     """Chat Message Download Status"""
 
     def __init__(self):
-        self.downloaded_ids: list = []
+        self.download_status: dict = {}
         self.failed_ids: list = []
         self.ids_to_retry_dict: dict = {}
 
@@ -558,6 +596,7 @@ class Application:
 
         return False
 
+    # pylint: disable = R0912
     def update_config(self, immediate: bool = True):
         """update config
 
@@ -575,17 +614,17 @@ class Application:
         # pylint: disable = R1733
         for key, value in self.chat_download_config.items():
             # pylint: disable = W0201
-            before_last_read_message_id = self.config["chat"][idx].get(
-                "last_read_message_id", 0
-            )
-
             unfinished_ids = set(value.ids_to_retry)
-            if before_last_read_message_id != value.last_read_message_id:
-                unfinished_ids = unfinished_ids | set(
-                    range(before_last_read_message_id, value.last_read_message_id + 1)
-                )
-            unfinished_ids -= set(value.downloaded_ids)
-            unfinished_ids -= set({0})
+
+            for it in value.ids_to_retry:
+                if DownloadStatus.SuccessDownload == value.download_status.get(
+                    it, DownloadStatus.FailedDownload
+                ):
+                    unfinished_ids.remove(it)
+
+            for _idx, _value in value.download_status.items():
+                if DownloadStatus.SuccessDownload != _value:
+                    unfinished_ids.add(_idx)
 
             self.chat_download_config[key].ids_to_retry = list(unfinished_ids)
 
@@ -722,7 +761,5 @@ class Application:
         self.chat_download_config[chat_id].last_read_message_id = max(
             self.chat_download_config[chat_id].last_read_message_id, message_id
         )
-        if download_status is not DownloadStatus.FailedDownload:
-            self.chat_download_config[chat_id].downloaded_ids.append(message_id)
-        else:
-            self.chat_download_config[chat_id].failed_ids.append(message_id)
+
+        self.chat_download_config[chat_id].download_status[message_id] = download_status

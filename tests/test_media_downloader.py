@@ -204,7 +204,8 @@ async def async_get_media_meta(chat_id, message, message_media, _type):
 async def async_download_media(
     client, message, media_types, file_formats, chat_id=-123
 ):
-    return await download_media(client, message, media_types, file_formats, chat_id)
+    node = TaskNode(chat_id=chat_id)
+    return await download_media(client, message, media_types, file_formats, node)
 
 
 def mock_move_to_download_path(temp_download_path: str, download_path: str):
