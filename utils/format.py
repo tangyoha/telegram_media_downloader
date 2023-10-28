@@ -4,8 +4,18 @@ import math
 import os
 import re
 import unicodedata
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
+
+
+@dataclass
+class Link:
+    """Telegram Link"""
+
+    group_id: Union[str, int, None] = None
+    post_id: Optional[int] = None
+    comment_id: Optional[int] = None
 
 
 def format_byte(size: float, dot=2):
@@ -205,24 +215,49 @@ def truncate_filename(path: str, limit: int = 230) -> str:
     return os.path.join(p, f_trunc + e)
 
 
-def extract_info_from_link(link: str):
+def extract_info_from_link(link) -> Link:
     """Extract info from link"""
     if link in ("me", "self"):
-        return link, None
+        return Link(group_id=link)
 
-    channel_match = re.match(r"(?:https?://)?t\.me/c/(\w+)(?:.*/(\d+)|/(\d+))?", link)
+    channel_match = re.match(
+        r"(?:https?://)?t\.me/c/(?P<channel_id>\w+)"
+        r"(?:.*/(?P<post_id>\d+)|/(?P<message_id>\d+))?",
+        link,
+    )
+
     if channel_match:
-        chat_id = f"-100{channel_match.group(1)}"
-        message_id = int(channel_match.group(2)) if channel_match.group(2) else None
-        return int(chat_id), message_id
+        channel_id = channel_match.group("channel_id")
+        post_id = channel_match.group("post_id")
+        message_id = channel_match.group("message_id")
 
-    username_match = re.match(r"(?:https?://)?t\.me/(\w+)(?:.*/(\d+)|/(\d+))?", link)
+        return Link(
+            group_id=int(f"-100{channel_id}"),
+            post_id=int(post_id) if post_id else None,
+            comment_id=int(message_id) if message_id else None,
+        )
+
+    username_match = re.match(
+        r"(?:https?://)?t\.me/(?P<username>\w+)"
+        r"(?:.*comment=(?P<comment_id>\d+)"
+        r"|.*/(?P<post_id>\d+)"
+        r"|/(?P<message_id>\d+))?",
+        link,
+    )
+
     if username_match:
-        username = username_match.group(1)
-        message_id = int(username_match.group(2)) if username_match.group(2) else None
-        return username, message_id
+        username = username_match.group("username")
+        comment_id = username_match.group("comment_id")
+        post_id = username_match.group("post_id")
+        message_id = username_match.group("message_id")
 
-    return None, None
+        return Link(
+            group_id=username,
+            post_id=int(post_id) if post_id else None,
+            comment_id=int(comment_id) if comment_id else None,
+        )
+
+    return Link()
 
 
 def validate_title(title: str) -> str:

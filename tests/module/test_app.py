@@ -29,21 +29,22 @@ class AppTestCase(unittest.TestCase):
 
         app.chat_download_config[123] = ChatDownloadConfig()
         app.chat_download_config[123].last_read_message_id = 13
-        app.chat_download_config[123].download_status[6] = DownloadStatus.Downloading
-        app.chat_download_config[123].failed_ids.append(6)
+        app.chat_download_config[123].node.download_status[
+            6
+        ] = DownloadStatus.Downloading
         app.chat_download_config[123].ids_to_retry.append(7)
         # download success
-        app.chat_download_config[123].download_status[
+        app.chat_download_config[123].node.download_status[
             8
         ] = DownloadStatus.SuccessDownload
         app.chat_download_config[123].finish_task += 1
         # download success
-        app.chat_download_config[123].download_status[
+        app.chat_download_config[123].node.download_status[
             10
         ] = DownloadStatus.SuccessDownload
         app.chat_download_config[123].finish_task += 1
         # not exist message
-        app.chat_download_config[123].download_status[
+        app.chat_download_config[123].node.download_status[
             13
         ] = DownloadStatus.SuccessDownload
         app.config["chat"] = [{"chat_id": 123, "last_read_message_id": 5}]

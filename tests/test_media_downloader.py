@@ -85,23 +85,6 @@ def os_get_file_size(file: str) -> int:
     return 0
 
 
-def new_set_download_id(
-    chat_id: Union[int, str], message_id: int, download_status: DownloadStatus
-):
-    if download_status is DownloadStatus.SuccessDownload:
-        app.total_download_task += 1
-    if chat_id not in app.chat_download_config:
-        return
-    app.chat_download_config[chat_id].last_read_message_id = max(
-        app.chat_download_config[chat_id].last_read_message_id, message_id
-    )
-    if download_status is not DownloadStatus.FailedDownload:
-        app.chat_download_config[chat_id].downloaded_ids.append(message_id)
-    else:
-        app.chat_download_config[chat_id].failed_ids.append(message_id)
-    app.is_running = False
-
-
 def rest_app(conf: dict):
     config_test = os.path.join(os.path.abspath("."), "config_test.yaml")
     data_test = os.path.join(os.path.abspath("."), "data_test.yaml")
@@ -113,7 +96,6 @@ def rest_app(conf: dict):
     app.is_running = True
     app.chat_download_config: dict = {}
     # app.already_download_ids_set = set()
-    app.disable_syslog: list = []
     app.save_path = os.path.abspath(".")
     app.api_id: str = ""
     app.api_hash: str = ""
@@ -154,8 +136,8 @@ async def new_upload_telegram_chat(
     app: Application,
     node: TaskNode,
     message: pyrogram.types.Message,
-    file_name: str,
     download_status: DownloadStatus,
+    file_name: str = None,
 ):
     pass
 
@@ -866,7 +848,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
         self.assertEqual((DownloadStatus.FailedDownload, None), result)
 
-    @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
+    @mock.patch("media_downloader.HookClient", new=MockClient)
     @mock.patch("media_downloader.asyncio.Queue.put")
     def test_download_task(self, moc_put):
         rest_app(MOCK_CONF)
@@ -983,7 +965,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
 
         self.assertEqual(res, (DownloadStatus.SkipDownload, None))
 
-    @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
+    @mock.patch("media_downloader.HookClient", new=MockClient)
     @mock.patch("media_downloader.RETRY_TIME_OUT", new=1)
     @mock.patch("media_downloader.logger")
     def test_main_with_bot(self, mock_logger):
@@ -996,7 +978,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
 
     @mock.patch("media_downloader.app.pre_run", new=raise_keyboard_interrupt)
-    @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
+    @mock.patch("media_downloader.HookClient", new=MockClient)
     @mock.patch("media_downloader.RETRY_TIME_OUT", new=1)
     @mock.patch("media_downloader.logger")
     def test_keyboard_interrupt(self, mock_logger):
@@ -1010,7 +992,7 @@ class MediaDownloaderTestCase(unittest.TestCase):
         )
 
     @mock.patch("media_downloader.app.pre_run", new=raise_exception)
-    @mock.patch("media_downloader.pyrogram.Client", new=MockClient)
+    @mock.patch("media_downloader.HookClient", new=MockClient)
     @mock.patch("media_downloader.RETRY_TIME_OUT", new=1)
     @mock.patch("media_downloader.logger")
     def test_other_exception(self, mock_logger):

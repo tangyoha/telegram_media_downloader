@@ -2,9 +2,11 @@
 import os
 import sys
 import unittest
+from dataclasses import asdict
 from unittest.mock import patch
 
 from utils.format import (
+    Link,
     create_progress_bar,
     extract_info_from_link,
     format_byte,
@@ -123,18 +125,35 @@ class FormatTestCase(unittest.TestCase):
 
     def test_extract_info_from_link(self):
         test_cases = [
-            ("https://t.me/", (None, None)),
-            ("https://t.me/username/1234", ("username", 1234)),
-            ("https://t.me/username", ("username", None)),
-            ("https://t.me/c/213213/91011", (-100213213, 91011)),
-            ("https://t.me/test123/1/1234", ("test123", 1234)),
-            ("me", ("me", None)),
-            ("self", ("self", None)),
+            ("https://t.me/", Link(group_id=None)),
+            ("https://t.me/username/1234", Link(group_id="username", post_id=1234)),
+            ("https://t.me/username", Link(group_id="username")),
+            ("https://t.me/c/213213/91011", Link(group_id=-100213213, post_id=91011)),
+            ("https://t.me/test123/1/1234", Link(group_id="test123", post_id=1234)),
+            ("me", Link(group_id="me")),
+            ("self", Link(group_id="self")),
+            (
+                "https://t.me/opencfdchannel/4434?comment=360409",
+                Link(group_id="opencfdchannel", comment_id=360409),
+            ),
+            ("https://t.me/telegram/193", Link(group_id="telegram", post_id=193)),
+            (
+                "https://t.me/c/1697797156/151",
+                Link(group_id=-1001697797156, post_id=151),
+            ),
+            (
+                "https://t.me/iFreeKnow/45662/55005",
+                Link(group_id="iFreeKnow", post_id=55005),
+            ),
+            (
+                "https://t.me/c/1492447836/251015/251021",
+                Link(group_id=-1001492447836, post_id=251021),
+            ),
         ]
 
-        for link, expected_output in test_cases:
+        for link, expected in test_cases:
             result = extract_info_from_link(link)
-            self.assertEqual(result, expected_output)
+            self.assertEqual(asdict(result), asdict(expected))
 
     def test_create_progress_bar(self):
         progress = 50

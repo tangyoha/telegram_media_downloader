@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        TARGET: [macos, linux-amd64, win64]
+        TARGET: [win64] #[macos, linux-amd64, win64]
     env:
       DISTPATH: tdl-${{ needs.create_release.outputs.VERSION }}-${{ matrix.TARGET }}
     steps:

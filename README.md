@@ -170,8 +170,6 @@ save_path: D:\telegram_media_downloader
 file_path_prefix:
 - chat_title
 - media_datetime
-disable_syslog:
-- INFO
 upload_drive:
   # required
   enable_upload_file: true
@@ -212,7 +210,6 @@ web_login_secret: 123
   - `chat_title`      - Channel or group title, it will be chat id if not exist title.
   - `media_datetime`  - Media date, also see pyrogram.types.Message.date.strftime("%Y_%m").
   - `media_type`      - Media type, also see `media_types`.
-- **disable_syslog** - You can choose which types of logs to disable,see `logging._nameToLevel`.
 - **upload_drive** - You can upload file to cloud drive.
   - `enable_upload_file` - Enable upload file, default `false`.
   - `remote_dir` - Where you upload, like `drive_id/drive_name`.
@@ -231,6 +228,8 @@ web_login_secret: 123
 - **web_port** - Web port
 - **language** - Application language, the default is English (`EN`), optional `ZH`(Chinese),`RU`,`UA`
 - **web_login_secret** - Web page login password, if not configured, no login is required to access the web page
+- **log_level** - see `logging._nameToLevel`.
+- **forward_limit** - Limit the number of forwards per minute, the default is 33, please do not modify this parameter by default.
 
 
 ## Execution
