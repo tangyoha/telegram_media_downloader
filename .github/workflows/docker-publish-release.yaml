@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-20.04, windows-latest]
+        os: [windows-latest] #[macos-latest, ubuntu-20.04, windows-latest]
         include:
         - os: macos-latest
           TARGET: macos
@@ -34,7 +34,7 @@ jobs:
           python -m pip install --upgrade pip setuptools
           python3 -m pip install -r requirements.txt
           python3 gen_filter_cache.py
-          pip install pyinstaller
+          pip install pyinstaller==5.13.0
       - name: Build with PyInstaller
         run: |
           pyinstaller --distpath ./${{ env.DISTPATH }} media_downloader.spec
