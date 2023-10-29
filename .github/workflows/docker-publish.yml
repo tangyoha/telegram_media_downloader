@@ -64,7 +64,7 @@ jobs:
       with:
         context: .
         push: true
-        platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le,linux/s390x
+        platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le
         target: compile-image
         tags: ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader_compile:latest
 
@@ -73,7 +73,7 @@ jobs:
       with:
         context: .
         push: true
-        platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le,linux/s390x
+        platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le
         target: runtime-image
         tags: |
           ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:latest
