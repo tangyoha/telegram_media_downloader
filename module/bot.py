@@ -875,10 +875,9 @@ async def forward_normal_content(
             await report_bot_forward_status(client, node, forward_ret)
             return
 
-    if message.media_group_id:
-        await upload_telegram_chat_message(
-            _bot.client, node.upload_user, _bot.app, node, message
-        )
+    await upload_telegram_chat_message(
+        _bot.client, node.upload_user, _bot.app, node, message
+    )
 
 
 async def forward_msg(node: TaskNode, message_id: int):

@@ -5,10 +5,11 @@ import os
 import secrets
 import struct
 import time
+from datetime import datetime
 from functools import wraps
 from io import BytesIO, StringIO
 from mimetypes import MimeTypes
-from typing import Callable, List, Optional, Union
+from typing import Callable, Iterable, List, Optional, Union
 
 import pyrogram
 from loguru import logger
@@ -427,8 +428,12 @@ async def _upload_telegram_chat_message(
 
     if not message.media_group_id:
         if not file_name:
-            await client.forward_messages(
-                node.upload_telegram_chat_id, node.chat_id, message.id
+            await forward_messages(
+                client,
+                node.upload_telegram_chat_id,  # type: ignore
+                node.chat_id,
+                message.id,
+                drop_author=True,
             )
         else:
             await _upload_signal_message(
@@ -1091,3 +1096,53 @@ class HookClient(pyrogram.Client):
             await self.initialize()
 
             return self
+
+
+async def forward_messages(
+    client: pyrogram.Client,
+    chat_id: Union[int, str],
+    from_chat_id: Union[int, str],
+    message_ids: Union[int, Iterable[int]],
+    disable_notification: bool = None,
+    schedule_date: datetime = None,
+    protect_content: bool = None,
+    drop_author: bool = None,
+) -> Union["types.Message", List["types.Message"]]:
+    """Forward messages of any kind."""
+
+    is_iterable = not isinstance(message_ids, int)
+    message_ids = list(message_ids) if is_iterable else [message_ids]  # type: ignore
+
+    r = await client.invoke(
+        pyrogram.raw.functions.messages.ForwardMessages(
+            to_peer=await client.resolve_peer(chat_id),
+            from_peer=await client.resolve_peer(from_chat_id),
+            id=message_ids,
+            silent=disable_notification or None,
+            random_id=[client.rnd_id() for _ in message_ids],
+            schedule_date=pyrogram.utils.datetime_to_timestamp(schedule_date),
+            noforwards=protect_content,
+            drop_author=drop_author,
+        )
+    )
+
+    forwarded_messages = []
+
+    users = {i.id: i for i in r.users}
+    chats = {i.id: i for i in r.chats}
+
+    for i in r.updates:
+        if isinstance(
+            i,
+            (
+                pyrogram.raw.types.UpdateNewMessage,
+                pyrogram.raw.types.UpdateNewChannelMessage,
+                pyrogram.raw.types.UpdateNewScheduledMessage,
+            ),
+        ):
+            forwarded_messages.append(
+                # pylint: disable=W0212
+                await types.Message._parse(client, i.message, users, chats)
+            )
+
+    return types.List(forwarded_messages) if is_iterable else forwarded_messages[0]
