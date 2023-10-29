@@ -17,6 +17,7 @@ from module.download_stat import update_download_status
 from module.get_chat_history_v2 import get_chat_history_v2
 from module.language import _t
 from module.pyrogram_extension import (
+    HookClient,
     fetch_message,
     get_extension,
     record_download_status,
@@ -43,13 +44,6 @@ CONFIG_NAME = "config.yaml"
 DATA_FILE_NAME = "data.yaml"
 APPLICATION_NAME = "media_downloader"
 app = Application(CONFIG_NAME, DATA_FILE_NAME, APPLICATION_NAME)
-
-logger.add(
-    os.path.join(app.log_file_path, "tdl.log"),
-    rotation="10 MB",
-    retention="10 days",
-    level="DEBUG",
-)
 
 queue: asyncio.Queue = asyncio.Queue()
 RETRY_TIME_OUT = 3
@@ -261,13 +255,11 @@ async def _get_media_meta(
 async def add_download_task(
     message: pyrogram.types.Message,
     node: TaskNode,
-    chat_download_config: ChatDownloadConfig = None,
 ):
     """Add Download task"""
     if message.empty:
         return False
-    if chat_download_config:
-        chat_download_config.download_status[message.id] = DownloadStatus.Downloading
+    node.download_status[message.id] = DownloadStatus.Downloading
     await queue.put((message, node))
     node.total_task += 1
     return True
@@ -283,7 +275,9 @@ async def download_task(
     )
 
     if not node.bot:
-        app.set_download_id(node.chat_id, message.id, download_status)
+        app.set_download_id(node, message.id, download_status)
+
+    node.download_status[message.id] = download_status
 
     file_size = os.path.getsize(file_name) if file_name else 0
 
@@ -293,8 +287,8 @@ async def download_task(
         app,
         node,
         message,
-        file_name,
         download_status,
+        file_name,
     )
 
     # rclone upload
@@ -474,6 +468,12 @@ def _check_config() -> bool:
     print_meta(logger)
     try:
         _load_config()
+        logger.add(
+            os.path.join(app.log_file_path, "tdl.log"),
+            rotation="10 MB",
+            retention="10 days",
+            level=app.log_level,
+        )
     except Exception as e:
         logger.exception(f"load config error: {e}")
         return False
@@ -510,9 +510,13 @@ async def download_chat_task(
         client,
         node.chat_id,
         limit=node.limit,
+        max_id=node.end_offset_id,
         offset_id=chat_download_config.last_read_message_id,
         reverse=True,
     )
+
+    chat_download_config.node = node
+
     if chat_download_config.ids_to_retry:
         logger.info(f"{_t('Downloading files failed during last run')}...")
         skipped_messages: list = await client.get_messages(  # type: ignore
@@ -520,7 +524,7 @@ async def download_chat_task(
         )
 
         for message in skipped_messages:
-            await add_download_task(message, node, chat_download_config)
+            await add_download_task(message, node)
 
     async for message in messages_iter:  # type: ignore
         meta_data = MetaData()
@@ -533,8 +537,21 @@ async def download_chat_task(
             caption = app.get_caption_name(node.chat_id, message.media_group_id)
         set_meta_data(meta_data, message, caption)
 
-        if not app.need_skip_message(chat_download_config, message.id, meta_data):
-            await add_download_task(message, node, chat_download_config)
+        if app.need_skip_message(chat_download_config, message.id):
+            continue
+
+        if app.exec_filter(chat_download_config, meta_data):
+            await add_download_task(message, node)
+        else:
+            node.download_status[message.id] = DownloadStatus.SkipDownload
+            await upload_telegram_chat(
+                client,
+                node.upload_user,
+                app,
+                node,
+                message,
+                DownloadStatus.SkipDownload,
+            )
 
     chat_download_config.need_check = True
     chat_download_config.total_task = node.total_task
@@ -544,9 +561,9 @@ async def download_chat_task(
 async def download_all_chat(client: pyrogram.Client):
     """Download All chat"""
     for key, value in app.chat_download_config.items():
-        node = TaskNode(chat_id=key)
+        value.node = TaskNode(chat_id=key)
         try:
-            await download_chat_task(client, value, node)
+            await download_chat_task(client, value, value.node)
         except Exception as e:
             logger.warning(f"Download {key} error: {e}")
         finally:
@@ -590,12 +607,13 @@ async def stop_server(client: pyrogram.Client):
 def main():
     """Main function of the downloader."""
     tasks = []
-    client = pyrogram.Client(
+    client = HookClient(
         "media_downloader",
         api_id=app.api_id,
         api_hash=app.api_hash,
         proxy=app.proxy,
         workdir=app.session_file_path,
+        start_timeout=app.start_timeout,
     )
     try:
         app.pre_run()

@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import Callable, List, Union
 
 import pyrogram
-from loguru import logger
 from pyrogram import types
 from pyrogram.handlers import CallbackQueryHandler, MessageHandler
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
@@ -21,17 +20,22 @@ from module.app import (
     QueryHandlerStr,
     TaskNode,
     TaskType,
+    UploadStatus,
 )
 from module.filter import Filter
+from module.get_chat_history_v2 import get_chat_history_v2
 from module.language import Language, _t
 from module.pyrogram_extension import (
     check_user_permission,
-    get_message_with_retry,
+    parse_link,
+    proc_cache_forward,
     report_bot_forward_status,
     report_bot_status,
+    retry,
     set_meta_data,
+    upload_telegram_chat_message,
 )
-from utils.format import extract_info_from_link, replace_date_time, validate_title
+from utils.format import replace_date_time, validate_title
 from utils.meta_data import MetaData
 
 # pylint: disable = C0301, R0902
@@ -171,6 +175,7 @@ class DownloadBot:
                 ),
             ),
             types.BotCommand("set_language", _t("Set language")),
+            types.BotCommand("stop", _t("Stop bot download or forward")),
         ]
 
         self.bot.add_handler(
@@ -380,7 +385,7 @@ async def get_info(client: pyrogram.Client, message: pyrogram.types.Message):
         )
         return
 
-    chat_id, message_id = extract_info_from_link(args[1])
+    chat_id, message_id = await parse_link(_bot.client, args[1])
 
     entity = None
     if chat_id:
@@ -388,7 +393,7 @@ async def get_info(client: pyrogram.Client, message: pyrogram.types.Message):
 
     if entity:
         if message_id:
-            _message = await get_message_with_retry(_bot.client, chat_id, message_id)
+            _message = await retry(_bot.client.get_messages, args=(chat_id, message_id))
             if _message:
                 meta_data = MetaData()
                 set_meta_data(meta_data, _message)
@@ -536,15 +541,15 @@ async def download_from_link(client: pyrogram.Client, message: pyrogram.types.Me
             message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML
         )
 
-    chat_id, message_id = extract_info_from_link(text[0])
+    chat_id, message_id = await parse_link(_bot.client, text[0])
 
     entity = None
     if chat_id:
         entity = await _bot.client.get_chat(chat_id)
     if entity:
         if message_id:
-            download_message = await get_message_with_retry(
-                _bot.client, chat_id, message_id
+            download_message = await retry(
+                _bot.client.get_messages, args=(chat_id, message_id)
             )
             if download_message:
                 await direct_download(_bot, entity.id, message, download_message)
@@ -586,19 +591,21 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
 
     url = args[1]
     try:
-        offset_id = int(args[2])
-        limit = int(args[3])
+        start_offset_id = int(args[2])
+        end_offset_id = int(args[3])
     except Exception:
         await client.send_message(
             message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML
         )
         return
 
-    if limit:
-        if limit < offset_id:
-            raise ValueError("M > N")
+    if end_offset_id:
+        if end_offset_id < start_offset_id:
+            raise ValueError(
+                f"end_offset_id < start_offset_id, {end_offset_id} < {start_offset_id}"
+            )
 
-        limit = limit - offset_id + 1
+        limit = end_offset_id - start_offset_id + 1
 
     download_filter = args[4] if len(args) > 4 else None
 
@@ -612,16 +619,18 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
             )
             return
     try:
-        chat_id, _ = extract_info_from_link(url)
+        chat_id, _ = await parse_link(_bot.client, url)
         if chat_id:
             entity = await _bot.client.get_chat(chat_id)
         if entity:
             chat_title = entity.title
             reply_message = f"from {chat_title} "
             chat_download_config = ChatDownloadConfig()
-            chat_download_config.last_read_message_id = offset_id
+            chat_download_config.last_read_message_id = start_offset_id
             chat_download_config.download_filter = download_filter
-            reply_message += f"download message id = {offset_id} limit = {limit} !"
+            reply_message += (
+                f"download message id = {start_offset_id} - {end_offset_id} !"
+            )
             last_reply_message = await client.send_message(
                 message.from_user.id, reply_message, reply_to_message_id=message.id
             )
@@ -631,6 +640,8 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
                 reply_message_id=last_reply_message.id,
                 replay_message=reply_message,
                 limit=limit,
+                start_offset_id=start_offset_id,
+                end_offset_id=end_offset_id,
                 bot=_bot.bot,
                 task_id=_bot.gen_task_id(),
             )
@@ -660,6 +671,7 @@ async def get_forward_task_node(
 ):
     """Get task node"""
 
+    end_offset_id = 0
     if limit:
         if limit < offset_id:
             await client.send_message(
@@ -668,10 +680,12 @@ async def get_forward_task_node(
             )
             return None
 
+        end_offset_id = limit
+
         limit = limit - offset_id + 1
 
-    src_chat_id, _ = extract_info_from_link(src_chat_link)
-    dst_chat_id, _ = extract_info_from_link(dst_chat_link)
+    src_chat_id, _ = await parse_link(_bot.client, src_chat_link)
+    dst_chat_id, _ = await parse_link(_bot.client, dst_chat_link)
 
     if not src_chat_id or not dst_chat_id:
         await client.send_message(
@@ -725,6 +739,8 @@ async def get_forward_task_node(
         has_protected_content=src_chat.has_protected_content,
         download_filter=download_filter,
         limit=limit,
+        start_offset_id=offset_id,
+        end_offset_id=end_offset_id,
         bot=_bot.bot,
         task_id=_bot.gen_task_id(),
         task_type=task_type,
@@ -806,18 +822,17 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
         return
 
     if not node.has_protected_content:
-        last_read_message_id = offset_id
         try:
-            async for item in _bot.client.get_chat_history(
+            async for item in get_chat_history_v2(  # type: ignore
+                _bot.client,
                 node.chat_id,
-                limit=limit,
+                limit=node.limit,
+                max_id=node.end_offset_id,
                 offset_id=offset_id,
                 reverse=True,
             ):
-                forward_ret = await forward_normal_content(client, node, item)
-                if forward_ret is ForwardStatus.SuccessForward:
-                    last_read_message_id = item.id
-                elif forward_ret is ForwardStatus.StopForward:
+                await forward_normal_content(client, node, item)
+                if node.is_stop_transmission:
                     await client.edit_message_text(
                         message.from_user.id,
                         node.reply_message_id,
@@ -828,8 +843,7 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
             await client.edit_message_text(
                 message.from_user.id,
                 node.reply_message_id,
-                f"{_t('Error forwarding message')} {last_read_message_id}"
-                f" - {offset_id + limit} {e}",
+                f"{_t('Error forwarding message')} {e}",
             )
         finally:
             await report_bot_status(client, node, immediate_reply=True)
@@ -842,9 +856,6 @@ async def forward_normal_content(
     client: pyrogram.Client, node: TaskNode, message: pyrogram.types.Message
 ):
     """Forward normal content"""
-    if node.is_stop_transmission:
-        return ForwardStatus.StopForward
-
     forward_ret = ForwardStatus.FailedForward
     if node.download_filter:
         meta_data = MetaData()
@@ -855,33 +866,18 @@ async def forward_normal_content(
         else:
             caption = _bot.app.get_caption_name(node.chat_id, message.media_group_id)
         set_meta_data(meta_data, message, caption)
+        _bot.filter.set_meta_data(meta_data)
         if not _bot.filter.exec(node.download_filter):
             forward_ret = ForwardStatus.SkipForward
+            if message.media_group_id:
+                node.upload_status[message.id] = UploadStatus.SkipUpload
+                await proc_cache_forward(_bot.client, node, message, False)
             await report_bot_forward_status(client, node, forward_ret)
-            return forward_ret
+            return
 
-    timeout_count = 0
-    while timeout_count < 3:
-        timeout_count += 1
-        try:
-            await _bot.client.forward_messages(
-                node.upload_telegram_chat_id, node.chat_id, message.id
-            )
-            forward_ret = ForwardStatus.SuccessForward
-            break
-        except pyrogram.errors.exceptions.bad_request_400.MessageIdInvalid:
-            pass
-        except pyrogram.errors.exceptions.flood_420.FloodWait as wait_err:
-            logger.warning(
-                "bot task: forward message[{}]: FlowWait {}", message.id, wait_err.value
-            )
-            await asyncio.sleep(wait_err.value)
-        except Exception as e:
-            logger.warning("bot task: forward message[{}]: exception {}", message.id, e)
-            break
-
-    await report_bot_forward_status(client, node, forward_ret)
-    return forward_ret
+    await upload_telegram_chat_message(
+        _bot.client, node.upload_user, _bot.app, node, message
+    )
 
 
 async def forward_msg(node: TaskNode, message_id: int):

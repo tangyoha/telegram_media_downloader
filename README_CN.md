@@ -173,8 +173,6 @@ save_path: D:\telegram_media_downloader
 file_path_prefix:
 - chat_title
 - media_datetime
-disable_syslog:
-- INFO
 upload_drive:
   enable_upload_file: true
   remote_dir: drive:/telegram
@@ -208,7 +206,6 @@ web_login_secret: 123
   - `chat_title`      - 聊天频道或者群组标题, 如果找不到标题则为配置文件中的`chat_id`
   - `media_datetime`  - 资源的发布时间
   - `media_type`      - 资源类型，类型查阅 `media_types`
-- **disable_syslog** - 您可以选择要禁用的日志类型，请参阅 `logging._nameToLevel`
 - **upload_drive** - 您可以将文件上传到云盘
   - `enable_upload_file` - [必填]启用上传文件，默认为`false`
   - `remote_dir` - [必填]你上传的地方
@@ -227,7 +224,8 @@ web_login_secret: 123
 - **web_port** - web界面端口
 - **language** - 应用语言，默认为英文(`EN`),可选`ZH`（中文）,`RU`,`UA`
 - **web_login_secret** - 网页登录密码，如果不配置则访问网页不需要登录
-
+- **log_level** - 默认日志等级，请参阅 `logging._nameToLevel`
+- **forward_limit** - 限制每分钟转发次数，默认为33，默认请不要修改该参数
 ## 执行
 
 ```sh
