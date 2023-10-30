@@ -302,8 +302,8 @@ async def send_help_str(client: pyrogram.Client, chat_id):
         its version, and the available commands.
     """
     msg = (
-        f"```\n🤖 {_t('Telegram Media Downloader')}\n"
-        f"🌐 {_t('Version')}: {utils.__version__}```\n\n"
+        f"`\n🤖 {_t('Telegram Media Downloader')}\n"
+        f"🌐 {_t('Version')}: {utils.__version__}`\n\n"
         f"{_t('Available commands:')}\n"
         f"/help - {_t('Show available commands')}\n"
         f"/get_info - {_t('Get group and user info from message link')}\n"
@@ -398,7 +398,7 @@ async def get_info(client: pyrogram.Client, message: pyrogram.types.Message):
                 meta_data = MetaData()
                 set_meta_data(meta_data, _message)
                 msg = (
-                    f"```\n"
+                    f"`\n"
                     f"{_t('Group/Channel')}\n"
                     f"├─ {_t('id')}: {entity.id}\n"
                     f"├─ {_t('first name')}: {entity.first_name}\n"
@@ -413,7 +413,7 @@ async def get_info(client: pyrogram.Client, message: pyrogram.types.Message):
                     else:
                         msg += f"├─ {key}: {value or None}\n"
 
-                msg += "```"
+                msg += "`"
     await client.send_message(
         message.from_user.id,
         msg,
@@ -599,6 +599,7 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
         )
         return
 
+    limit = 0
     if end_offset_id:
         if end_offset_id < start_offset_id:
             raise ValueError(
@@ -611,7 +612,6 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
 
     if download_filter:
         download_filter = replace_date_time(download_filter)
-        print(download_filter)
         res, err = _bot.filter.check_filter(download_filter)
         if not res:
             await client.send_message(
@@ -662,27 +662,26 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
 async def get_forward_task_node(
     client: pyrogram.Client,
     message: pyrogram.types.Message,
+    task_type: TaskType,
     src_chat_link: str,
     dst_chat_link: str,
-    offset_id: int,
-    limit: int,
-    download_filter: str,
-    task_type: TaskType,
+    offset_id: int = 0,
+    end_offset_id: int = 0,
+    download_filter: str = None,
 ):
     """Get task node"""
+    limit: int = 0
 
-    end_offset_id = 0
-    if limit:
-        if limit < offset_id:
+    if end_offset_id:
+        if end_offset_id < offset_id:
             await client.send_message(
                 message.from_user.id,
-                f"{limit} > {offset_id}",
+                f" end_offset_id({end_offset_id}) < start_offset_id({offset_id}),"
+                f" end_offset_id{_t('must be greater than')} offset_id",
             )
             return None
 
-        end_offset_id = limit
-
-        limit = limit - offset_id + 1
+        limit = end_offset_id - offset_id + 1
 
     src_chat_id, _ = await parse_link(_bot.client, src_chat_link)
     dst_chat_id, _ = await parse_link(_bot.client, dst_chat_link)
@@ -800,7 +799,7 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
 
     try:
         offset_id = int(args[3])
-        limit = int(args[4])
+        end_offset_id = int(args[4])
     except Exception:
         await report_error(client, message)
         return
@@ -810,12 +809,12 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
     node = await get_forward_task_node(
         client,
         message,
+        TaskType.Forward,
         src_chat_link,
         dst_chat_link,
         offset_id,
-        limit,
+        end_offset_id,
         download_filter,
-        TaskType.Forward,
     )
 
     if not node:
@@ -885,7 +884,7 @@ async def forward_msg(node: TaskNode, message_id: int):
 
     chat_download_config = ChatDownloadConfig()
     chat_download_config.last_read_message_id = message_id
-    chat_download_config.download_filter = node.download_filter
+    chat_download_config.download_filter = node.download_filter  # type: ignore
 
     await _bot.download_chat_task(_bot.client, chat_download_config, node)
 
@@ -921,12 +920,10 @@ async def set_listen_forward_msg(
     node = await get_forward_task_node(
         client,
         message,
+        TaskType.ListenForward,
         src_chat_link,
         dst_chat_link,
-        0,
-        1,
-        download_filter,
-        task_type=TaskType.ListenForward,
+        download_filter=download_filter,
     )
 
     if not node:

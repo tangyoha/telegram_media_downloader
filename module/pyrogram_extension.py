@@ -544,8 +544,7 @@ async def proc_cache_forward(
     for key in node.media_group_ids[message.media_group_id].keys():
         download_status = node.download_status.get(key, DownloadStatus.Downloading)
         if (
-            key < node.start_offset_id
-            or key > node.end_offset_id
+            node.skip_msg_id(key)
             or download_status is DownloadStatus.SkipDownload
             or download_status is DownloadStatus.FailedDownload
         ):
@@ -740,7 +739,7 @@ async def _report_bot_status(
             upload_result_str = f"\n📤 {_t('Upload Progresses')}:\n" + upload_result_str
 
         new_msg_str = (
-            f"```\n"
+            f"`\n"
             f"🆔 task id: {node.task_id}\n"
             f"📥 {_t('Downloading')}: {format_byte(node.total_download_byte)}\n"
             f"├─ 📁 {_t('Total')}: {node.total_download_task}\n"
@@ -750,10 +749,11 @@ async def _report_bot_status(
             f"{node.forward_msg_detail_str}"
             f"{upload_msg_detail_str}"
             f"{upload_result_str}"
-            f"{download_result_str}\n```"
+            f"{download_result_str}\n`"
         )
 
         if new_msg_str != node.last_edit_msg:
+            node.last_edit_msg = new_msg_str
             await client.edit_message_text(
                 node.from_user_id,
                 node.reply_message_id,

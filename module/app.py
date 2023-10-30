@@ -114,7 +114,7 @@ class TaskNode:
         replay_message: str = None,
         upload_telegram_chat_id: Union[int, str] = None,
         has_protected_content: bool = False,
-        download_filter: str = "",
+        download_filter: str = None,
         limit: int = 0,
         start_offset_id: int = 0,
         end_offset_id: int = 0,
@@ -157,6 +157,16 @@ class TaskNode:
         self.download_status: dict = {}
         self.upload_status: dict = {}
         self.upload_stat_dict: dict = {}
+
+    def skip_msg_id(self, msg_id: int):
+        """Skip if message id out of range"""
+        if self.start_offset_id and msg_id < self.start_offset_id:
+            return True
+
+        if self.end_offset_id and msg_id > self.end_offset_id:
+            return True
+
+        return False
 
     def is_finish(self):
         """If is finish"""
