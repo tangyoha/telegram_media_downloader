@@ -4,7 +4,10 @@ WORKDIR /app
 
 COPY requirements.txt /app/
 
-RUN apk add --no-cache --virtual .build-deps gcc g++ cmake openblas-dev make musl-dev zlib-dev \
+RUN apk add --no-cache --virtual .build-deps gcc g++ cmake openblas-dev make musl-dev \
+    tiff-dev jpeg-dev openjpeg-dev zlib-dev freetype-dev lcms2-dev \
+    libwebp-dev tcl-dev tk-dev harfbuzz-dev fribidi-dev libimagequant-dev \
+    libxcb-dev libpng-dev \
     && pip install --trusted-host pypi.python.org -r requirements.txt \
     && apk del .build-deps && rm -rf requirements.txt
 
@@ -13,6 +16,8 @@ RUN apk add --no-cache rclone
 FROM python:3.11.2-alpine As runtime-image
 
 WORKDIR /app
+
+RUN apk add --no-cache ffmpeg
 
 COPY --from=tangyoha/telegram_media_downloader_compile:latest /usr/bin/rclone /app/rclone/rclone
 
