@@ -453,7 +453,7 @@ async def _upload_telegram_chat_message(
 # pylint: disable=R0912
 async def forward_multi_media(
     client: pyrogram.Client,
-    upload_user: pyrogram.Client,
+    _: pyrogram.Client,
     app: Application,
     node: TaskNode,
     message: pyrogram.types.Message,
@@ -497,7 +497,7 @@ async def forward_multi_media(
                     else file_name
                 )
                 media_obj.thumb = (
-                    await download_thumbnail(upload_user, app.temp_save_path, message)
+                    await download_thumbnail(client, app.temp_save_path, message)
                     if message.video
                     else None
                 )
@@ -506,7 +506,7 @@ async def forward_multi_media(
                 proc_video_no_audio(file_name)
 
             _media = await cache_media(
-                upload_user,
+                client,
                 node.upload_telegram_chat_id,  # type: ignore
                 media_obj,
                 progress=update_upload_stat,
@@ -515,7 +515,7 @@ async def forward_multi_media(
                     ui_file_name,
                     time.time(),
                     node,
-                    upload_user,
+                    client,
                 ),
             )
         except Exception as e:
@@ -529,7 +529,7 @@ async def forward_multi_media(
         node.media_group_ids[message.media_group_id][message.id] = _media
         node.upload_status[message.id] = UploadStatus.SuccessUpload
 
-    return await proc_cache_forward(upload_user, node, message, bool(file_name))
+    return await proc_cache_forward(client, node, message, bool(file_name))
 
 
 async def proc_cache_forward(
