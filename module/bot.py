@@ -697,10 +697,10 @@ async def get_forward_task_node(
     try:
         src_chat = await _bot.client.get_chat(src_chat_id)
         dst_chat = await _bot.client.get_chat(dst_chat_id)
-    except Exception:
+    except Exception as e:
         await client.send_message(
             message.from_user.id,
-            _t("Invalid chat link"),
+            f"{_t('Invalid chat link')} {e}",
             reply_to_message_id=message.id,
         )
         return None
