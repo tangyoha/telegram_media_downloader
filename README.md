@@ -195,6 +195,7 @@ language: EN
 web_login_secret: 123
 allowed_user_ids:
 - 'me'
+date_format: '%Y_%m'
 ```
 
 - **api_hash**  - The api_hash you got from telegram apps

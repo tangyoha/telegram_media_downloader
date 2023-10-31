@@ -189,6 +189,7 @@ web_port: 5000
 web_login_secret: 123
 allowed_user_ids:
 - 'me'
+date_format: '%Y_%m'
 ```
 
 - **api_hash** - 你从电报应用程序获得的 api_hash
