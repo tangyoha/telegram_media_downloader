@@ -292,7 +292,7 @@ class ChatDownloadConfig:
         self.node: TaskNode = TaskNode(0)
 
 
-def get_config(config, key, default=None, val_type=str):
+def get_config(config, key, default=None, val_type=str, verbose=True):
     """
     Retrieves a configuration value from the given `config` dictionary
     based on the specified `key`.
@@ -303,15 +303,19 @@ def get_config(config, key, default=None, val_type=str):
         default (Any, optional): The default value to be returned
             if the `key` is not found.
         val_type (type, optional): The data type of the configuration value.
+        verbose (bool, optional): A flag indicating whether to print
+            a warning message if the `key` is not found.
 
     Returns:
         The configuration value associated with the specified `key`,
          converted to the specified `type`. If the `key` is not found,
          the `default` value is returned.
     """
-    try:
-        return val_type(config.get(key, default))
-    except Exception:
+    val = config.get(key, default)
+    if isinstance(val, val_type):
+        return val
+
+    if verbose:
         logger.warning(f"{key} is not {val_type.__name__}")
 
     return default
@@ -381,6 +385,7 @@ class Application:
         self.debug_web: bool = False
         self.log_level: str = "INFO"
         self.start_timeout: int = 60
+        self.allowed_user_ids: yaml.comments.CommentedSeq = []
 
         self.forward_limit_call = LimitCall(max_limit_call_times=33)
         self.loop = asyncio.new_event_loop()
@@ -490,6 +495,13 @@ class Application:
 
         self.start_timeout = get_config(
             _config, "start_timeout", self.start_timeout, int
+        )
+
+        self.allowed_user_ids = get_config(
+            _config,
+            "allowed_user_ids",
+            self.allowed_user_ids,
+            yaml.comments.CommentedSeq,
         )
 
         forward_limit = _config.get("forward_limit", None)

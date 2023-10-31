@@ -187,6 +187,8 @@ max_download_task: 5
 web_host: 127.0.0.1
 web_port: 5000
 web_login_secret: 123
+allowed_user_ids:
+- 'me'
 ```
 
 - **api_hash** - 你从电报应用程序获得的 api_hash
@@ -226,6 +228,9 @@ web_login_secret: 123
 - **web_login_secret** - 网页登录密码，如果不配置则访问网页不需要登录
 - **log_level** - 默认日志等级，请参阅 `logging._nameToLevel`
 - **forward_limit** - 限制每分钟转发次数，默认为33，默认请不要修改该参数
+- **allowed_user_ids** - 允许哪些人使用机器人，默认登录账号可以使用，带@的名称请加单引号
+
+
 ## 执行
 
 ```sh

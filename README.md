@@ -193,6 +193,8 @@ web_host: 127.0.0.1
 web_port: 5000
 language: EN
 web_login_secret: 123
+allowed_user_ids:
+- 'me'
 ```
 
 - **api_hash**  - The api_hash you got from telegram apps
@@ -230,7 +232,7 @@ web_login_secret: 123
 - **web_login_secret** - Web page login password, if not configured, no login is required to access the web page
 - **log_level** - see `logging._nameToLevel`.
 - **forward_limit** - Limit the number of forwards per minute, the default is 33, please do not modify this parameter by default.
-
+- **allowed_user_ids** - Who is allowed to use the robot? The default login account can be used. Please add single quotes to the name with @.
 
 ## Execution
 

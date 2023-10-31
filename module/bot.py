@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Callable, List, Union
 
 import pyrogram
+from loguru import logger
 from pyrogram import types
 from pyrogram.handlers import CallbackQueryHandler, MessageHandler
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
@@ -59,6 +60,7 @@ class DownloadBot:
         self.bot_info = None
         self.task_node: dict = {}
         self.is_running = True
+        self.allowed_user_ids: List[Union[int, str]] = []
 
         meta = MetaData(datetime(2022, 8, 5, 14, 35, 12), 0, "", 0, 0, 0, "", 0)
         self.filter.set_meta_data(meta)
@@ -178,62 +180,10 @@ class DownloadBot:
             types.BotCommand("stop", _t("Stop bot download or forward")),
         ]
 
-        self.bot.add_handler(
-            MessageHandler(
-                download_from_bot, filters=pyrogram.filters.command(["download"])
-            )
-        )
-        self.bot.add_handler(
-            MessageHandler(
-                forward_messages, filters=pyrogram.filters.command(["forward"])
-            )
-        )
-        self.bot.add_handler(
-            MessageHandler(download_forward_media, filters=pyrogram.filters.media)
-        )
-        self.bot.add_handler(
-            MessageHandler(
-                download_from_link, filters=pyrogram.filters.regex(r"^https://t.me.*")
-            )
-        )
-        self.bot.add_handler(
-            MessageHandler(
-                set_listen_forward_msg,
-                filters=pyrogram.filters.command(["listen_forward"]),
-            )
-        )
-        self.bot.add_handler(
-            MessageHandler(help_command, filters=pyrogram.filters.command(["help"]))
-        )
-        self.bot.add_handler(
-            MessageHandler(get_info, filters=pyrogram.filters.command(["get_info"]))
-        )
-        self.bot.add_handler(
-            MessageHandler(help_command, filters=pyrogram.filters.command(["start"]))
-        )
-        self.bot.add_handler(
-            MessageHandler(
-                set_language, filters=pyrogram.filters.command(["set_language"])
-            )
-        )
-        self.bot.add_handler(
-            MessageHandler(add_filter, filters=pyrogram.filters.command(["add_filter"]))
-        )
-
-        self.bot.add_handler(
-            MessageHandler(stop, filters=pyrogram.filters.command(["stop"]))
-        )
-
-        self.bot.add_handler(CallbackQueryHandler(on_query_handler))
-
+        self.app = app
         self.client = client
-
-        self.client.add_handler(MessageHandler(listen_forward_msg))
-
         self.add_download_task = add_download_task
         self.download_chat_task = download_chat_task
-
-        self.app = app
 
         # load config
         if os.path.exists(self.config_path):
@@ -247,17 +197,109 @@ class DownloadBot:
 
         self.bot_info = await self.bot.get_me()
 
-        # 添加命令列表
-        await self.bot.set_bot_commands(commands)
+        for allowed_user_id in self.app.allowed_user_ids:
+            try:
+                chat = await self.client.get_chat(allowed_user_id)
+                self.allowed_user_ids.append(chat.id)
+            except Exception as e:
+                logger.warning(f"set allowed_user_ids error: {e}")
 
         admin = await self.client.get_me()
+        self.allowed_user_ids.append(admin.id)
+
+        await self.bot.set_bot_commands(commands)
+
+        self.bot.add_handler(
+            MessageHandler(
+                download_from_bot,
+                filters=pyrogram.filters.command(["download"])
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+        self.bot.add_handler(
+            MessageHandler(
+                forward_messages,
+                filters=pyrogram.filters.command(["forward"])
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+        self.bot.add_handler(
+            MessageHandler(
+                download_forward_media,
+                filters=pyrogram.filters.media
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+        self.bot.add_handler(
+            MessageHandler(
+                download_from_link,
+                filters=pyrogram.filters.regex(r"^https://t.me.*")
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+        self.bot.add_handler(
+            MessageHandler(
+                set_listen_forward_msg,
+                filters=pyrogram.filters.command(["listen_forward"])
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+        self.bot.add_handler(
+            MessageHandler(
+                help_command,
+                filters=pyrogram.filters.command(["help"])
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+        self.bot.add_handler(
+            MessageHandler(
+                get_info,
+                filters=pyrogram.filters.command(["get_info"])
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+        self.bot.add_handler(
+            MessageHandler(
+                help_command,
+                filters=pyrogram.filters.command(["start"])
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+        self.bot.add_handler(
+            MessageHandler(
+                set_language,
+                filters=pyrogram.filters.command(["set_language"])
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+        self.bot.add_handler(
+            MessageHandler(
+                add_filter,
+                filters=pyrogram.filters.command(["add_filter"])
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+
+        self.bot.add_handler(
+            MessageHandler(
+                stop,
+                filters=pyrogram.filters.command(["stop"])
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+
+        self.bot.add_handler(
+            CallbackQueryHandler(
+                on_query_handler, filters=pyrogram.filters.user(self.allowed_user_ids)
+            )
+        )
+
+        self.client.add_handler(MessageHandler(listen_forward_msg))
 
         try:
             await send_help_str(self.bot, admin.id)
         except Exception:
             pass
-        # TODO: add admin
-        # self.bot.set_my_commands(commands, scope=types.BotCommandScopeChatAdministrators(self.app.))
 
         self.reply_task = _bot.app.loop.create_task(_bot.update_reply_message())
 
