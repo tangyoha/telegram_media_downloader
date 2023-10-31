@@ -195,7 +195,7 @@ async def _get_media_meta(
         dirname = validate_title(f"{message.chat.title}")
 
     if message.date:
-        datetime_dir_name = message.date.strftime("%Y_%m")
+        datetime_dir_name = message.darte.strftime(app.date_format)
     else:
         datetime_dir_name = "0"
 

@@ -210,7 +210,7 @@ allowed_user_ids:
 - **save_path** - The root directory where you want to store downloaded files.
 - **file_path_prefix** - Store file subfolders, the order of the list is not fixed, can be randomly combined.
   - `chat_title`      - Channel or group title, it will be chat id if not exist title.
-  - `media_datetime`  - Media date, also see pyrogram.types.Message.date.strftime("%Y_%m").
+  - `media_datetime`  - Media date.
   - `media_type`      - Media type, also see `media_types`.
 - **upload_drive** - You can upload file to cloud drive.
   - `enable_upload_file` - Enable upload file, default `false`.
@@ -233,6 +233,7 @@ allowed_user_ids:
 - **log_level** - see `logging._nameToLevel`.
 - **forward_limit** - Limit the number of forwards per minute, the default is 33, please do not modify this parameter by default.
 - **allowed_user_ids** - Who is allowed to use the robot? The default login account can be used. Please add single quotes to the name with @.
+- **date_format** Support custom configuration of media_datetime format in file_path_prefix.see [python-datetime](https://docs.python.org/3/library/datetime.html)
 
 ## Execution
 

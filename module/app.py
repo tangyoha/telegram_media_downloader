@@ -5,6 +5,7 @@ import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from typing import List, Optional, Union
 
@@ -386,6 +387,7 @@ class Application:
         self.log_level: str = "INFO"
         self.start_timeout: int = 60
         self.allowed_user_ids: yaml.comments.CommentedSeq = []
+        self.date_format: str = "%Y_%m"
 
         self.forward_limit_call = LimitCall(max_limit_call_times=33)
         self.loop = asyncio.new_event_loop()
@@ -503,6 +505,20 @@ class Application:
             self.allowed_user_ids,
             yaml.comments.CommentedSeq,
         )
+
+        self.date_format = get_config(
+            _config,
+            "date_format",
+            self.date_format,
+            str,
+        )
+
+        try:
+            date = datetime(2023, 10, 31)
+            date.strftime(self.date_format)
+        except Exception as e:
+            logger.warning(f"config date format error: {e}")
+            self.date_format = "%Y_%m"
 
         forward_limit = _config.get("forward_limit", None)
         if forward_limit:

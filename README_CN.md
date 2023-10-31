@@ -229,6 +229,7 @@ allowed_user_ids:
 - **log_level** - 默认日志等级，请参阅 `logging._nameToLevel`
 - **forward_limit** - 限制每分钟转发次数，默认为33，默认请不要修改该参数
 - **allowed_user_ids** - 允许哪些人使用机器人，默认登录账号可以使用，带@的名称请加单引号
+- **date_format** - 支持自定义配置file_path_prefix中media_datetime的格式，具体格式查看 [python-datetime](https://docs.python.org/zh-cn/3/library/time.html)
 
 
 ## 执行
