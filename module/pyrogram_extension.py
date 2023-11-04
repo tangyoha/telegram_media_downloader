@@ -87,7 +87,6 @@ def get_media_obj(
             width=message.video.width,
             height=message.video.height,
             duration=message.video.duration,
-            caption=message.caption or "",
             parse_mode=pyrogram.enums.ParseMode.HTML,
         )
 
