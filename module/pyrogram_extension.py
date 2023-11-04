@@ -67,7 +67,7 @@ def _guess_extension(mime_type: str) -> Optional[str]:
 
 
 def get_media_obj(
-    media_type: pyrogram.enums.MessageMediaType, media: str = None, caption: str = None
+    message: pyrogram.types.Message, media: str = None, caption: str = None
 ) -> Union[
     types.InputMediaPhoto,
     types.InputMediaVideo,
@@ -76,11 +76,20 @@ def get_media_obj(
     types.InputMediaAnimation,
 ]:
     """Get media object"""
+    media_type = message.media
     if media_type == pyrogram.enums.MessageMediaType.PHOTO:
         return types.InputMediaPhoto(media, caption=caption)
 
     if media_type == pyrogram.enums.MessageMediaType.VIDEO:
-        return types.InputMediaVideo(media, caption=caption)
+        return types.InputMediaVideo(
+            media,
+            caption=caption,
+            width=message.video.width,
+            height=message.video.height,
+            duration=message.video.duration,
+            caption=message.caption or "",
+            parse_mode=pyrogram.enums.ParseMode.HTML,
+        )
 
     if media_type in [
         pyrogram.enums.MessageMediaType.AUDIO,
@@ -464,7 +473,7 @@ async def forward_multi_media(
     if not caption:
         caption = app.get_caption_name(node.chat_id, message.media_group_id)
 
-    media_obj = get_media_obj(message.media, file_name, caption)
+    media_obj = get_media_obj(message, file_name, caption)
     if not file_name:
         media = getattr(message, message.media.value)
         if not media:
