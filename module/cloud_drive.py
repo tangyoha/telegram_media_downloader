@@ -111,7 +111,7 @@ class CloudDrive:
 
             cmd = (
                 f'"{drive_config.rclone_path}" copy "{file_path}" '
-                f"{remote_dir}/ --create-empty-src-dirs --ignore-existing --progress"
+                f'"{remote_dir}/" --create-empty-src-dirs --ignore-existing --progress'
             )
             proc = await asyncio.create_subprocess_shell(
                 cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
