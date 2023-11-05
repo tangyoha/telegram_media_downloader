@@ -231,6 +231,7 @@ date_format: '%Y_%m'
 - **forward_limit** - 限制每分钟转发次数，默认为33，默认请不要修改该参数
 - **allowed_user_ids** - 允许哪些人使用机器人，默认登录账号可以使用，带@的名称请加单引号
 - **date_format** - 支持自定义配置file_path_prefix中media_datetime的格式，具体格式查看 [python-datetime](https://docs.python.org/zh-cn/3/library/time.html)
+- **drop_no_audio_video** 由于telegram服务器不支持上传一组媒体的时候，上传没有音频的视频会报错，所以使用ffmpeg处理，如果不处理将该选项置为true，默认为false
 
 
 ## 执行

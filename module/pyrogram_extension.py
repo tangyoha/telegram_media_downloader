@@ -511,8 +511,8 @@ async def forward_multi_media(
                 )
 
             if file_name and message.video:
-                proc_video_no_audio(file_name)
-
+                if not proc_video_no_audio(file_name, app.drop_no_audio_video):
+                    node.upload_status[message.id] = UploadStatus.FailedUpload
             _media = await cache_media(
                 client,
                 node.upload_telegram_chat_id,  # type: ignore
@@ -529,10 +529,12 @@ async def forward_multi_media(
         except Exception as e:
             logger.exception(f"{e}")
             node.upload_status[message.id] = UploadStatus.FailedUpload
-            return ForwardStatus.FailedForward
         finally:
             if file_name and message.video and media_obj.thumb:
                 os.remove(str(media_obj.thumb))
+
+        if node.upload_status[message.id] == UploadStatus.FailedUpload:
+            return ForwardStatus.FailedForward
 
         node.media_group_ids[message.media_group_id][message.id] = _media
         node.upload_status[message.id] = UploadStatus.SuccessUpload
@@ -974,26 +976,31 @@ async def update_upload_stat(
         node.upload_stat_dict[message_id] = upload_stat
 
 
-def proc_video_no_audio(path):
+def proc_video_no_audio(path, drop_no_audio_video=False):
     """
-    Process a video file without audio.
+    Processes a video file without audio.
 
-    Parameters:
-    - path (str): The path to the video file.
+    Args:
+        path (str): The path of the video file to be processed.
+        drop_no_audio_video (bool, optional): If set to True,
+        drop the video file if no audio is found. Defaults to False.
 
     Returns:
-    - None: If the video file has audio, the function will return without processing.
-    - None: If the function successfully processes the video file.
+        bool: True if the video was processed successfully, False otherwise.
 
     Raises:
-    - ValueError: If the function fails to process the video file without audio.
+        ValueError: If failed to process the video without audio.
     """
     ext = os.path.splitext(path)[1]
     tmp_path = f"{os.path.splitext(path)[0]}_tmp{ext}"
 
     with VideoFileClip(path, audio=False) as videoclip:
         if videoclip.reader.infos.get("audio_found"):
-            return
+            return True
+
+        if drop_no_audio_video:
+            logger.warning(f"drop forward video without audio: {path}")
+            return False
 
         def make_frame(_):
             return [0.0, 0.0]
@@ -1005,7 +1012,7 @@ def proc_video_no_audio(path):
     if os.path.exists(tmp_path):
         os.remove(path)
         os.rename(tmp_path, path)
-        return
+        return True
 
     raise ValueError(f"Failed to process video without audio {path}")
 
