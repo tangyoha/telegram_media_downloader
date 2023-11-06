@@ -386,7 +386,9 @@ class Application:
         self.debug_web: bool = False
         self.log_level: str = "INFO"
         self.start_timeout: int = 60
-        self.allowed_user_ids: yaml.comments.CommentedSeq = []
+        self.allowed_user_ids: yaml.comments.CommentedSeq = yaml.comments.CommentedSeq(
+            []
+        )
         self.date_format: str = "%Y_%m"
         self.drop_no_audio_video: bool = False
 
