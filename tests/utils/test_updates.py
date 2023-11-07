@@ -1,11 +1,12 @@
 """Unittest module for update checker."""
+import json
 import sys
 import unittest
 
 import mock
 
 sys.path.append("..")  # Adds higher directory to python modules path.
-from utils.updates import check_for_updates
+from utils.updates import check_for_updates, get_latest_release
 
 
 class FakeHTTPSConnection:
@@ -30,37 +31,117 @@ class FakeHTTPSResponse:
             return b"{error}"
 
 
-class UpdatesTestCase(unittest.TestCase):
-    @mock.patch(
-        "utils.updates.http.client.HTTPSConnection",
-        new=mock.MagicMock(return_value=FakeHTTPSConnection(200)),
-    )
-    @mock.patch("utils.updates.__version__", new="0.0.1")
-    @mock.patch("utils.updates.Console")
-    @mock.patch("utils.updates.Markdown")
-    def test_update(self, mock_markdown, mock_console):
-        check_for_updates()
-        name: str = "v0.0.0 2022-03-02"
-        html_url: str = (
-            "https://github.com/tangyoha/telegram_media_downloader/releases/tag/v0.0.0"
-        )
-        expected_message: str = (
-            f"## New version of Telegram-Media-Downloader is available - {name}\n"
-            "You are using an outdated version v0.0.1 please pull in the changes using `git pull` or download the latest release.\n\n"
-            f"Find more details about the latest release here - {html_url}"
-        )
-        mock_markdown.assert_called_with(expected_message)
-        mock_console.return_value.print.assert_called_once()
+class MocResponse:
+    def __init__(self, text: str):
+        self.text = text
 
-    @mock.patch(
-        "utils.updates.http.client.HTTPSConnection",
-        new=mock.MagicMock(return_value=FakeHTTPSConnection(500)),
-    )
-    @mock.patch("utils.updates.Console")
-    def test_exception(self, mock_console):
-        check_for_updates()
-        exception_message: str = (
-            "Following error occurred when checking for updates\n"
-            "<class 'json.decoder.JSONDecodeError'>, Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+
+def new_request_get(*args, **kwargs):
+    return MocResponse('{"tag_name":"v0.0.0"}')
+
+
+import unittest
+from unittest.mock import MagicMock, patch
+
+from utils import __version__
+from utils.updates import check_for_updates, get_latest_release
+
+
+class TestUpdates(unittest.TestCase):
+    @patch("requests.get")
+    def test_get_latest_release(self, mock_get):
+        # Mock the response from requests.get
+        mock_response = MagicMock()
+        mock_response.text = json.dumps(
+            {
+                "name": "v0.0.0 2022-03-02",
+                "tag_name": "v0.0.0",
+                "html_url": "https://github.com/tangyoha/telegram_media_downloader/releases/tag/v0.0.0",
+            }
         )
-        mock_console.return_value.log.assert_called_with(exception_message)
+        mock_get.return_value = mock_response
+
+        # Call the function with a test proxy_config
+        proxy_config = {
+            "scheme": "http",
+            "hostname": "localhost",
+            "port": "8080",
+            "username": "user",
+            "password": "pass",
+        }
+        result = get_latest_release(proxy_config)
+
+        # Check the result
+        self.assertEqual(result["name"], "v0.0.0 2022-03-02")
+        self.assertEqual(result["tag_name"], "v0.0.0")
+        self.assertEqual(
+            result["html_url"],
+            "https://github.com/tangyoha/telegram_media_downloader/releases/tag/v0.0.0",
+        )
+
+    @patch("requests.get")
+    def test_get_latest_release_same_version(self, mock_get):
+        # Mock the response from requests.get
+        mock_response = MagicMock()
+        mock_response.text = json.dumps(
+            {
+                "name": f"v{__version__} 2022-03-02",
+                "tag_name": f"v{__version__}",
+                "html_url": "https://github.com/tangyoha/telegram_media_downloader/releases/tag/v0.0.0",
+            }
+        )
+        mock_get.return_value = mock_response
+
+        # Call the function with a test proxy_config
+        proxy_config = {
+            "scheme": "http",
+            "hostname": "localhost",
+            "port": "8080",
+            "username": "user",
+            "password": "pass",
+        }
+        result = get_latest_release(proxy_config)
+
+        # Check the result
+        self.assertEqual(result, {})
+
+    @patch("requests.get")
+    def test_get_latest_release_exception(self, mock_get):
+        # Mock the response from requests.get to raise an exception
+        mock_get.side_effect = Exception("Test exception")
+
+        # Call the function with a test proxy_config
+        proxy_config = {
+            "scheme": "http",
+            "hostname": "localhost",
+            "port": "8080",
+            "username": "user",
+            "password": "pass",
+        }
+        result = get_latest_release(proxy_config)
+
+        # Check the result
+        self.assertEqual(result, {})
+
+    @patch("utils.updates.get_latest_release")
+    @patch("utils.updates.Console")
+    def test_check_for_updates(self, mock_console, mock_get_latest_release):
+        # Mock the response from get_latest_release
+        mock_get_latest_release.return_value = {
+            "name": "v0.0.0 2022-03-02",
+            "tag_name": "v0.0.0",
+            "html_url": "https://github.com/tangyoha/telegram_media_downloader/releases/tag/v0.0.0",
+        }
+
+        # Call the function with a test proxy_config
+        proxy_config = {
+            "scheme": "http",
+            "hostname": "localhost",
+            "port": "8080",
+            "username": "user",
+            "password": "pass",
+        }
+        check_for_updates(proxy_config)
+
+        # Check the console output
+        mock_console.return_value.print.assert_called_once()

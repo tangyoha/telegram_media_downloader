@@ -38,6 +38,7 @@ from module.pyrogram_extension import (
 )
 from utils.format import replace_date_time, validate_title
 from utils.meta_data import MetaData
+from utils.updates import get_latest_release
 
 # pylint: disable = C0301, R0902
 
@@ -343,9 +344,33 @@ async def send_help_str(client: pyrogram.Client, chat_id):
         The help string includes information about the Telegram Media Downloader bot,
         its version, and the available commands.
     """
+
+    update_keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    "Github",
+                    url="https://github.com/tangyoha/telegram_media_downloader/releases",
+                ),
+                InlineKeyboardButton(
+                    "Join us", url="https://t.me/TeegramMediaDownload"
+                ),
+            ]
+        ]
+    )
+
+    latest_release = get_latest_release(_bot.app.proxy)
+
+    latest_release_str = (
+        f"{_t('New Version')}: [{latest_release['name']}]({latest_release['html_url']})\n"
+        if latest_release
+        else ""
+    )
+
     msg = (
         f"`\n🤖 {_t('Telegram Media Downloader')}\n"
-        f"🌐 {_t('Version')}: {utils.__version__}`\n\n"
+        f"🌐 {_t('Version')}: {utils.__version__}`\n"
+        f"{latest_release_str}\n"
         f"{_t('Available commands:')}\n"
         f"/help - {_t('Show available commands')}\n"
         f"/get_info - {_t('Get group and user info from message link')}\n"
@@ -360,7 +385,7 @@ async def send_help_str(client: pyrogram.Client, chat_id):
         f"`[` `]` {_t('means optional, not required')}\n"
     )
 
-    await client.send_message(chat_id, msg)
+    await client.send_message(chat_id, msg, reply_markup=update_keyboard)
 
 
 async def help_command(client: pyrogram.Client, message: pyrogram.types.Message):

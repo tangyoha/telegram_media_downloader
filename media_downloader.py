@@ -646,7 +646,7 @@ def main():
         for task in tasks:
             task.cancel()
         logger.info(_t("Stopped!"))
-        check_for_updates()
+        check_for_updates(app.proxy)
         logger.info(f"{_t('update config')}......")
         app.update_config()
         logger.success(

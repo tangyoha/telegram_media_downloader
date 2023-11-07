@@ -345,7 +345,7 @@ class MockClient:
         return True
 
 
-def check_for_updates():
+def check_for_updates(_: dict = None):
     pass
 
 
