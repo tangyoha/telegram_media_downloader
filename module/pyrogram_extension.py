@@ -27,6 +27,7 @@ from pyrogram.mime_types import mime_types
 
 from module.app import (
     Application,
+    CloudDriveUploadStat,
     DownloadStatus,
     ForwardStatus,
     TaskNode,
@@ -101,6 +102,28 @@ def get_media_obj(
         return types.InputMediaAnimation(media, caption=caption)
 
     return None
+
+
+def replace_caption(
+    caption: Optional[str], caption_replace_dict, default_caption: Optional[str] = None
+):
+    """
+    Replaces certain items in a caption string
+        with their corresponding values from a dictionary.
+
+    :param caption: Optional. The caption string to be modified.
+    :param caption_replace_dict: The dictionary containing the items
+        to be replaced and their corresponding values.
+    :param default_caption: Optional. The default caption to be used if `caption` is None.
+
+    :return: The modified caption string.
+    """
+    if caption:
+        for item in caption_replace_dict:
+            caption = caption.replace(item, caption_replace_dict[item])
+    else:
+        caption = default_caption
+    return caption
 
 
 def _get_file_type(file_id: str):
@@ -342,6 +365,9 @@ async def _upload_signal_message(
             else file_name
         )
 
+    caption = replace_caption(
+        message.caption, app.caption_replace_dict, app.default_forward_caption
+    )
     if message.video:
         # Download thumbnail
         thumbnail_file = await download_thumbnail(client, app.temp_save_path, message)
@@ -355,7 +381,7 @@ async def _upload_signal_message(
                 width=message.video.width,
                 height=message.video.height,
                 duration=message.video.duration,
-                caption=message.caption or "",
+                caption=caption,
                 parse_mode=pyrogram.enums.ParseMode.HTML,
                 progress=update_upload_stat,
                 progress_args=(
@@ -377,7 +403,7 @@ async def _upload_signal_message(
         await upload_user.send_photo(
             upload_telegram_chat_id,
             file_name,
-            caption=message.caption,
+            caption=caption,
             progress=update_upload_stat,
             progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
             message_thread_id=node.topic_id,
@@ -386,7 +412,7 @@ async def _upload_signal_message(
         await upload_user.send_document(
             upload_telegram_chat_id,
             file_name,
-            caption=message.caption,
+            caption=caption,
             progress=update_upload_stat,
             progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
             message_thread_id=node.topic_id,
@@ -395,7 +421,7 @@ async def _upload_signal_message(
         await upload_user.send_voice(
             upload_telegram_chat_id,
             file_name,
-            caption=message.caption,
+            caption=caption,
             progress=update_upload_stat,
             progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
             message_thread_id=node.topic_id,
@@ -404,7 +430,7 @@ async def _upload_signal_message(
         await upload_user.send_video_note(
             upload_telegram_chat_id,
             file_name,
-            caption=message.caption,
+            caption=caption,
             progress=update_upload_stat,
             progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
             message_thread_id=node.topic_id,
@@ -477,6 +503,10 @@ async def forward_multi_media(
     caption = message.caption
     if not caption:
         caption = app.get_caption_name(node.chat_id, message.media_group_id)
+
+    caption = replace_caption(
+        caption, app.caption_replace_dict, app.default_forward_caption
+    )
 
     max_caption_length = 4096 if client.me and client.me.is_premium else 1024
     # proc caption MEDIA_CAPTION_TOO_LONG
@@ -710,6 +740,21 @@ async def _report_bot_status(
                 f"└─ ✅ {_t('Success')}: {node.upload_success_count}\n"
             )
 
+        for idx, value in node.cloud_drive_upload_stat_dict.items():
+            if value.transferred == value.total:
+                continue
+
+            temp_file_name = truncate_filename(os.path.basename(value.file_name), 10)
+            upload_msg_detail_str += (
+                f" ├─ 🆔 {_t('Message ID')}: {idx}\n"
+                f" │   ├─ 📁 : {temp_file_name}\n"
+                f" │   ├─ 📏 : {value.total}\n"
+                f" │   ├─ ⏫ : {value.speed}\n"
+                f" │   └─ 📊 : ["
+                f'{create_progress_bar(int(value.percentage.split("%")[0]))}]'
+                f" ({value.percentage})%\n"
+            )
+
         download_result_str = ""
         download_result = get_download_result()
         if node.chat_id in download_result:
@@ -748,7 +793,7 @@ async def _report_bot_status(
                 f" ├─ 🆔 {_t('Message ID')}: {idx}\n"
                 f" │   ├─ 📁 : {temp_file_name}\n"
                 f" │   ├─ 📏 : {format_byte(value.total_size)}\n"
-                f" │   ├─ ⏫ : {format_byte(value.upload_size)}/s\n"
+                f" │   ├─ ⏫ : {format_byte(value.upload_speed)}/s\n"
                 f" │   └─ 📊 : [{create_progress_bar(progress)}]"
                 f" ({progress}%)\n"
             )
@@ -936,6 +981,42 @@ async def parse_link(client: pyrogram.Client, link_str: str):
     return link.group_id, link.post_id, link.topic_id
 
 
+async def update_cloud_upload_stat(
+    transferred: str,
+    total: str,
+    percentage: str,
+    speed: str,
+    eta: str,
+    node: TaskNode,
+    message_id: int,
+    file_name: str,
+):
+    """
+    Update the cloud upload statistics with the given information.
+
+    Args:
+        transferred (str): The amount of data transferred.
+        total (str): The total size of the file.
+        percentage (str): The percentage of the file uploaded.
+        speed (str): The upload speed.
+        eta (str): The estimated time of arrival for the upload to complete.
+        node (TaskNode): The task node associated with the upload.
+        message_id (int): The ID of the message.
+        file_name (str): The name of the file being uploaded.
+
+    Returns:
+        None
+    """
+    node.cloud_drive_upload_stat_dict[message_id] = CloudDriveUploadStat(
+        file_name=file_name,
+        transferred=transferred,
+        total=total,
+        percentage=percentage,
+        speed=speed,
+        eta=eta,
+    )
+
+
 async def update_upload_stat(
     upload_size: int,
     total_size: int,
@@ -956,20 +1037,17 @@ async def update_upload_stat(
     if node.upload_stat_dict.get(message_id):
         upload_stat = node.upload_stat_dict[message_id]
 
-        upload_stat.each_second_total_upload += upload_size - upload_stat.upload_size
-
         if cur_time - upload_stat.last_stat_time >= 1.0:
             upload_stat.upload_speed = max(
                 int(
-                    upload_stat.each_second_total_upload
+                    (upload_size - upload_stat.upload_size)
                     / (cur_time - upload_stat.last_stat_time)
                 ),
                 0,
             )
             upload_stat.last_stat_time = cur_time
-            upload_stat.each_second_total_upload = 0
+            upload_stat.upload_size = upload_size
 
-        upload_stat.upload_size = upload_size
         node.upload_stat_dict[message_id] = upload_stat
     else:
         upload_stat = UploadProgressStat(
@@ -978,7 +1056,6 @@ async def update_upload_stat(
             upload_size=upload_size,
             start_time=start_time,
             last_stat_time=cur_time,
-            each_second_total_upload=upload_size,
             upload_speed=upload_size / (cur_time - start_time),
         )
         node.upload_stat_dict[message_id] = upload_stat

@@ -1,9 +1,13 @@
 """provide upload cloud drive"""
 import asyncio
+import functools
 import importlib
+import inspect
 import os
+import re
 from asyncio import subprocess
 from subprocess import Popen
+from typing import Callable
 from zipfile import ZipFile
 
 from loguru import logger
@@ -83,9 +87,14 @@ class CloudDrive:
 
         return zip_file_name
 
+    # pylint: disable = R0914
     @staticmethod
     async def rclone_upload_file(
-        drive_config: CloudDriveConfig, save_path: str, local_file_path: str
+        drive_config: CloudDriveConfig,
+        save_path: str,
+        local_file_path: str,
+        progress_callback: Callable = None,
+        progress_args: tuple = (),
     ) -> bool:
         """Use Rclone upload file"""
         upload_status: bool = False
@@ -128,6 +137,26 @@ class CloudDrive:
                         if drive_config.before_upload_file_zip:
                             os.remove(zip_file_path)
                         upload_status = True
+                    else:
+                        pattern = (
+                            r"Transferred: (.*?) / (.*?), (.*?)%, (.*?/s)?, ETA (.*?)$"
+                        )
+                        transferred_match = re.search(pattern, s)
+
+                        if transferred_match:
+                            if progress_callback:
+                                func = functools.partial(
+                                    progress_callback,
+                                    transferred_match.group(1),
+                                    transferred_match.group(2),
+                                    transferred_match.group(3),
+                                    transferred_match.group(4),
+                                    transferred_match.group(5),
+                                    *progress_args,
+                                )
+
+                            if inspect.iscoroutinefunction(progress_callback):
+                                await func()
 
             await proc.wait()
         except Exception as e:
