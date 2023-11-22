@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, Union
+from typing import Callable, List, Optional, Union
 
 from loguru import logger
 from ruamel import yaml
@@ -76,8 +76,19 @@ class UploadProgressStat:
     upload_size: int
     start_time: float
     last_stat_time: float
-    each_second_total_upload: int
     upload_speed: float
+
+
+@dataclass
+class CloudDriveUploadStat:
+    """Cloud drive upload task"""
+
+    file_name: str
+    transferred: str
+    total: str
+    percentage: str
+    speed: str
+    eta: str
 
 
 class QueryHandlerStr:
@@ -158,6 +169,7 @@ class TaskNode:
         self.download_status: dict = {}
         self.upload_status: dict = {}
         self.upload_stat_dict: dict = {}
+        self.cloud_drive_upload_stat_dict: dict = {}
 
     def skip_msg_id(self, msg_id: int):
         """Skip if message id out of range"""
@@ -393,6 +405,9 @@ class Application:
         self.drop_no_audio_video: bool = False
 
         self.forward_limit_call = LimitCall(max_limit_call_times=33)
+
+        self.caption_replace_dict: yaml.comments.CommentedMap = {}
+        self.default_forward_caption = None
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
@@ -473,12 +488,17 @@ class Application:
 
         # TODO: add check if expression exist syntax error
 
-        self.max_concurrent_transmissions = _config.get(
-            "max_concurrent_transmissions", self.max_concurrent_transmissions
-        )
-
         self.max_download_task = _config.get(
             "max_download_task", self.max_download_task
+        )
+
+        self.max_concurrent_transmissions = self.max_download_task * 2
+
+        self.max_concurrent_transmissions = get_config(
+            _config,
+            "max_concurrent_transmissions",
+            self.max_concurrent_transmissions,
+            int,
         )
 
         language = _config.get("language", "EN")
@@ -534,6 +554,17 @@ class Application:
                 self.forward_limit_call.max_limit_call_times = forward_limit
             except ValueError:
                 pass
+
+        self.caption_replace_dict = get_config(
+            _config,
+            "caption_replace",
+            self.caption_replace_dict,
+            yaml.comments.CommentedMap,
+        )
+
+        self.default_forward_caption = get_config(
+            _config, "default_forward_caption", self.default_forward_caption, str
+        )
 
         if _config.get("chat"):
             chat = _config["chat"]
@@ -636,7 +667,12 @@ class Application:
                             ] = True
         return True
 
-    async def upload_file(self, local_file_path: str) -> bool:
+    async def upload_file(
+        self,
+        local_file_path: str,
+        progress_callback: Callable = None,
+        progress_args: tuple = (),
+    ) -> bool:
         """Upload file"""
 
         if not self.cloud_drive_config.enable_upload_file:
@@ -645,7 +681,11 @@ class Application:
         ret: bool = False
         if self.cloud_drive_config.upload_adapter == "rclone":
             ret = await CloudDrive.rclone_upload_file(
-                self.cloud_drive_config, self.save_path, local_file_path
+                self.cloud_drive_config,
+                self.save_path,
+                local_file_path,
+                progress_callback,
+                progress_args,
             )
         elif self.cloud_drive_config.upload_adapter == "aligo":
             ret = await self.loop.run_in_executor(

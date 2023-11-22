@@ -5,9 +5,9 @@ import os
 import threading
 
 from flask import Flask, jsonify, render_template, request
-from flask_login import LoginManager, UserMixin, login_required, login_user
 
 import utils
+from flask_login import LoginManager, UserMixin, login_required, login_user
 from module.app import Application
 from module.download_stat import (
     DownloadState,

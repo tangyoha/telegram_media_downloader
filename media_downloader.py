@@ -24,6 +24,7 @@ from module.pyrogram_extension import (
     report_bot_download_status,
     set_max_concurrent_transmissions,
     set_meta_data,
+    update_cloud_upload_stat,
     upload_telegram_chat,
 )
 from module.web import init_web
@@ -296,7 +297,12 @@ async def download_task(
         not node.upload_telegram_chat_id
         and download_status is DownloadStatus.SuccessDownload
     ):
-        if await app.upload_file(file_name):
+        ui_file_name = file_name
+        if app.hide_file_name:
+            ui_file_name = f"****{os.path.splitext(file_name)[-1]}"
+        if await app.upload_file(
+            file_name, update_cloud_upload_stat, (node, message.id, ui_file_name)
+        ):
             node.upload_success_count += 1
 
     await report_bot_download_status(
