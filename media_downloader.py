@@ -572,14 +572,26 @@ async def download_all_chat(client: pyrogram.Client):
 
 async def run_until_all_task_finish():
     """Normal download"""
+    _status: bool = True
     while True:
         finish: bool = True
         for _, value in app.chat_download_config.items():
             if not value.need_check or value.total_task != value.finish_task:
                 finish = False
+                _status = True
 
         if (not app.bot_token and finish) or app.restart_program:
             break
+
+        if app.bot_token and finish and _status:
+            _status = False
+            app.update_config()
+            logger.success(
+                f"{_t('Updated last read message_id to config file')},"
+                f"{_t('total download')} {app.total_download_task}, "
+                f"{_t('total upload file')} "
+                f"{app.cloud_drive_config.total_upload_success_file_count}"
+            )
 
         await asyncio.sleep(1)
 
