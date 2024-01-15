@@ -621,7 +621,7 @@ async def download_from_link(client: pyrogram.Client, message: pyrogram.types.Me
             if download_message:
                 await direct_download(_bot, entity.id, message, download_message)
             else:
-                client.send_message(
+                await client.send_message(
                     message.from_user.id,
                     f"{_t('From')} {entity.title} {_t('download')} {message_id} {_t('error')}!",
                     reply_to_message_id=message.id,
@@ -689,33 +689,33 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
         chat_id, _ = await parse_link(_bot.client, url)
         if chat_id:
             entity = await _bot.client.get_chat(chat_id)
-        if entity:
-            chat_title = entity.title
-            reply_message = f"from {chat_title} "
-            chat_download_config = ChatDownloadConfig()
-            chat_download_config.last_read_message_id = start_offset_id
-            chat_download_config.download_filter = download_filter
-            reply_message += (
-                f"download message id = {start_offset_id} - {end_offset_id} !"
-            )
-            last_reply_message = await client.send_message(
-                message.from_user.id, reply_message, reply_to_message_id=message.id
-            )
-            node = TaskNode(
-                chat_id=entity.id,
-                from_user_id=message.from_user.id,
-                reply_message_id=last_reply_message.id,
-                replay_message=reply_message,
-                limit=limit,
-                start_offset_id=start_offset_id,
-                end_offset_id=end_offset_id,
-                bot=_bot.bot,
-                task_id=_bot.gen_task_id(),
-            )
-            _bot.add_task_node(node)
-            _bot.app.loop.create_task(
-                _bot.download_chat_task(_bot.client, chat_download_config, node)
-            )
+            if entity:
+                chat_title = entity.title
+                reply_message = f"from {chat_title} "
+                chat_download_config = ChatDownloadConfig()
+                chat_download_config.last_read_message_id = start_offset_id
+                chat_download_config.download_filter = download_filter
+                reply_message += (
+                    f"download message id = {start_offset_id} - {end_offset_id} !"
+                )
+                last_reply_message = await client.send_message(
+                    message.from_user.id, reply_message, reply_to_message_id=message.id
+                )
+                node = TaskNode(
+                    chat_id=entity.id,
+                    from_user_id=message.from_user.id,
+                    reply_message_id=last_reply_message.id,
+                    replay_message=reply_message,
+                    limit=limit,
+                    start_offset_id=start_offset_id,
+                    end_offset_id=end_offset_id,
+                    bot=_bot.bot,
+                    task_id=_bot.gen_task_id(),
+                )
+                _bot.add_task_node(node)
+                _bot.app.loop.create_task(
+                    _bot.download_chat_task(_bot.client, chat_download_config, node)
+                )
     except Exception as e:
         await client.send_message(
             message.from_user.id,
@@ -1061,7 +1061,7 @@ async def stop_task(
 ):
     """Stop task"""
     if query.data == queryHandler:
-        buttons: List[InlineKeyboardButton] = []
+        buttons: List[List[InlineKeyboardButton]] = []
         temp_buttons: List[InlineKeyboardButton] = []
         for key, value in _bot.task_node.copy().items():
             if not value.is_finish() and value.task_type is task_type:
