@@ -24,7 +24,7 @@ from module.pyrogram_extension import (
     report_bot_download_status,
     set_max_concurrent_transmissions,
     set_meta_data,
-    upload_telegram_chat,
+    upload_telegram_chat, download_thumbnail,
 )
 from module.web import init_web
 from utils.format import truncate_filename, validate_title
@@ -163,10 +163,10 @@ def _is_exist(file_path: str) -> bool:
 
 
 async def _get_media_meta(
-    chat_id: Union[int, str],
-    message: pyrogram.types.Message,
-    media_obj: Union[Audio, Document, Photo, Video, VideoNote, Voice],
-    _type: str,
+        chat_id: Union[int, str],
+        message: pyrogram.types.Message,
+        media_obj: Union[Audio, Document, Photo, Video, VideoNote, Voice],
+        _type: str,
 ) -> Tuple[str, str, Optional[str]]:
     """Extract file name and file id from media object.
 
@@ -220,7 +220,7 @@ async def _get_media_meta(
         file_name_suffix = ".unknown"
         if not file_name:
             file_name_suffix = get_extension(
-                media_obj.file_id, getattr(media_obj, "mime_type", "")
+                media_obj.file_id, getattr(media_obj, "mime_type", ""), False
             )
         else:
             # file_name = file_name.split(".")[0]
@@ -240,8 +240,14 @@ async def _get_media_meta(
         if not file_name and message.photo:
             file_name = f"{message.photo.file_unique_id}"
 
+        hash_tags, plain_text = process_entities(message.caption, message.caption_entities)
+        joined_tags = "{TAG}".join(hash_tags)  # connect tags with "{TAG}"
         gen_file_name = (
-            app.get_file_name(message.id, file_name, caption) + file_name_suffix
+                app.get_file_name(message.id, plain_text, "")
+                + "{PlaceHolder}" + joined_tags
+                + "{PlaceHolder}" + f"{media_obj.duration}" + "{PlaceHolder}"
+                + f"{media_obj.width}" + "{PlaceHolder}"
+                + f"{media_obj.height}" + file_name_suffix
         )
 
         file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
@@ -252,9 +258,34 @@ async def _get_media_meta(
     return truncate_filename(file_name), truncate_filename(temp_file_name), file_format
 
 
+def process_entities(caption, caption_entities):
+    hash_tags = []
+    plain_text = ""
+    prev_end = 0
+    for entity in sorted(caption_entities, key=lambda e: getattr(e, "offset", 0)):
+        type_obj = getattr(entity, "type", None)
+        type_name = getattr(type_obj, "name", None) if type_obj else None
+
+        start = getattr(entity, "offset", 0)
+        end = start + getattr(entity, "length", 0)
+        if prev_end < start:
+            plain_text += caption[prev_end: start]
+
+        if type_name == 'HASHTAG':
+            hash_tags.append(caption[start: end])
+        elif type_name not in ['TEXT_LINK', 'CUSTOM_EMOJI']:
+            plain_text += caption[start: end]
+
+        prev_end = end
+    if prev_end < len(caption):
+        plain_text += caption[prev_end:]
+
+    return hash_tags, plain_text
+
+
 async def add_download_task(
-    message: pyrogram.types.Message,
-    node: TaskNode,
+        message: pyrogram.types.Message,
+        node: TaskNode,
 ):
     """Add Download task"""
     if message.empty:
@@ -266,7 +297,7 @@ async def add_download_task(
 
 
 async def download_task(
-    client: pyrogram.Client, message: pyrogram.types.Message, node: TaskNode
+        client: pyrogram.Client, message: pyrogram.types.Message, node: TaskNode
 ):
     """Download and Forward media"""
 
@@ -293,8 +324,8 @@ async def download_task(
 
     # rclone upload
     if (
-        not node.upload_telegram_chat_id
-        and download_status is DownloadStatus.SuccessDownload
+            not node.upload_telegram_chat_id
+            and download_status is DownloadStatus.SuccessDownload
     ):
         if await app.upload_file(file_name):
             node.upload_success_count += 1
@@ -312,11 +343,11 @@ async def download_task(
 
 @record_download_status
 async def download_media(
-    client: pyrogram.client.Client,
-    message: pyrogram.types.Message,
-    media_types: List[str],
-    file_formats: dict,
-    node: TaskNode,
+        client: pyrogram.client.Client,
+        message: pyrogram.types.Message,
+        media_types: List[str],
+        file_formats: dict,
+        node: TaskNode,
 ):
     """
     Download media from Telegram.
@@ -366,6 +397,7 @@ async def download_media(
             file_name, temp_file_name, file_format = await _get_media_meta(
                 node.chat_id, message, _media, _type
             )
+            await download_thumbnail(client, app.temp_save_path, message, file_name)
             media_size = getattr(_media, "file_size", 0)
 
             ui_file_name = file_name
@@ -501,9 +533,9 @@ async def worker(client: pyrogram.client.Client):
 
 
 async def download_chat_task(
-    client: pyrogram.Client,
-    chat_download_config: ChatDownloadConfig,
-    node: TaskNode,
+        client: pyrogram.Client,
+        chat_download_config: ChatDownloadConfig,
+        node: TaskNode,
 ):
     """Download all task"""
     messages_iter = get_chat_history_v2(

@@ -178,9 +178,10 @@ async def send_message_by_language(
 
 
 async def download_thumbnail(
-    client: pyrogram.Client,
-    temp_path: str,
-    message: pyrogram.types.Message,
+        client: pyrogram.Client,
+        temp_path: str,
+        message: pyrogram.types.Message,
+        add_file_name: str,
 ):
     """Downloads the thumbnail of a video message to a temporary file.
 
@@ -198,14 +199,14 @@ async def download_thumbnail(
         ValueError: If the downloaded thumbnail file size doesn't match the
                     expected file size.
     """
+    new_filename = os.path.basename(add_file_name)
     thumbnail_file = None
     if message.video.thumbs:
-        message = await fetch_message(client, message)
         thumbnail = message.video.thumbs[0] if message.video.thumbs else None
         unique_name = os.path.join(
             temp_path,
             "thumbnail",
-            f"thumb-{int(time.time())}-{secrets.token_hex(8)}.jpg",
+            f"{new_filename}.jpg",
         )
 
         max_attempts = 3
@@ -505,7 +506,7 @@ async def forward_multi_media(
                     else file_name
                 )
                 media_obj.thumb = (
-                    await download_thumbnail(client, app.temp_save_path, message)
+                    await download_thumbnail(client, app.temp_save_path, message, "")
                     if message.video
                     else None
                 )

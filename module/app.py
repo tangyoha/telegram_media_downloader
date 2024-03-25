@@ -717,14 +717,10 @@ class Application:
                 if res != "":
                     res += self.file_name_prefix_split
                 res += f"{message_id}"
-            elif prefix == "file_name" and file_name:
+            elif prefix == "file_name":
                 if res != "":
                     res += self.file_name_prefix_split
                 res += f"{file_name}"
-            elif prefix == "caption" and caption:
-                if res != "":
-                    res += self.file_name_prefix_split
-                res += f"{caption}"
         if res == "":
             res = f"{message_id}"
 
