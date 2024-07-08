@@ -130,7 +130,7 @@ def _get_file_type(file_id: str):
     return file_type
 
 
-def get_extension(file_id: str, mime_type: str, dot: bool = True) -> str:
+def get_extension(file_id: str, mime_type: str) -> str:
     """Get extension"""
 
     if not file_id:
@@ -143,19 +143,19 @@ def get_extension(file_id: str, mime_type: str, dot: bool = True) -> str:
     guessed_extension = _guess_extension(mime_type)
 
     if file_type in PHOTO_TYPES:
-        extension = "jpg"
+        extension = ".jpg"
     elif file_type == FileType.VOICE:
-        extension = guessed_extension or "ogg"
+        extension = guessed_extension or ".ogg"
     elif file_type in (FileType.VIDEO, FileType.ANIMATION, FileType.VIDEO_NOTE):
-        extension = guessed_extension or "mp4"
+        extension = guessed_extension or ".mp4"
     elif file_type == FileType.DOCUMENT:
-        extension = guessed_extension or "zip"
+        extension = guessed_extension or ".zip"
     elif file_type == FileType.STICKER:
-        extension = guessed_extension or "webp"
+        extension = guessed_extension or ".webp"
     elif file_type == FileType.AUDIO:
-        extension = guessed_extension or "mp3"
+        extension = guessed_extension or ".mp3"
     else:
-        extension = "unknown"
+        extension = ".unknown"
 
     if dot:
         extension = "." + extension
@@ -913,7 +913,7 @@ def set_meta_data(
     meta_data.media_height = getattr(media_obj, "height", None)
     meta_data.media_duration = getattr(media_obj, "duration", None)
     meta_data.file_extension = get_extension(
-        media_obj.file_id, getattr(media_obj, "mime_type", ""), False
+        media_obj.file_id, getattr(media_obj, "mime_type", "")
     )
 
 
