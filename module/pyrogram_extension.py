@@ -157,8 +157,6 @@ def get_extension(file_id: str, mime_type: str) -> str:
     else:
         extension = ".unknown"
 
-    if dot:
-        extension = "." + extension
     return extension
 
 
