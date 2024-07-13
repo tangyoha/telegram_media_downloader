@@ -1100,6 +1100,31 @@ class HookClient(pyrogram.Client):
                 ).id
                 logger.warning(f"Takeout session {self.takeout_id} initiated")
 
+            dialogs = []
+            offset_date = 0
+            offset_id = 0
+            offset_peer = pyrogram.raw.types.InputPeerEmpty()
+            limit = 100
+            hash = 0
+
+            while True:
+                response = await self.invoke(pyrogram.raw.functions.messages.GetDialogs(
+                    offset_date=offset_date,
+                    offset_id=offset_id,
+                    offset_peer=offset_peer,
+                    limit=limit,
+                    hash=hash
+                ))
+
+                dialogs.extend(response.dialogs)
+
+                if len(response.dialogs) < limit:
+                    break
+
+                offset_peer = pyrogram.raw.types.InputPeerEmpty() if not response.dialogs else response.dialogs[-1].peer
+                offset_id = response.messages[-1].id if response.messages else 0
+                offset_date = response.messages[-1].date if response.messages else 0
+
             await self.invoke(pyrogram.raw.functions.updates.GetState())
         except (Exception, KeyboardInterrupt):
             await self.disconnect()
