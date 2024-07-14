@@ -110,6 +110,7 @@ async def cache_media(
                             thumb=await client.save_file(media_obj.thumb),
                             mime_type=client.guess_mime_type(media_obj.media)
                             or "video/mp4",
+                            nosound_video=True,
                             attributes=[
                                 raw.types.DocumentAttributeVideo(
                                     supports_streaming=media_obj.supports_streaming
@@ -167,6 +168,7 @@ async def cache_media(
                             getattr(media_obj.media, "name", "video.mp4")
                         )
                         or "video/mp4",
+                        nosound_video=True,
                         attributes=[
                             raw.types.DocumentAttributeVideo(
                                 supports_streaming=media_obj.supports_streaming or None,

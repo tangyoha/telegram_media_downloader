@@ -13,8 +13,6 @@ from typing import Callable, Iterable, List, Optional, Union
 
 import pyrogram
 from loguru import logger
-from moviepy.audio.io.AudioFileClip import AudioClip
-from moviepy.video.io.VideoFileClip import VideoFileClip
 from pyrogram import types
 from pyrogram.client import Cache
 from pyrogram.file_id import (
@@ -510,9 +508,6 @@ async def forward_multi_media(
                     else None
                 )
 
-            if file_name and message.video:
-                if not proc_video_no_audio(file_name, app.drop_no_audio_video):
-                    node.upload_status[message.id] = UploadStatus.FailedUpload
             _media = await cache_media(
                 client,
                 node.upload_telegram_chat_id,  # type: ignore
@@ -974,47 +969,6 @@ async def update_upload_stat(
             upload_speed=upload_size / (cur_time - start_time),
         )
         node.upload_stat_dict[message_id] = upload_stat
-
-
-def proc_video_no_audio(path, drop_no_audio_video=False):
-    """
-    Processes a video file without audio.
-
-    Args:
-        path (str): The path of the video file to be processed.
-        drop_no_audio_video (bool, optional): If set to True,
-        drop the video file if no audio is found. Defaults to False.
-
-    Returns:
-        bool: True if the video was processed successfully, False otherwise.
-
-    Raises:
-        ValueError: If failed to process the video without audio.
-    """
-    ext = os.path.splitext(path)[1]
-    tmp_path = f"{os.path.splitext(path)[0]}_tmp{ext}"
-
-    with VideoFileClip(path, audio=False) as videoclip:
-        if videoclip.reader.infos.get("audio_found"):
-            return True
-
-        if drop_no_audio_video:
-            logger.warning(f"drop forward video without audio: {path}")
-            return False
-
-        def make_frame(_):
-            return [0.0, 0.0]
-
-        audioclip = AudioClip(make_frame, duration=videoclip.duration)
-        final_clip = videoclip.set_audio(audioclip)
-        final_clip.write_videofile(tmp_path, verbose=False, logger=None)
-
-    if os.path.exists(tmp_path):
-        os.remove(path)
-        os.rename(tmp_path, path)
-        return True
-
-    raise ValueError(f"Failed to process video without audio {path}")
 
 
 class HookSession(pyrogram.session.Session):
