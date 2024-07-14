@@ -21,6 +21,7 @@ from media_downloader import (
     download_media,
     download_task,
     main,
+    save_msg_to_file,
     worker,
 )
 from module.app import Application, DownloadStatus, TaskNode
@@ -885,6 +886,35 @@ class MediaDownloaderTestCase(unittest.TestCase):
 
         result2 = _is_exist(this_dir)
         self.assertEqual(result2, False)
+
+    @mock.patch("media_downloader.os.makedirs")
+    @mock.patch("builtins.open", new_callable=mock.mock_open)
+    def test_save_msg_to_file(self, mock_open, mock_makedirs):
+        rest_app(MOCK_CONF)
+        app.enable_download_txt = True
+        app.temp_save_path = "/tmp"
+        app.date_format = "%Y_%m"
+
+        message = MockMessage(
+            id=123,
+            dis_chat=True,
+            chat=Chat(chat_id=456, chat_title="Test Chat"),
+            date=datetime(2023, 5, 15, 10, 30, 0),
+            text="This is a test message",
+        )
+
+        expected_file_path = platform_generic_path(
+            "/root/project/Test Chat/2023_05/123.txt"
+        )
+
+        result = self.loop.run_until_complete(save_msg_to_file(app, 456, message))
+
+        self.assertEqual(result, (DownloadStatus.SuccessDownload, expected_file_path))
+        mock_makedirs.assert_called_once_with(
+            os.path.dirname(expected_file_path), exist_ok=True
+        )
+        mock_open.assert_called_once_with(expected_file_path, "w", encoding="utf-8")
+        mock_open().write.assert_called_once_with("This is a test message")
 
     @mock.patch("media_downloader.RETRY_TIME_OUT", new=0)
     @mock.patch("media_downloader.os.path.getsize", new=os_get_file_size)

@@ -254,7 +254,7 @@ async def upload_telegram_chat(
     """Upload telegram chat"""
     # upload telegram
     if node.upload_telegram_chat_id:
-        if download_status is DownloadStatus.SkipDownload:
+        if download_status is DownloadStatus.SkipDownload and message.media:
             if message.media_group_id:
                 await proc_cache_forward(client, node, message, True)
             return

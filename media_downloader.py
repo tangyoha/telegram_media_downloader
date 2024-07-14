@@ -265,6 +265,33 @@ async def add_download_task(
     return True
 
 
+async def save_msg_to_file(
+    app, chat_id: Union[int, str], message: pyrogram.types.Message
+):
+    """Write message text into file"""
+    dirname = validate_title(
+        message.chat.title if message.chat and message.chat.title else str(chat_id)
+    )
+    datetime_dir_name = message.date.strftime(app.date_format) if message.date else "0"
+
+    file_save_path = app.get_file_save_path("msg", dirname, datetime_dir_name)
+    file_name = os.path.join(
+        app.temp_save_path,
+        file_save_path,
+        f"{app.get_file_name(message.id, None, None)}.txt",
+    )
+
+    os.makedirs(os.path.dirname(file_name), exist_ok=True)
+
+    if _is_exist(file_name):
+        return DownloadStatus.SkipDownload, None
+
+    with open(file_name, "w", encoding="utf-8") as f:
+        f.write(message.text or "")
+
+    return DownloadStatus.SuccessDownload, file_name
+
+
 async def download_task(
     client: pyrogram.Client, message: pyrogram.types.Message, node: TaskNode
 ):
@@ -273,6 +300,9 @@ async def download_task(
     download_status, file_name = await download_media(
         client, message, app.media_types, app.file_formats, node
     )
+
+    if app.enable_download_txt and message.text and not message.media:
+        download_status, file_name = await save_msg_to_file(app, node.chat_id, message)
 
     if not node.bot:
         app.set_download_id(node, message.id, download_status)

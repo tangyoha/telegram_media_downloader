@@ -30,7 +30,7 @@ class MockMessage:
         self.video_note = kwargs.get("video_note", None)
         self.media_group_id = kwargs.get("media_group_id", None)
         self.caption = kwargs.get("caption", None)
-        self.text = None
+        self.text = kwargs.get("text", None)
         self.empty = kwargs.get("empty", False)
         self.from_user = kwargs.get("from_user", None)
         self.reply_to_message_id = kwargs.get("reply_to_message_id", None)
@@ -40,7 +40,7 @@ class MockMessage:
                 kwargs.get("chat_id", None), kwargs.get("chat_title", None)
             )
         else:
-            self.chat = None
+            self.chat = kwargs.get("chat", None)
         self.date: datetime = None
         if kwargs.get("date") != None:
             self.date = kwargs["date"]
