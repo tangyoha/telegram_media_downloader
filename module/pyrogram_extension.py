@@ -470,6 +470,11 @@ async def forward_multi_media(
     if not caption:
         caption = app.get_caption_name(node.chat_id, message.media_group_id)
 
+    max_caption_length = 4096 if client.me and client.me.is_premium else 1024
+    # proc caption MEDIA_CAPTION_TOO_LONG
+    if caption and len(caption) > max_caption_length:
+        caption = caption[:max_caption_length]
+
     media_obj = get_media_obj(message, file_name, caption)
     if not file_name:
         media = getattr(message, message.media.value)
