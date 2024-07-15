@@ -110,6 +110,7 @@ async def cache_media(
                             thumb=await client.save_file(media_obj.thumb),
                             mime_type=client.guess_mime_type(media_obj.media)
                             or "video/mp4",
+                            nosound_video=True,
                             attributes=[
                                 raw.types.DocumentAttributeVideo(
                                     supports_streaming=media_obj.supports_streaming
@@ -167,6 +168,7 @@ async def cache_media(
                             getattr(media_obj.media, "name", "video.mp4")
                         )
                         or "video/mp4",
+                        nosound_video=True,
                         attributes=[
                             raw.types.DocumentAttributeVideo(
                                 supports_streaming=media_obj.supports_streaming or None,
@@ -379,7 +381,6 @@ async def send_media_group_v2(
     chat_id: Union[int, str],
     multi_media: List[raw.types.InputSingleMedia],
     disable_notification: bool = None,
-    reply_to_message_id: int = None,
     schedule_date: datetime = None,
     protect_content: bool = None,
 ):
@@ -391,7 +392,6 @@ async def send_media_group_v2(
             peer=await client.resolve_peer(chat_id),
             multi_media=multi_media,
             silent=disable_notification or None,
-            reply_to_msg_id=reply_to_message_id,
             schedule_date=utils.datetime_to_timestamp(schedule_date),
             noforwards=protect_content,
         ),

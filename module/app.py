@@ -391,6 +391,7 @@ class Application:
         )
         self.date_format: str = "%Y_%m"
         self.drop_no_audio_video: bool = False
+        self.enable_download_txt: bool = False
 
         self.forward_limit_call = LimitCall(max_limit_call_times=33)
         self.loop = asyncio.new_event_loop()
@@ -473,12 +474,14 @@ class Application:
 
         # TODO: add check if expression exist syntax error
 
-        self.max_concurrent_transmissions = _config.get(
-            "max_concurrent_transmissions", self.max_concurrent_transmissions
-        )
-
         self.max_download_task = _config.get(
             "max_download_task", self.max_download_task
+        )
+
+        self.max_concurrent_transmissions = self.max_download_task * 5
+
+        self.max_concurrent_transmissions = _config.get(
+            "max_concurrent_transmissions", self.max_concurrent_transmissions
         )
 
         language = _config.get("language", "EN")
@@ -518,6 +521,10 @@ class Application:
 
         self.drop_no_audio_video = get_config(
             _config, "drop_no_audio_video", self.drop_no_audio_video, bool
+        )
+
+        self.enable_download_txt = get_config(
+            _config, "enable_download_txt", self.enable_download_txt, bool
         )
 
         try:

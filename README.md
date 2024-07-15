@@ -196,6 +196,7 @@ web_login_secret: 123
 allowed_user_ids:
 - 'me'
 date_format: '%Y_%m'
+enable_download_txt: false
 ```
 
 - **api_hash**  - The api_hash you got from telegram apps
@@ -235,7 +236,7 @@ date_format: '%Y_%m'
 - **forward_limit** - Limit the number of forwards per minute, the default is 33, please do not modify this parameter by default.
 - **allowed_user_ids** - Who is allowed to use the robot? The default login account can be used. Please add single quotes to the name with @.
 - **date_format** Support custom configuration of media_datetime format in file_path_prefix.see [python-datetime](https://docs.python.org/3/library/datetime.html)
-- **drop_no_audio_video*** Since the telegram server does not support uploading a set of media, an error will be reported when uploading a video without audio, so use ffmpeg to process it. If not, set this option to true. The default is false.
+- **enable_download_txt** Enable download txt file, default `false`
 
 ## Execution
 
