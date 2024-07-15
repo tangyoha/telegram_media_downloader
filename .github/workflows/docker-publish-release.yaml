@@ -34,7 +34,7 @@ jobs:
           python -m pip install --upgrade pip setuptools
           python3 -m pip install -r requirements.txt
           python3 gen_filter_cache.py
-          python3 -m pip install -U pyinstaller
+          pip install pyinstaller==6.7.0
       - name: Build with PyInstaller
         run: |
           pyinstaller --distpath ./${{ env.DISTPATH }} media_downloader.spec
