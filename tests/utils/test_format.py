@@ -129,7 +129,10 @@ class FormatTestCase(unittest.TestCase):
             ("https://t.me/username/1234", Link(group_id="username", post_id=1234)),
             ("https://t.me/username", Link(group_id="username")),
             ("https://t.me/c/213213/91011", Link(group_id=-100213213, post_id=91011)),
-            ("https://t.me/test123/1/1234", Link(group_id="test123", post_id=1234)),
+            (
+                "https://t.me/test123/1/1234",
+                Link(group_id="test123", topic_id=1, post_id=1234),
+            ),
             ("me", Link(group_id="me")),
             ("self", Link(group_id="self")),
             (
@@ -143,11 +146,11 @@ class FormatTestCase(unittest.TestCase):
             ),
             (
                 "https://t.me/iFreeKnow/45662/55005",
-                Link(group_id="iFreeKnow", post_id=55005),
+                Link(group_id="iFreeKnow", topic_id=45662, post_id=55005),
             ),
             (
                 "https://t.me/c/1492447836/251015/251021",
-                Link(group_id=-1001492447836, post_id=251021),
+                Link(group_id=-1001492447836, topic_id=251015, post_id=251021),
             ),
         ]
 

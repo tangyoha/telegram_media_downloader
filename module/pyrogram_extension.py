@@ -365,6 +365,7 @@ async def _upload_signal_message(
                     node,
                     upload_user,
                 ),
+                message_thread_id=node.topic_id,
             )
         except Exception as e:
             raise e
@@ -379,6 +380,7 @@ async def _upload_signal_message(
             caption=message.caption,
             progress=update_upload_stat,
             progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
+            message_thread_id=node.topic_id,
         )
     elif message.document:
         await upload_user.send_document(
@@ -387,6 +389,7 @@ async def _upload_signal_message(
             caption=message.caption,
             progress=update_upload_stat,
             progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
+            message_thread_id=node.topic_id,
         )
     elif message.voice:
         await upload_user.send_voice(
@@ -395,6 +398,7 @@ async def _upload_signal_message(
             caption=message.caption,
             progress=update_upload_stat,
             progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
+            message_thread_id=node.topic_id,
         )
     elif message.video_note:
         await upload_user.send_video_note(
@@ -403,9 +407,12 @@ async def _upload_signal_message(
             caption=message.caption,
             progress=update_upload_stat,
             progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
+            message_thread_id=node.topic_id,
         )
     elif message.text:
-        await upload_user.send_message(upload_telegram_chat_id, message.text)
+        await upload_user.send_message(
+            upload_telegram_chat_id, message.text, message_thread_id=node.topic_id
+        )
 
 
 async def _upload_telegram_chat_message(
@@ -440,6 +447,7 @@ async def _upload_telegram_chat_message(
                 node.chat_id,
                 message.id,
                 drop_author=True,
+                topic_id=node.topic_id,
             )
         else:
             await _upload_signal_message(
@@ -923,9 +931,9 @@ async def parse_link(client: pyrogram.Client, link_str: str):
     if link.comment_id:
         chat = await client.get_chat(link.group_id)
         if chat:
-            return chat.linked_chat.id, link.comment_id
+            return chat.linked_chat.id, link.comment_id, link.topic_id
 
-    return link.group_id, link.post_id
+    return link.group_id, link.post_id, link.topic_id
 
 
 async def update_upload_stat(
@@ -1081,6 +1089,7 @@ async def forward_messages(
     schedule_date: datetime = None,
     protect_content: bool = None,
     drop_author: bool = None,
+    topic_id: int = None,
 ) -> Union["types.Message", List["types.Message"]]:
     """Forward messages of any kind."""
 
@@ -1097,6 +1106,7 @@ async def forward_messages(
             schedule_date=pyrogram.utils.datetime_to_timestamp(schedule_date),
             noforwards=protect_content,
             drop_author=drop_author,
+            top_msg_id=topic_id,
         )
     )
 

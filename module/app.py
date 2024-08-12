@@ -122,6 +122,7 @@ class TaskNode:
         bot=None,
         task_type: TaskType = TaskType.Download,
         task_id: int = 0,
+        topic_id: int = 0,
     ):
         self.chat_id = chat_id
         self.from_user_id = from_user_id
@@ -158,6 +159,7 @@ class TaskNode:
         self.download_status: dict = {}
         self.upload_status: dict = {}
         self.upload_stat_dict: dict = {}
+        self.topic_id = topic_id
 
     def skip_msg_id(self, msg_id: int):
         """Skip if message id out of range"""

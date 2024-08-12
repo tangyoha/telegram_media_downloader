@@ -452,7 +452,7 @@ async def get_info(client: pyrogram.Client, message: pyrogram.types.Message):
         )
         return
 
-    chat_id, message_id = await parse_link(_bot.client, args[1])
+    chat_id, message_id, topic_id = await parse_link(_bot.client, args[1])
 
     entity = None
     if chat_id:
@@ -472,6 +472,7 @@ async def get_info(client: pyrogram.Client, message: pyrogram.types.Message):
                     f"├─ {_t('last name')}: {entity.last_name}\n"
                     f"└─ {_t('name')}: {entity.username}\n"
                     f"{_t('Message')}\n"
+                    f"└─ topic_id: {topic_id or None}\n"
                 )
 
                 for key, value in meta_data.data().items():
@@ -608,7 +609,7 @@ async def download_from_link(client: pyrogram.Client, message: pyrogram.types.Me
             message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML
         )
 
-    chat_id, message_id = await parse_link(_bot.client, text[0])
+    chat_id, message_id, _ = await parse_link(_bot.client, text[0])
 
     entity = None
     if chat_id:
@@ -686,7 +687,7 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
             )
             return
     try:
-        chat_id, _ = await parse_link(_bot.client, url)
+        chat_id, _, _ = await parse_link(_bot.client, url)
         if chat_id:
             entity = await _bot.client.get_chat(chat_id)
         if entity:
@@ -750,8 +751,8 @@ async def get_forward_task_node(
 
         limit = end_offset_id - offset_id + 1
 
-    src_chat_id, _ = await parse_link(_bot.client, src_chat_link)
-    dst_chat_id, _ = await parse_link(_bot.client, dst_chat_link)
+    src_chat_id, _, _ = await parse_link(_bot.client, src_chat_link)
+    dst_chat_id, _, topic_id = await parse_link(_bot.client, dst_chat_link)
 
     if not src_chat_id or not dst_chat_id:
         await client.send_message(
@@ -810,6 +811,7 @@ async def get_forward_task_node(
         bot=_bot.bot,
         task_id=_bot.gen_task_id(),
         task_type=task_type,
+        topic_id=topic_id,
     )
     _bot.add_task_node(node)
 
