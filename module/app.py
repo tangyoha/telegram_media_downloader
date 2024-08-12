@@ -411,6 +411,8 @@ class Application:
 
         self.caption_replace_dict: yaml.comments.CommentedMap = {}
         self.default_forward_caption = None
+        self.caption_regex_replace_dict: yaml.comments.CommentedMap = {}
+        self.default_forward_additional_caption = None
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
@@ -568,6 +570,20 @@ class Application:
 
         self.default_forward_caption = get_config(
             _config, "default_forward_caption", self.default_forward_caption, str
+        )
+
+        self.caption_regex_replace_dict = get_config(
+            _config,
+            "caption_replace_regex",
+            self.caption_regex_replace_dict,
+            yaml.comments.CommentedMap,
+        )
+
+        self.default_forward_additional_caption = get_config(
+            _config,
+            "default_forward_additional_caption",
+            self.default_forward_additional_caption,
+            str,
         )
 
         if _config.get("chat"):

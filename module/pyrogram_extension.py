@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import re
 import secrets
 import struct
 import time
@@ -105,7 +106,11 @@ def get_media_obj(
 
 
 def replace_caption(
-    caption: Optional[str], caption_replace_dict, default_caption: Optional[str] = None
+    caption: Optional[str],
+    caption_replace_dict,
+    default_caption: Optional[str] = None,
+    caption_regex_replace_dict=None,
+    default_additional_caption: Optional[str] = None,
 ):
     """
     Replaces certain items in a caption string
@@ -123,6 +128,16 @@ def replace_caption(
             caption = caption.replace(item, caption_replace_dict[item])
     else:
         caption = default_caption
+
+    if not caption:
+        return default_additional_caption
+
+    if caption_regex_replace_dict:
+        for item in caption_regex_replace_dict:
+            caption = re.sub(item, caption_regex_replace_dict[item], caption)
+
+    if default_additional_caption:
+        caption += default_additional_caption
     return caption
 
 
@@ -366,7 +381,11 @@ async def _upload_signal_message(
         )
 
     caption = replace_caption(
-        message.caption, app.caption_replace_dict, app.default_forward_caption
+        message.caption,
+        app.caption_replace_dict,
+        app.default_forward_caption,
+        app.caption_regex_replace_dict,
+        app.default_forward_additional_caption,
     )
     if message.video:
         # Download thumbnail
@@ -465,6 +484,18 @@ async def _upload_telegram_chat_message(
     """
     await app.forward_limit_call.wait(node)
 
+    caption = message.caption
+    if not caption:
+        caption = app.get_caption_name(node.chat_id, message.media_group_id)
+
+    caption = replace_caption(
+        caption,
+        app.caption_replace_dict,
+        app.default_forward_caption,
+        app.caption_regex_replace_dict,
+        app.default_forward_additional_caption,
+    )
+
     if not message.media_group_id:
         if not file_name:
             await forward_messages(
@@ -474,6 +505,7 @@ async def _upload_telegram_chat_message(
                 message.id,
                 drop_author=True,
                 topic_id=node.topic_id,
+                caption=caption,
             )
         else:
             await _upload_signal_message(
@@ -487,7 +519,9 @@ async def _upload_telegram_chat_message(
             )
         return ForwardStatus.SuccessForward
 
-    return await forward_multi_media(client, upload_user, app, node, message, file_name)
+    return await forward_multi_media(
+        client, upload_user, app, node, message, caption, file_name
+    )
 
 
 # pylint: disable=R0912
@@ -497,6 +531,7 @@ async def forward_multi_media(
     app: Application,
     node: TaskNode,
     message: pyrogram.types.Message,
+    caption: str = None,
     file_name: str = None,
 ):
     """Forward multi media by cache"""
@@ -505,7 +540,11 @@ async def forward_multi_media(
         caption = app.get_caption_name(node.chat_id, message.media_group_id)
 
     caption = replace_caption(
-        caption, app.caption_replace_dict, app.default_forward_caption
+        caption,
+        app.caption_replace_dict,
+        app.default_forward_caption,
+        app.caption_regex_replace_dict,
+        app.default_forward_additional_caption,
     )
 
     max_caption_length = 4096 if client.me and client.me.is_premium else 1024
@@ -1157,6 +1196,7 @@ class HookClient(pyrogram.Client):
             return self
 
 
+# pylint: disable=R0914
 async def forward_messages(
     client: pyrogram.Client,
     chat_id: Union[int, str],
@@ -1167,6 +1207,7 @@ async def forward_messages(
     protect_content: bool = None,
     drop_author: bool = None,
     topic_id: int = None,
+    caption: str = None,
 ) -> Union["types.Message", List["types.Message"]]:
     """Forward messages of any kind."""
 
@@ -1205,5 +1246,10 @@ async def forward_messages(
                 # pylint: disable=W0212
                 await types.Message._parse(client, i.message, users, chats)
             )
+
+    if caption and not is_iterable and forwarded_messages:
+        await client.edit_message_caption(
+            chat_id, forwarded_messages[0].id, caption=caption
+        )
 
     return types.List(forwarded_messages) if is_iterable else forwarded_messages[0]
