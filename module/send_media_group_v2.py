@@ -383,6 +383,7 @@ async def send_media_group_v2(
     disable_notification: bool = None,
     schedule_date: datetime = None,
     protect_content: bool = None,
+    message_thread_id: int = None,
 ):
     """
     see pyrogram
@@ -394,6 +395,9 @@ async def send_media_group_v2(
             silent=disable_notification or None,
             schedule_date=utils.datetime_to_timestamp(schedule_date),
             noforwards=protect_content,
+            reply_to=utils.get_reply_to(
+                message_thread_id=message_thread_id,
+            ),
         ),
         sleep_threshold=60,
     )

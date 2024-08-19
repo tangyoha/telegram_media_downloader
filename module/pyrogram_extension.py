@@ -653,7 +653,10 @@ async def proc_cache_forward(
 
     forward_status = ForwardStatus.SuccessForward
     if not await send_media_group_v2(
-        client, node.upload_telegram_chat_id, multi_media  # type: ignore
+        client,
+        node.upload_telegram_chat_id,  # type: ignore
+        multi_media,
+        message_thread_id=node.topic_id,
     ):
         forward_status = ForwardStatus.FailedForward
 
