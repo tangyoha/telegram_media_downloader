@@ -295,7 +295,9 @@ async def upload_telegram_chat(
                 await proc_cache_forward(client, node, message, True)
             return
 
-        if download_status is DownloadStatus.SuccessDownload:
+        if download_status is DownloadStatus.SuccessDownload or (
+            download_status is DownloadStatus.SkipDownload and not message.media
+        ):
             try:
                 await upload_telegram_chat_message(
                     client,
@@ -361,7 +363,7 @@ async def _upload_signal_message(
     node: TaskNode,
     upload_telegram_chat_id: Union[int, str],
     message: pyrogram.types.Message,
-    file_name: str,
+    file_name: Optional[str],
 ):
     """
     Uploads a video or message to a Telegram chat.
@@ -497,7 +499,7 @@ async def _upload_telegram_chat_message(
     )
 
     if not message.media_group_id:
-        if not file_name:
+        if not node.has_protected_content:
             await forward_messages(
                 client,
                 node.upload_telegram_chat_id,  # type: ignore
@@ -553,7 +555,7 @@ async def forward_multi_media(
         caption = caption[:max_caption_length]
 
     media_obj = get_media_obj(message, file_name, caption)
-    if not file_name:
+    if not node.has_protected_content:
         media = getattr(message, message.media.value)
         if not media:
             return ForwardStatus.SkipForward
