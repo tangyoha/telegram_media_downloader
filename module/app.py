@@ -796,13 +796,13 @@ class Application:
             unfinished_ids = set(value.ids_to_retry)
 
             for it in value.ids_to_retry:
-                if DownloadStatus.SuccessDownload == value.node.download_status.get(
+                if  value.node.download_status.get(
                     it, DownloadStatus.FailedDownload
-                ):
+                ) in [DownloadStatus.SuccessDownload, DownloadStatus.SkipDownload]:
                     unfinished_ids.remove(it)
 
             for _idx, _value in value.node.download_status.items():
-                if DownloadStatus.SuccessDownload != _value:
+                if DownloadStatus.SuccessDownload != _value and DownloadStatus.SkipDownload != _value:
                     unfinished_ids.add(_idx)
 
             self.chat_download_config[key].ids_to_retry = list(unfinished_ids)
