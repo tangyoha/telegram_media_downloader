@@ -461,7 +461,7 @@ async def get_info(client: pyrogram.Client, message: pyrogram.types.Message):
         )
         return
 
-    chat_id, message_id, topic_id = await parse_link(_bot.client, args[1])
+    chat_id, message_id, _ = await parse_link(_bot.client, args[1])
 
     entity = None
     if chat_id:
@@ -481,7 +481,6 @@ async def get_info(client: pyrogram.Client, message: pyrogram.types.Message):
                     f"├─ {_t('last name')}: {entity.last_name}\n"
                     f"└─ {_t('name')}: {entity.username}\n"
                     f"{_t('Message')}\n"
-                    f"└─ topic_id: {topic_id or None}\n"
                 )
 
                 for key, value in meta_data.data().items():

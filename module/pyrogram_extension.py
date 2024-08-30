@@ -996,6 +996,7 @@ def set_meta_data(
         message, "reply_to_message_id", 1
     )  # 1 for General
 
+    meta_data.message_thread_id = getattr(message, "message_thread_id", None)
     # media
     for kind in meta_data.AVAILABLE_MEDIA:
         media_obj = getattr(message, kind, None)
