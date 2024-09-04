@@ -580,14 +580,15 @@ async def download_chat_task(
             await add_download_task(message, node)
         else:
             node.download_status[message.id] = DownloadStatus.SkipDownload
-            await upload_telegram_chat(
-                client,
-                node.upload_user,
-                app,
-                node,
-                message,
-                DownloadStatus.SkipDownload,
-            )
+            if message.media_group_id:
+                await upload_telegram_chat(
+                    client,
+                    node.upload_user,
+                    app,
+                    node,
+                    message,
+                    DownloadStatus.SkipDownload,
+                )
 
     chat_download_config.need_check = True
     chat_download_config.total_task = node.total_task
