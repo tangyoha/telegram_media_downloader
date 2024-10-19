@@ -730,6 +730,10 @@ class Application:
                 if res != "":
                     res += self.file_name_prefix_split
                 res += f"{message_id}"
+            elif prefix == "task_id":
+                if res != "":
+                    res += self.file_name_prefix_split
+                res += f"{global_task_id}"
             elif prefix == "file_name" and file_name:
                 if res != "":
                     res += self.file_name_prefix_split
@@ -738,10 +742,6 @@ class Application:
                 if res != "":
                     res += self.file_name_prefix_split
                 res += f"{caption}"
-            elif prefix == "task_id":
-                if res != "":
-                    res += self.file_name_prefix_split
-                res += f"{global_task_id}"
 
         # 如果所有字段都为空，默认使用 message_id 作为文件名
         if res == "":
