@@ -313,6 +313,14 @@ class DownloadBot:
 
         self.reply_task = _bot.app.loop.create_task(_bot.update_reply_message())
 
+        self.bot.add_handler(
+            MessageHandler(
+                forward_to_comments,
+                filters=pyrogram.filters.command(["forward_to_comments"])
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+
 
 _bot = DownloadBot()
 
@@ -392,6 +400,7 @@ async def send_help_str(client: pyrogram.Client, chat_id):
         f"{_t('**Note**: 1 means the start of the entire chat')},"
         f"{_t('0 means the end of the entire chat')}\n"
         f"`[` `]` {_t('means optional, not required')}\n"
+        f"/forward_to_comments - {_t('Forward a specific media to a comment section')}\n"
     )
 
     await client.send_message(chat_id, msg, reply_markup=update_keyboard)
@@ -760,7 +769,7 @@ async def get_forward_task_node(
         limit = end_offset_id - offset_id + 1
 
     src_chat_id, _, _ = await parse_link(_bot.client, src_chat_link)
-    dst_chat_id, _, topic_id = await parse_link(_bot.client, dst_chat_link)
+    dst_chat_id, target_msg_id, topic_id = await parse_link(_bot.client, dst_chat_link)
 
     if not src_chat_id or not dst_chat_id:
         await client.send_message(
@@ -821,6 +830,10 @@ async def get_forward_task_node(
         task_type=task_type,
         topic_id=topic_id,
     )
+
+    if target_msg_id:
+        node.reply_to_message = await _bot.client.get_discussion_message(dst_chat_id, target_msg_id)
+
     _bot.add_task_node(node)
 
     node.upload_user = _bot.client
@@ -1259,3 +1272,69 @@ async def export_data(client: pyrogram.Client, message: pyrogram.types.Message):
     finally:
         await report_bot_status(client, node, immediate_reply=True)
         node.stop_transmission()
+
+
+async def forward_to_comments(client: pyrogram.Client, message: pyrogram.types.Message):
+    """
+    Forwards specified media to a designated comment section.
+
+    Usage: /forward_to_comments <source_chat_link> <destination_chat_link> <msg_start_id> <msg_end_id>
+
+    Parameters:
+        client (pyrogram.Client): The pyrogram client.
+        message (pyrogram.types.Message): The message containing the command.
+    """
+    args = message.text.split(maxsplit=5)
+    if len(args) < 5:
+        await client.send_message(
+            message.from_user.id,
+            f"{_t('Invalid command format')}. {_t('Please use')} /forward_to_comments "
+            f"<source_chat_link> <destination_chat_link> <msg_start_id> <msg_end_id>",
+        )
+        return
+
+    src_chat_link = args[1]
+    dst_chat_link = args[2]
+    msg_start_id = int(args[3])
+    msg_end_id = int(args[4])
+
+    try:
+        src_chat_id, _, _ = await parse_link(_bot.client, src_chat_link)
+        dst_chat_id, target_msg_id, _ = await parse_link(_bot.client, dst_chat_link)
+
+        if not src_chat_id or not dst_chat_id:
+            await client.send_message(
+                message.from_user.id,
+                _t("Invalid chat link"),
+                reply_to_message_id=message.id,
+            )
+            return
+
+        src_message = await _bot.client.get_messages(src_chat_id, message_id)
+        if not src_message:
+            await client.send_message(
+                message.from_user.id,
+                _t("Source message not found"),
+                reply_to_message_id=message.id,
+            )
+            return
+
+        await _bot.client.forward_messages(
+            chat_id=dst_chat_id,
+            from_chat_id=src_chat_id,
+            message_ids=message_id,
+            reply_to_message_id=comment_id
+        )
+
+        await client.send_message(
+            message.from_user.id,
+            _t("Message forwarded successfully to the comment section"),
+            reply_to_message_id=message.id,
+        )
+
+    except Exception as e:
+        await client.send_message(
+            message.from_user.id,
+            f"{_t('Error forwarding message')}: {str(e)}",
+            reply_to_message_id=message.id,
+        )

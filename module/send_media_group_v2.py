@@ -384,6 +384,8 @@ async def send_media_group_v2(
     schedule_date: datetime = None,
     protect_content: bool = None,
     message_thread_id: int = None,
+    reply_to_message_id: int = None,
+    business_connection_id: int = None,
 ):
     """
     see pyrogram
@@ -397,9 +399,11 @@ async def send_media_group_v2(
             noforwards=protect_content,
             reply_to=utils.get_reply_to(
                 message_thread_id=message_thread_id,
+                reply_to_message_id=reply_to_message_id,
             ),
         ),
         sleep_threshold=60,
+        business_connection_id=business_connection_id
     )
 
     return await utils.parse_messages(

@@ -395,23 +395,35 @@ async def _upload_signal_message(
         try:
             # TODO(tangyoha): add more log when upload video more than 2000MB failed
             # Send video to the destination chat
-            await upload_user.send_video(
-                chat_id=upload_telegram_chat_id,
-                video=file_name,
-                thumb=thumbnail_file,
-                width=message.video.width,
-                height=message.video.height,
-                duration=message.video.duration,
-                caption=caption,
-                parse_mode=pyrogram.enums.ParseMode.HTML,
-                progress=update_upload_stat,
-                progress_args=(
-                    message.id,
-                    ui_file_name,
-                    time.time(),
-                    node,
-                    upload_user,
-                ),
+            if node.reply_to_message:
+                await node.reply_to_message.reply_video(
+                    file_name,
+                    caption=caption,
+                    message_thread_id=node.topic_id,
+                    thumb=thumbnail_file,
+                    width=message.video.width,
+                    height=message.video.height,
+                    duration=message.video.duration,
+                    parse_mode=pyrogram.enums.ParseMode.HTML,
+                )
+            else:
+                await upload_user.send_video(
+                    upload_telegram_chat_id,
+                    file_name,
+                    thumb=thumbnail_file,
+                    width=message.video.width,
+                    height=message.video.height,
+                    duration=message.video.duration,
+                    caption=caption,
+                    parse_mode=pyrogram.enums.ParseMode.HTML,
+                    progress=update_upload_stat,
+                    progress_args=(
+                        message.id,
+                        ui_file_name,
+                        time.time(),
+                        node,
+                        upload_user,
+                    ),
                 message_thread_id=node.topic_id,
             )
         except Exception as e:
@@ -421,45 +433,79 @@ async def _upload_signal_message(
                 os.remove(str(thumbnail_file))
 
     elif message.photo:
-        await upload_user.send_photo(
-            upload_telegram_chat_id,
-            file_name,
-            caption=caption,
-            progress=update_upload_stat,
-            progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
-            message_thread_id=node.topic_id,
-        )
+        if node.reply_to_message:
+            await node.reply_to_message.reply_photo(
+                file_name,
+                caption=caption,
+                message_thread_id=node.topic_id,
+            )
+        else:
+            await upload_user.send_photo(
+                upload_telegram_chat_id,
+                file_name,
+                caption=caption,
+                progress=update_upload_stat,
+                progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
+                message_thread_id=node.topic_id,
+            )
     elif message.document:
-        await upload_user.send_document(
-            upload_telegram_chat_id,
-            file_name,
-            caption=caption,
-            progress=update_upload_stat,
-            progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
-            message_thread_id=node.topic_id,
-        )
+        if node.reply_to_message:
+            await node.reply_to_message.reply_document(
+                file_name,
+                caption=caption,
+                message_thread_id=node.topic_id,
+            )
+        else:
+            await upload_user.send_document(
+                upload_telegram_chat_id,
+                file_name,
+                caption=caption,
+                progress=update_upload_stat,
+                progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
+                message_thread_id=node.topic_id,
+            )
     elif message.voice:
-        await upload_user.send_voice(
+        if node.reply_to_message:
+            await node.reply_to_message.reply_voice(
+                file_name,
+                caption=caption,
+                message_thread_id=node.topic_id,
+            )
+        else:
+            await upload_user.send_voice(
             upload_telegram_chat_id,
             file_name,
             caption=caption,
             progress=update_upload_stat,
             progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
-            message_thread_id=node.topic_id,
-        )
+                message_thread_id=node.topic_id,
+            )
     elif message.video_note:
-        await upload_user.send_video_note(
+        if node.reply_to_message:
+            await node.reply_to_message.reply_video_note(
+                file_name,
+                caption=caption,
+                message_thread_id=node.topic_id,
+            )
+        else:
+            await upload_user.send_video_note(
             upload_telegram_chat_id,
             file_name,
             caption=caption,
             progress=update_upload_stat,
             progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
-            message_thread_id=node.topic_id,
-        )
+                message_thread_id=node.topic_id,
+            )
     elif message.text:
-        await upload_user.send_message(
-            upload_telegram_chat_id, message.text, message_thread_id=node.topic_id
-        )
+        if node.reply_to_message:
+            await node.reply_to_message.reply(
+                message.text,
+                message_thread_id=node.topic_id,
+            )
+        else:
+            await upload_user.send_message(
+                upload_telegram_chat_id, message.text, message_thread_id=node.topic_id,
+            )
 
 
 async def _upload_telegram_chat_message(
@@ -500,22 +546,54 @@ async def _upload_telegram_chat_message(
 
     if not message.media_group_id:
         if not node.has_protected_content:
-            await forward_messages(
-                client,
-                node.upload_telegram_chat_id,  # type: ignore
-                node.chat_id,
-                message.id,
-                drop_author=True,
-                topic_id=node.topic_id,
-                caption=caption,
-            )
+            if node.reply_to_message:
+                if message.text:
+                    await node.reply_to_message.reply(
+                        message.text,
+                        message_thread_id=node.topic_id
+                    )
+                elif message.photo:
+                    await node.reply_to_message.reply_photo(
+                        message.photo.file_id,
+                        caption=caption,
+                        message_thread_id=node.topic_id
+                    )
+                elif message.video:
+                    await node.reply_to_message.reply_video(
+                        message.video.file_id,
+                        caption=caption,
+                        message_thread_id=node.topic_id
+                    )
+                elif message.document:
+                    await node.reply_to_message.reply_document(
+                        message.document.file_id,
+                        caption=caption,
+                        message_thread_id=node.topic_id
+                    )
+                elif message.audio:
+                    await node.reply_to_message.reply_audio(
+                        message.audio.file_id,
+                        caption=caption,
+                        message_thread_id=node.topic_id
+                    )
+            else:
+                # For other types of media, fallback to forward_messages
+                await forward_messages(
+                    client,
+                    node.upload_telegram_chat_id,
+                    node.chat_id,
+                    message.id,
+                    drop_author=True,
+                    topic_id=node.topic_id,
+                    caption=caption,
+                )
         else:
             await _upload_signal_message(
                 client,
                 upload_user,
                 app,
                 node,
-                node.upload_telegram_chat_id,  # type: ignore
+                node.upload_telegram_chat_id,
                 message,
                 file_name,
             )
@@ -654,11 +732,24 @@ async def proc_cache_forward(
             multi_media.append(node.media_group_ids[message.media_group_id][it])
 
     forward_status = ForwardStatus.SuccessForward
+
+    reply_to_message_id = None
+    message_thread_id = node.topic_id
+    business_connection_id = None
+    upload_telegram_chat_id = node.upload_telegram_chat_id
+    if node.reply_to_message:
+        if node.reply_to_message.chat.type != pyrogram.enums.ChatType.PRIVATE:
+            reply_to_message_id = node.reply_to_message.id
+        message_thread_id = node.reply_to_message.message_thread_id
+        business_connection_id = node.reply_to_message.business_connection_id
+        upload_telegram_chat_id = node.reply_to_message.chat.id
     if not await send_media_group_v2(
         client,
-        node.upload_telegram_chat_id,  # type: ignore
+        upload_telegram_chat_id,  # type: ignore
         multi_media,
-        message_thread_id=node.topic_id,
+        message_thread_id=message_thread_id,
+        reply_to_message_id = reply_to_message_id,
+        business_connection_id=business_connection_id,
     ):
         forward_status = ForwardStatus.FailedForward
 
