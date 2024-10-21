@@ -753,6 +753,7 @@ async def get_forward_task_node(
     offset_id: int = 0,
     end_offset_id: int = 0,
     download_filter: str = None,
+    reply_comment: bool = False
 ):
     """Get task node"""
     limit: int = 0
@@ -831,7 +832,7 @@ async def get_forward_task_node(
         topic_id=topic_id,
     )
 
-    if target_msg_id:
+    if target_msg_id and reply_comment:
         node.reply_to_message = await _bot.client.get_discussion_message(dst_chat_id, target_msg_id)
 
     _bot.add_task_node(node)
@@ -854,20 +855,8 @@ async def get_forward_task_node(
 
 
 # pylint: disable = R0914
-
-
-async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Message):
-    """
-    Forwards messages from one chat to another.
-
-    Parameters:
-        client (pyrogram.Client): The pyrogram client.
-        message (pyrogram.types.Message): The message containing the command.
-
-    Returns:
-        None
-    """
-
+async def forward_message_impl(client: pyrogram.Client, message: pyrogram.types.Message, reply_comment: bool):
+    
     async def report_error(client: pyrogram.Client, message: pyrogram.types.Message):
         """Report error"""
 
@@ -905,6 +894,7 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
         offset_id,
         end_offset_id,
         download_filter,
+        reply_comment
     )
 
     if not node:
@@ -940,6 +930,19 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
     else:
         await forward_msg(node, offset_id)
 
+
+async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Message):
+    """
+    Forwards messages from one chat to another.
+
+    Parameters:
+        client (pyrogram.Client): The pyrogram client.
+        message (pyrogram.types.Message): The message containing the command.
+
+    Returns:
+        None
+    """
+    return await forward_message_impl(client, message, False)
 
 async def forward_normal_content(
     client: pyrogram.Client, node: TaskNode, message: pyrogram.types.Message
@@ -1284,57 +1287,4 @@ async def forward_to_comments(client: pyrogram.Client, message: pyrogram.types.M
         client (pyrogram.Client): The pyrogram client.
         message (pyrogram.types.Message): The message containing the command.
     """
-    args = message.text.split(maxsplit=5)
-    if len(args) < 5:
-        await client.send_message(
-            message.from_user.id,
-            f"{_t('Invalid command format')}. {_t('Please use')} /forward_to_comments "
-            f"<source_chat_link> <destination_chat_link> <msg_start_id> <msg_end_id>",
-        )
-        return
-
-    src_chat_link = args[1]
-    dst_chat_link = args[2]
-    msg_start_id = int(args[3])
-    msg_end_id = int(args[4])
-
-    try:
-        src_chat_id, _, _ = await parse_link(_bot.client, src_chat_link)
-        dst_chat_id, target_msg_id, _ = await parse_link(_bot.client, dst_chat_link)
-
-        if not src_chat_id or not dst_chat_id:
-            await client.send_message(
-                message.from_user.id,
-                _t("Invalid chat link"),
-                reply_to_message_id=message.id,
-            )
-            return
-
-        src_message = await _bot.client.get_messages(src_chat_id, message_id)
-        if not src_message:
-            await client.send_message(
-                message.from_user.id,
-                _t("Source message not found"),
-                reply_to_message_id=message.id,
-            )
-            return
-
-        await _bot.client.forward_messages(
-            chat_id=dst_chat_id,
-            from_chat_id=src_chat_id,
-            message_ids=message_id,
-            reply_to_message_id=comment_id
-        )
-
-        await client.send_message(
-            message.from_user.id,
-            _t("Message forwarded successfully to the comment section"),
-            reply_to_message_id=message.id,
-        )
-
-    except Exception as e:
-        await client.send_message(
-            message.from_user.id,
-            f"{_t('Error forwarding message')}: {str(e)}",
-            reply_to_message_id=message.id,
-        )
+    return await forward_message_impl(client, message, True)
