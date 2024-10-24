@@ -362,32 +362,31 @@ async def send_help_str(client: pyrogram.Client, chat_id):
         its version, and the available commands.
     """
 
-    update_keyboard = InlineKeyboardMarkup(
-        [
-            [
-                InlineKeyboardButton(
-                    "Github",
-                    url="https://github.com/tangyoha/telegram_media_downloader/releases",
-                ),
-                InlineKeyboardButton(
-                    "Join us", url="https://t.me/TeegramMediaDownload"
-                ),
-            ]
-        ]
-    )
+    # update_keyboard = InlineKeyboardMarkup(
+    #     [
+    #         [
+    #             InlineKeyboardButton(
+    #                 "Github",
+    #                 url="https://github.com/tangyoha/telegram_media_downloader/releases",
+    #             ),
+    #             InlineKeyboardButton(
+    #                 "Join us", url="https://t.me/TeegramMediaDownload"
+    #             ),
+    #         ]
+    #     ]
+    # )
 
-    latest_release = get_latest_release(_bot.app.proxy)
+    # latest_release = get_latest_release(_bot.app.proxy)
 
-    latest_release_str = (
-        f"{_t('New Version')}: [{latest_release['name']}]({latest_release['html_url']})\n"
-        if latest_release
-        else ""
-    )
+    # latest_release_str = (
+    #     f"{_t('New Version')}: [{latest_release['name']}]({latest_release['html_url']})\n"
+    #     if latest_release
+    #     else ""
+    # )
 
     msg = (
         f"`\n🤖 {_t('Telegram Media Downloader')}\n"
         f"🌐 {_t('Version')}: {utils.__version__}`\n"
-        f"{latest_release_str}\n"
         f"{_t('Available commands:')}\n"
         f"/help - {_t('Show available commands')}\n"
         f"/get_info - {_t('Get group and user info from message link')}\n"
@@ -403,7 +402,7 @@ async def send_help_str(client: pyrogram.Client, chat_id):
         f"/forward_to_comments - {_t('Forward a specific media to a comment section')}\n"
     )
 
-    await client.send_message(chat_id, msg, reply_markup=update_keyboard)
+    await client.send_message(chat_id, msg)
 
 
 async def help_command(client: pyrogram.Client, message: pyrogram.types.Message):
