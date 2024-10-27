@@ -774,7 +774,7 @@ async def get_forward_task_node(
     if not src_chat_id or not dst_chat_id:
         await client.send_message(
             message.from_user.id,
-            _t("Invalid chat link"),
+            _t("Invalid chat link") + f"{src_chat_id} {dst_chat_id}",
             reply_to_message_id=message.id,
         )
         return None
