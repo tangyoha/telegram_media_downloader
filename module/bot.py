@@ -788,6 +788,7 @@ async def get_forward_task_node(
             f"{_t('Invalid chat link')} {e}",
             reply_to_message_id=message.id,
         )
+        logger.exception(f"get chat error: {e}")
         return None
 
     me = await client.get_me()
