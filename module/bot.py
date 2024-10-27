@@ -772,6 +772,7 @@ async def get_forward_task_node(
     dst_chat_id, target_msg_id, topic_id = await parse_link(_bot.client, dst_chat_link)
 
     if not src_chat_id or not dst_chat_id:
+        logger.info(f"{src_chat_id} {dst_chat_id}")
         await client.send_message(
             message.from_user.id,
             _t("Invalid chat link") + f"{src_chat_id} {dst_chat_id}",
