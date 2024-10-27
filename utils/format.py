@@ -237,8 +237,11 @@ def extract_info_from_link(link: str) -> Link:
     elif len(paths) == 1 and paths[0] != "c":
         result.group_id = paths[0]
     elif len(paths) == 2:
-        result.group_id = paths[0]
-        result.post_id = int(paths[1])
+        if paths[0] == "c":
+            result.group_id = int(f"-100{paths[1]}")
+        else:
+            result.group_id = paths[0]
+            result.post_id = int(paths[1])
     elif len(paths) == 3:
         if paths[0] == "c":
             result.group_id = int(f"-100{paths[1]}")
