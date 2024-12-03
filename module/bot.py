@@ -220,7 +220,7 @@ class DownloadBot:
         )
         self.bot.add_handler(
             MessageHandler(
-                forward_messages,
+                on_forward_messages,
                 filters=pyrogram.filters.command(["forward"])
                 & pyrogram.filters.user(self.allowed_user_ids),
             )
@@ -303,6 +303,14 @@ class DownloadBot:
                 & pyrogram.filters.user(admin.id),
             )
         )
+        
+        self.bot.add_handler(
+            MessageHandler(
+                add_forward_filter,
+                filters=pyrogram.filters.command(["add_forward_filter"])
+                & pyrogram.filters.user(admin.id),
+            )
+        )
 
         self.client.add_handler(MessageHandler(listen_forward_msg))
 
@@ -320,6 +328,18 @@ class DownloadBot:
                 & pyrogram.filters.user(self.allowed_user_ids),
             )
         )
+
+        # 遍历sessions下面的目录加载所有的client
+        for dir in os.listdir(self.app.session_file_path):
+            if os.path.isdir(self.app.session_file_path + f"/{dir}"):
+                new_client = HookClient(
+                    "media_downloader",
+                    api_id=self.app.api_id,
+                    api_hash=self.app.api_hash,
+                    proxy=self.app.proxy,
+                    workdir=self.app.session_file_path + f"/{dir}",
+                )
+                self.app.add_forward_client(new_client)
 
 
 _bot = DownloadBot()
@@ -903,6 +923,7 @@ async def forward_message_impl(client: pyrogram.Client, message: pyrogram.types.
 
     if not node.has_protected_content:
         try:
+            skip_message_id = 0
             async for item in get_chat_history_v2(  # type: ignore
                 _bot.client,
                 node.chat_id,
@@ -911,7 +932,42 @@ async def forward_message_impl(client: pyrogram.Client, message: pyrogram.types.
                 offset_id=offset_id,
                 reverse=True,
             ):
-                await forward_normal_content(client, node, item)
+                try:
+                    # Skip already processed media groups
+                    if item.id <= skip_message_id:
+                        continue
+
+                    if item.media_group_id:
+                        # Get all messages in media group
+                        messages = await get_media_group_with_retry(_bot.client, node.chat_id, item.id)
+                        if messages:
+                            current_forward_client = await _bot.app.get_available_forward_client(len(messages))
+                            skip_message_id = messages[-1].id
+                            
+                            await forward_messages(
+                                current_forward_client,
+                                node.upload_telegram_chat_id, 
+                                node.chat_id,
+                                [msg.id for msg in messages],
+                                drop_author=True,
+                                topic_id=node.topic_id,
+                                caption=caption,
+                            )
+                    else:
+                        current_forward_client = await _bot.app.get_available_forward_client(1)
+                        await forward_messages(
+                            current_forward_client,
+                            node.upload_telegram_chat_id,
+                            node.chat_id,
+                            item.id,
+                            drop_author=True,
+                            topic_id=node.topic_id,
+                            caption=caption,
+                        )
+
+                except Exception as e:
+                    logger.exception(f"Error forwarding message: {e}")
+
                 if node.is_stop_transmission:
                     await client.edit_message_text(
                         message.from_user.id,
@@ -931,8 +987,7 @@ async def forward_message_impl(client: pyrogram.Client, message: pyrogram.types.
     else:
         await forward_msg(node, offset_id)
 
-
-async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Message):
+async def on_forward_messages(client: pyrogram.Client, message: pyrogram.types.Message):
     """
     Forwards messages from one chat to another.
 
@@ -1289,3 +1344,37 @@ async def forward_to_comments(client: pyrogram.Client, message: pyrogram.types.M
         message (pyrogram.types.Message): The message containing the command.
     """
     return await forward_message_impl(client, message, True)
+
+
+async def add_forward_filter(client: pyrogram.Client, message: pyrogram.types.Message):
+    """Add forward filter
+    /add_forward_filter <dir>
+    """
+
+    if len(message.text.split()) < 2:
+        await client.send_message(
+            message.from_user.id,
+            "Invalid command format , use /add_forward_filter <dir>",
+        )
+        return
+
+    dir = message.text.split()[1]
+
+    if not os.path.exists(app.session_file_path + f"/{dir}"):
+        os.makedirs(app.session_file_path + f"/{dir}")
+
+    new_client = HookClient(
+        "media_downloader",
+        api_id=app.api_id,
+        api_hash=app.api_hash,
+        proxy=app.proxy,
+        workdir=app.session_file_path + f"/{name}/",
+        start_timeout=app.start_timeout,
+    )
+
+    await new_client.start()
+
+    _bot.app.add_forward_client(new_client)
+
+
+

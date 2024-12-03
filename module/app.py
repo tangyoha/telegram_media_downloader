@@ -242,13 +242,14 @@ class TaskNode:
 
 
 class LimitCall:
-    """Limit call"""
+    """Limit call with support for waiting and checking modes"""
 
     def __init__(
         self,
         max_limit_call_times: int = 0,
         limit_call_times: int = 0,
         last_call_time: float = 0,
+        reset_interval: float = 60.0,
     ):
         """
         Initializes the object with the given parameters.
@@ -256,7 +257,8 @@ class LimitCall:
         Args:
             max_limit_call_times (int): The maximum limit of call times allowed.
             limit_call_times (int): The current limit of call times.
-            last_call_time (int): The time of the last call.
+            last_call_time (float): The time of the last call.
+            reset_interval (float): The interval in seconds after which the limit resets.
 
         Returns:
             None
@@ -264,32 +266,50 @@ class LimitCall:
         self.max_limit_call_times = max_limit_call_times
         self.limit_call_times = limit_call_times
         self.last_call_time = last_call_time
+        self.reset_interval = reset_interval
+        self.lock = asyncio.Lock()
+
+    async def _check_and_update(self, count: int = 1):
+        async with self.lock:
+            now = time.time()
+            time_span = now - self.last_call_time
+
+            if time_span > self.reset_interval:
+                self.limit_call_times = 0
+                self.last_call_time = now
+
+            if self.limit_call_times + count <= self.max_limit_call_times:
+                self.limit_call_times += count
+                return True
+            return False
 
     async def wait(self, node: TaskNode):
         """
         Wait for a certain period of time before continuing execution.
 
-        This function does not take any parameters.
+        Args:
+            node (TaskNode): The task node to check for stop transmission.
 
-        This function does not return anything.
+        Returns:
+            None
         """
         while True:
-            now = time.time()
-            time_span = now - self.last_call_time
             if node.is_stop_transmission:
                 break
 
-            if time_span > 60:
-                self.limit_call_times = 0
-                self.last_call_time = now
-
-            if self.limit_call_times + 1 <= self.max_limit_call_times:
-                self.limit_call_times += 1
+            if await self._check_and_update():
                 break
 
-            # logger.debug("Waiting for 10 seconds...")
             await asyncio.sleep(1)
 
+    async def check(self, count: int) -> bool:
+        """
+        Check if the limit has been exceeded without waiting.
+
+        Returns:
+            bool: True if the limit has not been exceeded, False otherwise.
+        """
+        return await self._check_and_update(count)
 
 class ChatDownloadConfig:
     """Chat Message Download Status"""
@@ -336,6 +356,13 @@ def get_config(config, key, default=None, val_type=str, verbose=True):
 
     return default
 
+
+class ForwardClient:
+    """Forward client"""
+
+    def __init__(self, client: Client):
+        self.client = client
+        self.limit_call = LimitCall(max_limit_call_times=33)
 
 class Application:
     """Application load config and update config."""
@@ -416,10 +443,29 @@ class Application:
         self.default_forward_additional_caption = None
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
+        
+        self.forward_clients: List[ForwardClient] = []
+        self.forward_client_index = 0
+        self.forward_client_count = 0
 
         self.executor = ThreadPoolExecutor(
             min(32, (os.cpu_count() or 0) + 4), thread_name_prefix="multi_task"
         )
+
+    async def get_available_forward_client(self, count: int):
+        """获取能够转发指定count的客户端"""
+        while True:
+            for client in self.forward_clients:
+                if client.limit_call.check(count):
+                    return client
+
+            await asyncio.sleep(1)
+
+    
+    def add_forward_client(self, client: ForwardClient):
+        """添加转发客户端"""
+        self.forward_clients.append(client)
+        self.forward_client_count += 1
 
     # pylint: disable = R0915
     def assign_config(self, _config: dict) -> bool:
