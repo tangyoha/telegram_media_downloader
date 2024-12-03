@@ -36,6 +36,9 @@ from module.pyrogram_extension import (
     retry,
     set_meta_data,
     upload_telegram_chat_message,
+    HookClient,
+    forward_messages,
+    get_media_group_with_retry
 )
 from utils.format import replace_date_time, validate_title
 from utils.meta_data import MetaData
@@ -306,8 +309,8 @@ class DownloadBot:
         
         self.bot.add_handler(
             MessageHandler(
-                add_forward_filter,
-                filters=pyrogram.filters.command(["add_forward_filter"])
+                add_forward_client,
+                filters=pyrogram.filters.command(["add_forward_client"])
                 & pyrogram.filters.user(admin.id),
             )
         )
@@ -339,7 +342,11 @@ class DownloadBot:
                     proxy=self.app.proxy,
                     workdir=self.app.session_file_path + f"/{dir}",
                 )
+                await new_client.start()
                 self.app.add_forward_client(new_client)
+            
+        
+        self.app.add_forward_client(self.client)
 
 
 _bot = DownloadBot()
@@ -945,28 +952,27 @@ async def forward_message_impl(client: pyrogram.Client, message: pyrogram.types.
                             skip_message_id = messages[-1].id
                             
                             await forward_messages(
-                                current_forward_client,
+                                current_forward_client.client,
                                 node.upload_telegram_chat_id, 
                                 node.chat_id,
                                 [msg.id for msg in messages],
                                 drop_author=True,
                                 topic_id=node.topic_id,
-                                caption=caption,
                             )
                     else:
                         current_forward_client = await _bot.app.get_available_forward_client(1)
                         await forward_messages(
-                            current_forward_client,
+                            current_forward_client.client,
                             node.upload_telegram_chat_id,
                             node.chat_id,
                             item.id,
                             drop_author=True,
                             topic_id=node.topic_id,
-                            caption=caption,
                         )
 
                 except Exception as e:
                     logger.exception(f"Error forwarding message: {e}")
+                    await asyncio.sleep(1)
 
                 if node.is_stop_transmission:
                     await client.edit_message_text(
@@ -1346,30 +1352,30 @@ async def forward_to_comments(client: pyrogram.Client, message: pyrogram.types.M
     return await forward_message_impl(client, message, True)
 
 
-async def add_forward_filter(client: pyrogram.Client, message: pyrogram.types.Message):
-    """Add forward filter
-    /add_forward_filter <dir>
+async def add_forward_client(client: pyrogram.Client, message: pyrogram.types.Message):
+    """Add forward client
+    /add_forward_client <dir>
     """
 
     if len(message.text.split()) < 2:
         await client.send_message(
             message.from_user.id,
-            "Invalid command format , use /add_forward_filter <dir>",
+            "Invalid command format , use /add_forward_client <dir>",
         )
         return
 
     dir = message.text.split()[1]
 
-    if not os.path.exists(app.session_file_path + f"/{dir}"):
-        os.makedirs(app.session_file_path + f"/{dir}")
+    if not os.path.exists(_bot.app.session_file_path + f"/{dir}"):
+        os.makedirs(_bot.app.session_file_path + f"/{dir}")
 
     new_client = HookClient(
         "media_downloader",
-        api_id=app.api_id,
-        api_hash=app.api_hash,
-        proxy=app.proxy,
-        workdir=app.session_file_path + f"/{name}/",
-        start_timeout=app.start_timeout,
+        api_id=_bot.app.api_id,
+        api_hash=_bot.app.api_hash,
+        proxy=_bot.app.proxy,
+        workdir=_bot.app.session_file_path + f"/{dir}/",
+        start_timeout=_bot.app.start_timeout,
     )
 
     await new_client.start()

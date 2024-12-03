@@ -1344,9 +1344,9 @@ async def forward_messages(
                 await types.Message._parse(client, i.message, users, chats)
             )
 
-    if caption and not is_iterable and forwarded_messages:
-        await client.edit_message_caption(
-            chat_id, forwarded_messages[0].id, caption=caption
-        )
+    # if caption and not is_iterable and forwarded_messages:
+    #     await client.edit_message_caption(
+    #         chat_id, forwarded_messages[0].id, caption=caption
+    #     )
 
     return types.List(forwarded_messages) if is_iterable else forwarded_messages[0]
