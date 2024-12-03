@@ -360,7 +360,7 @@ def get_config(config, key, default=None, val_type=str, verbose=True):
 class ForwardClient:
     """Forward client"""
 
-    def __init__(self, client: Client):
+    def __init__(self, client):
         self.client = client
         self.limit_call = LimitCall(max_limit_call_times=33)
 
@@ -456,15 +456,16 @@ class Application:
         """获取能够转发指定count的客户端"""
         while True:
             for client in self.forward_clients:
-                if client.limit_call.check(count):
+                if await client.limit_call.check(count):
                     return client
 
             await asyncio.sleep(1)
 
     
-    def add_forward_client(self, client: ForwardClient):
+    def add_forward_client(self, client):
         """添加转发客户端"""
-        self.forward_clients.append(client)
+        forward_client = ForwardClient(client)
+        self.forward_clients.append(forward_client)
         self.forward_client_count += 1
 
     # pylint: disable = R0915
