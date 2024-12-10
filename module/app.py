@@ -283,7 +283,7 @@ class LimitCall:
                 return True
             return False
 
-    async def wait(self, node: TaskNode):
+    async def wait(self, node: TaskNode = None):
         """
         Wait for a certain period of time before continuing execution.
 
@@ -294,7 +294,7 @@ class LimitCall:
             None
         """
         while True:
-            if node.is_stop_transmission:
+            if node and node.is_stop_transmission:
                 break
 
             if await self._check_and_update():
@@ -436,6 +436,7 @@ class Application:
         self.enable_download_txt: bool = False
 
         self.forward_limit_call = LimitCall(max_limit_call_times=33)
+        self.edit_limit_call = LimitCall(max_limit_call_times=100)
 
         self.caption_replace_dict: yaml.comments.CommentedMap = {}
         self.default_forward_caption = None
@@ -447,6 +448,9 @@ class Application:
         self.forward_clients: List[ForwardClient] = []
         self.forward_client_index = 0
         self.forward_client_count = 0
+
+        self.pre_wait_time = 1800
+        self.pause_time = 360
 
         self.executor = ThreadPoolExecutor(
             min(32, (os.cpu_count() or 0) + 4), thread_name_prefix="multi_task"
@@ -609,11 +613,27 @@ class Application:
             except ValueError:
                 pass
 
+        edit_limit = _config.get("edit_limit", None)
+        if edit_limit:
+            try:
+                edit_limit = int(edit_limit)
+                self.edit_limit_call.max_limit_call_times = edit_limit
+            except ValueError:
+                pass
+
         self.caption_replace_dict = get_config(
             _config,
             "caption_replace",
             self.caption_replace_dict,
             yaml.comments.CommentedMap,
+        )
+
+        self.pre_wait_time = get_config(
+            _config, "pre_wait_time", self.pre_wait_time, int
+        )
+
+        self.pause_time = get_config(
+            _config, "pause_time", self.pause_time, int
         )
 
         self.default_forward_caption = get_config(

@@ -23,6 +23,7 @@ from module.app import (
     TaskNode,
     TaskType,
     UploadStatus,
+    LimitCall,
 )
 from module.filter import Filter
 from module.get_chat_history_v2 import get_chat_history_v2
@@ -258,6 +259,13 @@ class DownloadBot:
         )
         self.bot.add_handler(
             MessageHandler(
+                edit_group_messages,
+                filters=pyrogram.filters.command(["edit_url"])
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+        self.bot.add_handler(
+            MessageHandler(
                 get_info,
                 filters=pyrogram.filters.command(["get_info"])
                 & pyrogram.filters.user(self.allowed_user_ids),
@@ -479,6 +487,147 @@ async def set_language(client: pyrogram.Client, message: pyrogram.types.Message)
             message.from_user.id,
             _t("Invalid command format. Please use /set_language en/ru/zh/ua"),
         )
+
+async def edit_group_messages(client: pyrogram.Client, message: pyrogram.types.Message):
+    """
+    Edit all messages in a group that contain specific text by replacing it with a link.
+    
+    Parameters:
+        client (pyrogram.Client): The pyrogram client.
+        message (pyrogram.types.Message): The message containing the command.
+    """
+    # Check command format
+    # /edit https://t.me/c/chat_link text target_url limit_call_times free_time
+    args = message.text.split(maxsplit=5)
+    if len(args) != 6:
+        await client.send_message(
+            message.from_user.id,
+            f"{_t('Invalid command format')}. {_t('Please use')} "
+            "/edit https://t.me/c/chat_link text target_url limit_call_times free_time",
+        )
+        return
+
+    chat_link = args[1]
+    replace_text = args[2]
+    target_url = args[3]
+    limit_call_times = args[4]
+    free_time = args[5]
+    # Parse chat link
+    chat_id, _, _ = await parse_link(_bot.client, chat_link)
+    if not chat_id:
+        await client.send_message(
+            message.from_user.id,
+            _t("Invalid chat link"),
+            reply_to_message_id=message.id,
+        )
+        return
+
+    try:
+        chat = await _bot.client.get_chat(chat_id)
+    except Exception as e:
+        await client.send_message(
+            message.from_user.id,
+            f"{_t('Invalid chat link')} {e}",
+            reply_to_message_id=message.id,
+        )
+        return
+
+    try:
+        limit_call_times = int(limit_call_times)
+        free_time = int(free_time)
+    except Exception:
+        limit_call_times = 30
+        free_time = 0
+
+    # Send initial status message
+    status_msg = await client.send_message(
+        message.from_user.id,
+        "Starting to edit messages...",
+        reply_to_message_id=message.id
+    )
+
+    edit_limit_call = LimitCall(max_limit_call_times=limit_call_times)
+
+    edited_count = 0
+    try:
+        async for msg in _bot.client.get_chat_history(chat_id):
+            if msg.text or msg.caption:
+                text = msg.text or msg.caption
+                if replace_text in text:
+                    entities = list(msg.entities or msg.caption_entities or [])
+                    
+                    # Find text position
+                    replace_index = text.find(replace_text)
+                    
+                    skip = False
+                    # Check if text already has a link
+                    existing_entity = None
+                    for entity in entities:
+                        if (entity.type == pyrogram.enums.MessageEntityType.TEXT_LINK and
+                            entity.offset == replace_index and 
+                            entity.length == len(replace_text)):
+                            skip = entity.url == target_url
+                            existing_entity = entity
+                            break
+                    if skip:
+                        continue
+                    if existing_entity:
+                        # Update existing link
+                        existing_entity.url = target_url
+                    else:
+                        # Add new link entity
+                        new_entity = pyrogram.types.MessageEntity(
+                            type=pyrogram.enums.MessageEntityType.TEXT_LINK,
+                            offset=replace_index,
+                            length=len(replace_text),
+                            url=target_url
+                        )
+                        entities.append(new_entity)
+
+                    await edit_limit_call.wait()
+
+                    await asyncio.sleep(2)
+                    try:
+                        if msg.text:
+                            await _bot.client.edit_message_text(
+                                    chat_id,
+                                    msg.id,
+                                    text, entities=entities
+                            )
+                        else:
+                            await msg.edit_caption(text, caption_entities=entities)
+                        edited_count += 1
+                        
+                        if edited_count % limit_call_times == 0:  # Update status every limit_call_times edits
+                            await status_msg.edit_text(f"Edited {edited_count} messages... sleep {free_time} seconds")
+                            await asyncio.sleep(free_time)
+                            
+                    except pyrogram.errors.FloodWait as e:
+                        await status_msg.edit_text(f"Hit rate limit, waiting {e.value} seconds...")
+                        await asyncio.sleep(e.value)
+                        # Retry the edit after waiting
+                        try:
+                            if msg.text:
+                                await _bot.client.edit_message_text(
+                                        chat_id,
+                                        msg.id,
+                                        text, entities=entities
+                                )
+                            else:
+                                await msg.edit_caption(text, caption_entities=entities)
+                            edited_count += 1
+                        except Exception as e:
+                            logger.error(f"Failed to edit message {msg.id} after flood wait: {e}")
+                            continue
+                    except Exception as e:
+                        logger.error(f"Failed to edit message {msg.id}: {e}")
+                        continue
+
+    except Exception as e:
+        await status_msg.edit_text(f"Error while editing messages: {e}")
+        return
+
+    await status_msg.edit_text(f"Finished editing {edited_count} messages.")
 
 
 async def get_info(client: pyrogram.Client, message: pyrogram.types.Message):
@@ -931,6 +1080,8 @@ async def forward_message_impl(client: pyrogram.Client, message: pyrogram.types.
     if not node.has_protected_content:
         try:
             skip_message_id = 0
+            last_pause_time = time.time()
+            
             async for item in get_chat_history_v2(  # type: ignore
                 _bot.client,
                 node.chat_id,
@@ -940,6 +1091,17 @@ async def forward_message_impl(client: pyrogram.Client, message: pyrogram.types.
                 reverse=True,
             ):
                 try:
+                    # Check if 30 minutes have passed since last pause
+                    current_time = time.time()
+                    if current_time - last_pause_time >= _bot.app.pause_time:  # 30 minutes = 1800 seconds
+                        await client.edit_message_text(
+                            message.from_user.id,
+                            node.reply_message_id,
+                            "Pausing for 6 minutes..."
+                        )
+                        await asyncio.sleep(_bot.app.pause_time)  # 6 minutes = 360 seconds
+                        last_pause_time = time.time()
+                        
                     # Skip already processed media groups
                     if item.id <= skip_message_id:
                         continue
