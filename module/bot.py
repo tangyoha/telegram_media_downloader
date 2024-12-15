@@ -4,6 +4,7 @@ import asyncio
 import csv
 import os
 from datetime import datetime
+import time
 from typing import Callable, List, Union
 
 import pyrogram
@@ -1093,11 +1094,11 @@ async def forward_message_impl(client: pyrogram.Client, message: pyrogram.types.
                 try:
                     # Check if 30 minutes have passed since last pause
                     current_time = time.time()
-                    if current_time - last_pause_time >= _bot.app.pause_time:  # 30 minutes = 1800 seconds
+                    if current_time - last_pause_time >= _bot.app.pre_wait_time:  # 30 minutes = 1800 seconds
                         await client.edit_message_text(
                             message.from_user.id,
                             node.reply_message_id,
-                            "Pausing for 6 minutes..."
+                            f"Pausing for {_bot.app.pause_time} s..."
                         )
                         await asyncio.sleep(_bot.app.pause_time)  # 6 minutes = 360 seconds
                         last_pause_time = time.time()

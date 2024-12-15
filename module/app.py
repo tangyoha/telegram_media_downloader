@@ -449,7 +449,7 @@ class Application:
         self.forward_client_index = 0
         self.forward_client_count = 0
 
-        self.pre_wait_time = 1800
+        self.pre_wait_time = 60
         self.pause_time = 360
 
         self.executor = ThreadPoolExecutor(
