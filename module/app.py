@@ -391,6 +391,7 @@ class Application:
         self.cloud_drive_config = CloudDriveConfig()
         self.hide_file_name = False
         self.caption_name_dict: dict = {}
+        self.caption_entities_dict: dict = {}
         self.max_concurrent_transmissions: int = 1
         self.web_host: str = "0.0.0.0"
         self.web_port: int = 5000
@@ -977,6 +978,31 @@ class Application:
             return None
 
         return str(self.caption_name_dict[chat_id][media_group_id])
+    
+    def set_caption_entities(
+        self, chat_id: Union[int, str], media_group_id: Optional[str], caption_entities
+    ):
+        if not media_group_id:
+            return
+        
+        if chat_id in self.caption_entities_dict:
+            self.caption_entities_dict[chat_id][media_group_id] = caption_entities
+        else:
+            self.caption_entities_dict[chat_id] = {media_group_id: caption_entities}
+
+    
+    def get_caption_entities(
+        self, chat_id: Union[int, str], media_group_id: Optional[str]
+    ):
+        if (
+            not media_group_id
+            or chat_id not in self.caption_entities_dict
+            or media_group_id not in self.caption_entities_dict[chat_id]
+        ):
+            return None
+
+        return self.caption_entities_dict[chat_id][media_group_id]
+
 
     def set_download_id(
         self, node: TaskNode, message_id: int, download_status: DownloadStatus

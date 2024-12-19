@@ -49,10 +49,10 @@ app = Application(CONFIG_NAME, DATA_FILE_NAME, APPLICATION_NAME)
 queue: asyncio.Queue = asyncio.Queue()
 RETRY_TIME_OUT = 3
 
-logging.getLogger("pyrogram.session.session").addFilter(LogFilter())
-logging.getLogger("pyrogram.client").addFilter(LogFilter())
+#logging.getLogger("pyrogram.session.session").addFilter(LogFilter())
+#logging.getLogger("pyrogram.client").addFilter(LogFilter())
 
-logging.getLogger("pyrogram").setLevel(logging.WARNING)
+#logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
 
 def _check_download_finish(media_size: int, download_path: str, ui_file_name: str):
@@ -235,6 +235,7 @@ async def _get_media_meta(
         if caption:
             caption = validate_title(caption)
             app.set_caption_name(chat_id, message.media_group_id, caption)
+            app.set_caption_entities(chat_id, message.media_group_id, message.caption_entities)
         else:
             caption = app.get_caption_name(chat_id, message.media_group_id)
 
@@ -569,6 +570,7 @@ async def download_chat_task(
         if caption:
             caption = validate_title(caption)
             app.set_caption_name(node.chat_id, message.media_group_id, caption)
+            app.set_caption_entities(node.chat_id, message.media_group_id, message.caption_entities)
         else:
             caption = app.get_caption_name(node.chat_id, message.media_group_id)
         set_meta_data(meta_data, message, caption)

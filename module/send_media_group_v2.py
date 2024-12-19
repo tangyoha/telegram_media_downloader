@@ -368,11 +368,12 @@ async def cache_media(
             f"{media_obj.__class__.__name__}"
             " is not a supported type for send_media_group"
         )
-
+    #quote_text, quote_entities = (await utils.parse_text_entities(client, media_obj.caption, media_obj.parse_mode, media_obj.caption_entities)).values()
     return raw.types.InputSingleMedia(
         media=media,
         random_id=client.rnd_id(),
-        **await client.parser.parse(media_obj.caption, media_obj.parse_mode),
+        message=media_obj.caption,
+        entities=media_obj.caption_entities,
     )
 
 
