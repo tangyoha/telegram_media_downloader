@@ -372,7 +372,7 @@ async def cache_media(
     return raw.types.InputSingleMedia(
         media=media,
         random_id=client.rnd_id(),
-        message=media_obj.caption,
+        message=media_obj.caption if media_obj.caption else "",
         entities=media_obj.caption_entities,
     )
 
