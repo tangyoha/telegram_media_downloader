@@ -67,7 +67,7 @@ def _guess_extension(mime_type: str) -> Optional[str]:
 
 
 def get_media_obj(
-    message: pyrogram.types.Message, media: str = None, caption: str = None, caption_entities: List[pyrogram.types.MessageEntity] = None
+    message: pyrogram.types.Message, media: str = None, caption: str = None
 ) -> Union[
     types.InputMediaPhoto,
     types.InputMediaVideo,
@@ -78,7 +78,7 @@ def get_media_obj(
     """Get media object"""
     media_type = message.media
     if media_type == pyrogram.enums.MessageMediaType.PHOTO:
-        return types.InputMediaPhoto(media, caption=caption, caption_entities=caption_entities)
+        return types.InputMediaPhoto(media, caption=caption)
 
     if media_type == pyrogram.enums.MessageMediaType.VIDEO:
         return types.InputMediaVideo(
@@ -87,21 +87,19 @@ def get_media_obj(
             width=message.video.width,
             height=message.video.height,
             duration=message.video.duration,
-            parse_mode=pyrogram.enums.ParseMode.HTML,
-            caption_entities=caption_entities,
         )
 
     if media_type in [
         pyrogram.enums.MessageMediaType.AUDIO,
         pyrogram.enums.MessageMediaType.VOICE,
     ]:
-        return types.InputMediaAudio(media, caption=caption, caption_entities=caption_entities)
+        return types.InputMediaAudio(media, caption=caption)
 
     if media_type == pyrogram.enums.MessageMediaType.DOCUMENT:
-        return types.InputMediaDocument(media, caption=caption, caption_entities=caption_entities)
+        return types.InputMediaDocument(media, caption=caption)
 
     if media_type == pyrogram.enums.MessageMediaType.ANIMATION:
-        return types.InputMediaAnimation(media, caption=caption, caption_entities=caption_entities)
+        return types.InputMediaAnimation(media, caption=caption)
 
     return None
 
@@ -365,6 +363,7 @@ async def _upload_signal_message(
     upload_telegram_chat_id: Union[int, str],
     message: pyrogram.types.Message,
     file_name: Optional[str],
+    caption: Optional[str] = None,
 ):
     """
     Uploads a video or message to a Telegram chat.
@@ -383,13 +382,6 @@ async def _upload_signal_message(
             else file_name
         )
 
-    caption = replace_caption(
-        message.caption,
-        app.caption_replace_dict,
-        app.default_forward_caption,
-        app.caption_regex_replace_dict,
-        app.default_forward_additional_caption,
-    )
     if message.video:
         # Download thumbnail
         thumbnail_file = await download_thumbnail(client, app.temp_save_path, message)
@@ -501,7 +493,7 @@ async def _upload_signal_message(
         if node.reply_to_message:
             await node.reply_to_message.reply(
                 message.text,
-                message_thread_id=node.topic_id,
+                message_thread_id=node.topic_id
             )
         else:
             await upload_user.send_message(
@@ -538,7 +530,7 @@ async def _upload_telegram_chat_message(
     
     # Convert caption and caption_entities to markdown format
     if caption and caption_entities:
-        caption = pyrogram.parser.Parser.unparse(caption, caption_entities, False)
+        caption = pyrogram.parser.Parser.unparse(caption, caption_entities, True)
         
 
     caption = replace_caption(
@@ -555,8 +547,13 @@ async def _upload_telegram_chat_message(
         caption = caption[:max_caption_length]
 
     # 将markdown格式的caption转为caption和caption_entities
-    if caption:
-        caption, caption_entities = (await client.parser.parse(caption, pyrogram.enums.ParseMode.MARKDOWN)).values()
+    # if caption:
+    #     #caption, caption_entities = (await client.parser.parse(caption, pyrogram.enums.ParseMode.HTML)).values()
+    #     caption, caption_entities = (
+    #         pyrogram.utils.parse_text_with_entities(
+    #             client, caption, users
+    #         )
+    #     ).values()
 
     if not message.media_group_id:
         if not node.has_protected_content:
@@ -565,35 +562,35 @@ async def _upload_telegram_chat_message(
                     await node.reply_to_message.reply(
                         message.text,
                         message_thread_id=node.topic_id,
-                        caption_entities=caption_entities
+                        
                     )
                 elif message.photo:
                     await node.reply_to_message.reply_photo(
                         message.photo.file_id,
                         caption=caption,
                         message_thread_id=node.topic_id,
-                        caption_entities=caption_entities
+                        
                     )
                 elif message.video:
                     await node.reply_to_message.reply_video(
                         message.video.file_id,
                         caption=caption,
                         message_thread_id=node.topic_id,
-                        caption_entities=caption_entities
+                        
                     )
                 elif message.document:
                     await node.reply_to_message.reply_document(
                         message.document.file_id,
                         caption=caption,
                         message_thread_id=node.topic_id,
-                        caption_entities=caption_entities
+                        
                     )
                 elif message.audio:
                     await node.reply_to_message.reply_audio(
                         message.audio.file_id,
                         caption=caption,
                         message_thread_id=node.topic_id,
-                        caption_entities=caption_entities
+                        
                     )
             else:
                 # For other types of media, fallback to forward_messages
@@ -605,7 +602,7 @@ async def _upload_telegram_chat_message(
                     drop_author=True,
                     topic_id=node.topic_id,
                     caption=caption,
-                    caption_entities=caption_entities
+                    
                 )
         else:
             await _upload_signal_message(
@@ -616,6 +613,7 @@ async def _upload_telegram_chat_message(
                 node.upload_telegram_chat_id,
                 message,
                 file_name,
+                caption,
             )
         return ForwardStatus.SuccessForward
 
@@ -646,7 +644,7 @@ async def forward_multi_media(
     
     # Convert caption and caption_entities to markdown format
     if caption and caption_entities:
-        caption = pyrogram.parser.Parser.unparse(caption, caption_entities, False)
+        caption = pyrogram.parser.Parser.unparse(caption, caption_entities, True)
         
 
     caption = replace_caption(
@@ -662,10 +660,7 @@ async def forward_multi_media(
     if caption and len(caption) > max_caption_length:
         caption = caption[:max_caption_length]
 
-    # 将markdown格式的caption转为caption和caption_entities
-    if caption:
-        caption, caption_entities = (await client.parser.parse(caption, pyrogram.enums.ParseMode.MARKDOWN)).values()
-    media_obj = get_media_obj(message, file_name, caption, caption_entities)
+    media_obj = get_media_obj(message, file_name, caption)
     if not node.has_protected_content:
         media = getattr(message, message.media.value)
         if not media:
