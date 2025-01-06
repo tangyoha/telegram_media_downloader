@@ -1,7 +1,6 @@
 """Bot for media downloader"""
 
 import asyncio
-import csv
 import os
 from datetime import datetime
 from typing import Callable, List, Union
@@ -293,14 +292,6 @@ class DownloadBot:
         self.bot.add_handler(
             CallbackQueryHandler(
                 on_query_handler, filters=pyrogram.filters.user(self.allowed_user_ids)
-            )
-        )
-
-        self.bot.add_handler(
-            MessageHandler(
-                export_data,
-                filters=pyrogram.filters.command(["export"])
-                & pyrogram.filters.user(admin.id),
             )
         )
 
@@ -1162,131 +1153,6 @@ async def on_query_handler(
         queryHandler = QueryHandlerStr.get_str(it.value)
         if queryHandler in query.data:
             await stop_task(client, query, queryHandler, TaskType(it.value))
-
-
-async def export_data(client: pyrogram.Client, message: pyrogram.types.Message):
-    """
-    Export meta data
-    /export src_chat_link offset_id end_offset_id
-    """
-
-    async def report_error(client: pyrogram.Client, message: pyrogram.types.Message):
-        """Report error"""
-        await client.send_message(
-            message.from_user.id,
-            f"{_t('Invalid command format')}()\n{_t('Please use')} /export src_chat_link offset_id end_offset_id",
-        )
-
-    args = message.text.split(maxsplit=4)
-    if len(args) < 4:
-        await report_error(client, message)
-        return
-
-    src_chat_link = args[1]
-    dst_chat_link = src_chat_link
-
-    try:
-        offset_id = int(args[2])
-        end_offset_id = int(args[3])
-    except Exception:
-        await report_error(client, message)
-        return
-
-    download_filter = args[4] if len(args) > 4 else None
-
-    node = await get_forward_task_node(
-        client,
-        message,
-        TaskType.Forward,
-        src_chat_link,
-        dst_chat_link,
-        offset_id,
-        end_offset_id,
-        download_filter,
-    )
-
-    if not node:
-        return
-
-    try:
-        src_chat = await _bot.client.get_chat(node.chat_id)
-        chat_title = src_chat.title
-        with open(
-            f"{node.chat_id} - {chat_title}.csv", "a+", newline="", encoding="utf-8"
-        ) as file:
-            writer = csv.writer(file)
-
-            # Write the header row
-            writer.writerow(
-                [
-                    "message_date",
-                    "message_id",
-                    "message_caption",
-                    "media_file_size",
-                    "media_width",
-                    "media_height",
-                    "media_file_name",
-                    "media_duration",
-                    "media_type",
-                    "file_extension",
-                    "sender_id",
-                    "sender_name",
-                    "reply_to_message_id",
-                ]
-            )
-
-            async for item in get_chat_history_v2(  # type: ignore
-                _bot.client,
-                node.chat_id,
-                limit=node.limit,
-                max_id=node.end_offset_id,
-                offset_id=offset_id,
-                reverse=True,
-            ):
-                caption = item.caption
-                if caption:
-                    caption = validate_title(caption)
-                    _bot.app.set_caption_name(
-                        node.chat_id, item.media_group_id, caption
-                    )
-                else:
-                    caption = _bot.app.get_caption_name(
-                        node.chat_id, item.media_group_id
-                    )
-                meta_data = MetaData()
-                set_meta_data(meta_data, item, caption)
-                data = meta_data.export()
-
-                # Write the metadata to the CSV file
-                writer.writerow(
-                    [
-                        data["message_date"],
-                        data["message_id"],
-                        data["message_caption"],
-                        data["media_file_size"],
-                        data["media_width"],
-                        data["media_height"],
-                        data["media_file_name"],
-                        data["media_duration"],
-                        data["media_type"],
-                        data["file_extension"],
-                        data["sender_id"],
-                        data["sender_name"],
-                        data["reply_to_message_id"],
-                    ]
-                )
-
-    except Exception as e:
-        logger.error(f"{e}")
-        await client.edit_message_text(
-            message.from_user.id,
-            node.reply_message_id,
-            f"{_t('Error export message')} {e}",
-        )
-    finally:
-        await report_bot_status(client, node, immediate_reply=True)
-        node.stop_transmission()
-
 
 async def forward_to_comments(client: pyrogram.Client, message: pyrogram.types.Message):
     """
