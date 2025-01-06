@@ -38,7 +38,6 @@ from module.pyrogram_extension import (
 )
 from utils.format import replace_date_time, validate_title
 from utils.meta_data import MetaData
-from utils.updates import get_latest_release
 
 # pylint: disable = C0301, R0902
 

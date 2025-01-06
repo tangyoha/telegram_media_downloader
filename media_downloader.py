@@ -32,7 +32,6 @@ from utils.format import truncate_filename, validate_title
 from utils.log import LogFilter
 from utils.meta import print_meta
 from utils.meta_data import MetaData
-from utils.updates import check_for_updates
 
 logging.basicConfig(
     level=logging.INFO,
