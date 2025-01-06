@@ -34,6 +34,7 @@ class MockMessage:
         self.empty = kwargs.get("empty", False)
         self.from_user = kwargs.get("from_user", None)
         self.reply_to_message_id = kwargs.get("reply_to_message_id", None)
+        self.caption_entities = kwargs.get("caption_entities", None)
 
         if kwargs.get("dis_chat") == None:
             self.chat = Chat(
