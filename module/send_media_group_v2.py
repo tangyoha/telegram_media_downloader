@@ -372,7 +372,9 @@ async def cache_media(
     return raw.types.InputSingleMedia(
         media=media,
         random_id=client.rnd_id(),
-        **await utils.parse_text_entities(client, media_obj.caption, media_obj.parse_mode, media_obj.caption_entities)
+        **await utils.parse_text_entities(
+            client, media_obj.caption, media_obj.parse_mode, media_obj.caption_entities
+        ),
     )
 
 
@@ -403,7 +405,7 @@ async def send_media_group_v2(
             ),
         ),
         sleep_threshold=60,
-        business_connection_id=business_connection_id
+        business_connection_id=business_connection_id,
     )
 
     return await utils.parse_messages(

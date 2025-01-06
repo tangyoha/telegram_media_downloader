@@ -2,7 +2,6 @@
 
 import asyncio
 import os
-import re
 import secrets
 import struct
 import time
@@ -102,42 +101,6 @@ def get_media_obj(
         return types.InputMediaAnimation(media, caption=caption)
 
     return None
-
-
-def replace_caption(
-    caption: Optional[str],
-    caption_replace_dict,
-    default_caption: Optional[str] = None,
-    caption_regex_replace_dict=None,
-    default_additional_caption: Optional[str] = None,
-):
-    """
-    Replaces certain items in a caption string
-        with their corresponding values from a dictionary.
-
-    :param caption: Optional. The caption string to be modified.
-    :param caption_replace_dict: The dictionary containing the items
-        to be replaced and their corresponding values.
-    :param default_caption: Optional. The default caption to be used if `caption` is None.
-
-    :return: The modified caption string.
-    """
-    if caption:
-        for item in caption_replace_dict:
-            caption = caption.replace(item, caption_replace_dict[item])
-    else:
-        caption = default_caption
-
-    if not caption:
-        return default_additional_caption
-
-    if caption_regex_replace_dict:
-        for item in caption_regex_replace_dict:
-            caption = re.sub(item, caption_regex_replace_dict[item], caption)
-
-    if default_additional_caption:
-        caption += default_additional_caption
-    return caption
 
 
 def _get_file_type(file_id: str):
@@ -355,12 +318,13 @@ async def upload_telegram_chat_message(
     return forward_status
 
 
+# pylint: disable=R0912
 async def _upload_signal_message(
     client: pyrogram.Client,
     upload_user: pyrogram.Client,
     app: Application,
     node: TaskNode,
-    upload_telegram_chat_id: Union[int, str],
+    upload_telegram_chat_id: Union[int, str, None],
     message: pyrogram.types.Message,
     file_name: Optional[str],
     caption: Optional[str] = None,
@@ -417,8 +381,8 @@ async def _upload_signal_message(
                         node,
                         upload_user,
                     ),
-                message_thread_id=node.topic_id,
-            )
+                    message_thread_id=node.topic_id,
+                )
         except Exception as e:
             raise e
         finally:
@@ -438,7 +402,13 @@ async def _upload_signal_message(
                 file_name,
                 caption=caption,
                 progress=update_upload_stat,
-                progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
+                progress_args=(
+                    message.id,
+                    ui_file_name,
+                    time.time(),
+                    node,
+                    upload_user,
+                ),
                 message_thread_id=node.topic_id,
             )
     elif message.document:
@@ -454,7 +424,13 @@ async def _upload_signal_message(
                 file_name,
                 caption=caption,
                 progress=update_upload_stat,
-                progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
+                progress_args=(
+                    message.id,
+                    ui_file_name,
+                    time.time(),
+                    node,
+                    upload_user,
+                ),
                 message_thread_id=node.topic_id,
             )
     elif message.voice:
@@ -466,11 +442,17 @@ async def _upload_signal_message(
             )
         else:
             await upload_user.send_voice(
-            upload_telegram_chat_id,
-            file_name,
-            caption=caption,
-            progress=update_upload_stat,
-            progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
+                upload_telegram_chat_id,
+                file_name,
+                caption=caption,
+                progress=update_upload_stat,
+                progress_args=(
+                    message.id,
+                    ui_file_name,
+                    time.time(),
+                    node,
+                    upload_user,
+                ),
                 message_thread_id=node.topic_id,
             )
     elif message.video_note:
@@ -482,22 +464,29 @@ async def _upload_signal_message(
             )
         else:
             await upload_user.send_video_note(
-            upload_telegram_chat_id,
-            file_name,
-            caption=caption,
-            progress=update_upload_stat,
-            progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
+                upload_telegram_chat_id,
+                file_name,
+                caption=caption,
+                progress=update_upload_stat,
+                progress_args=(
+                    message.id,
+                    ui_file_name,
+                    time.time(),
+                    node,
+                    upload_user,
+                ),
                 message_thread_id=node.topic_id,
             )
     elif message.text:
         if node.reply_to_message:
             await node.reply_to_message.reply(
-                message.text,
-                message_thread_id=node.topic_id
+                message.text, message_thread_id=node.topic_id
             )
         else:
             await upload_user.send_message(
-                upload_telegram_chat_id, message.text, message_thread_id=node.topic_id,
+                upload_telegram_chat_id,
+                message.text,
+                message_thread_id=node.topic_id,
             )
 
 
@@ -527,33 +516,15 @@ async def _upload_telegram_chat_message(
 
     caption = message.caption
     caption_entities = message.caption_entities
-    
+
     # Convert caption and caption_entities to markdown format
     if caption and caption_entities:
         caption = pyrogram.parser.Parser.unparse(caption, caption_entities, True)
-        
-
-    caption = replace_caption(
-        caption,
-        app.caption_replace_dict,
-        app.default_forward_caption,
-        app.caption_regex_replace_dict,
-        app.default_forward_additional_caption,
-    )
 
     max_caption_length = 4096 if client.me and client.me.is_premium else 1024
     # proc caption MEDIA_CAPTION_TOO_LONG
     if caption and len(caption) > max_caption_length:
         caption = caption[:max_caption_length]
-
-    # 将markdown格式的caption转为caption和caption_entities
-    # if caption:
-    #     #caption, caption_entities = (await client.parser.parse(caption, pyrogram.enums.ParseMode.HTML)).values()
-    #     caption, caption_entities = (
-    #         pyrogram.utils.parse_text_with_entities(
-    #             client, caption, users
-    #         )
-    #     ).values()
 
     if not message.media_group_id:
         if not node.has_protected_content:
@@ -562,35 +533,30 @@ async def _upload_telegram_chat_message(
                     await node.reply_to_message.reply(
                         message.text,
                         message_thread_id=node.topic_id,
-                        
                     )
                 elif message.photo:
                     await node.reply_to_message.reply_photo(
                         message.photo.file_id,
                         caption=caption,
                         message_thread_id=node.topic_id,
-                        
                     )
                 elif message.video:
                     await node.reply_to_message.reply_video(
                         message.video.file_id,
                         caption=caption,
                         message_thread_id=node.topic_id,
-                        
                     )
                 elif message.document:
                     await node.reply_to_message.reply_document(
                         message.document.file_id,
                         caption=caption,
                         message_thread_id=node.topic_id,
-                        
                     )
                 elif message.audio:
                     await node.reply_to_message.reply_audio(
                         message.audio.file_id,
                         caption=caption,
                         message_thread_id=node.topic_id,
-                        
                     )
             else:
                 # For other types of media, fallback to forward_messages
@@ -602,7 +568,6 @@ async def _upload_telegram_chat_message(
                     drop_author=True,
                     topic_id=node.topic_id,
                     caption=caption,
-                    
                 )
         else:
             await _upload_signal_message(
@@ -640,20 +605,10 @@ async def forward_multi_media(
         caption_entities = app.get_caption_entities(
             node.chat_id, message.media_group_id
         )
-        
-    
+
     # Convert caption and caption_entities to markdown format
     if caption and caption_entities:
         caption = pyrogram.parser.Parser.unparse(caption, caption_entities, True)
-        
-
-    caption = replace_caption(
-        caption,
-        app.caption_replace_dict,
-        app.default_forward_caption,
-        app.caption_regex_replace_dict,
-        app.default_forward_additional_caption,
-    )
 
     max_caption_length = 4096 if client.me and client.me.is_premium else 1024
     # proc caption MEDIA_CAPTION_TOO_LONG
@@ -776,7 +731,7 @@ async def proc_cache_forward(
         upload_telegram_chat_id,  # type: ignore
         multi_media,
         message_thread_id=message_thread_id,
-        reply_to_message_id = reply_to_message_id,
+        reply_to_message_id=reply_to_message_id,
         business_connection_id=business_connection_id,
     ):
         forward_status = ForwardStatus.FailedForward
@@ -1225,6 +1180,7 @@ async def update_upload_stat(
         node.upload_stat_dict[message_id] = upload_stat
 
 
+# pylint: enable=W0201
 class HookSession(pyrogram.session.Session):
     """Hook Session"""
 
@@ -1241,6 +1197,7 @@ class HookSession(pyrogram.session.Session):
         self.START_TIMEOUT = start_timeout
 
 
+# pylint: disable=all
 class HookClient(pyrogram.Client):
     """Hook Client"""
 
@@ -1321,10 +1278,10 @@ class HookClient(pyrogram.Client):
             return self
 
 
-# pylint: disable=R0914
+# pylint: disable=R0914,R0913
 async def forward_messages(
     client: pyrogram.Client,
-    chat_id: Union[int, str],
+    chat_id: Union[int, str, None],
     from_chat_id: Union[int, str],
     message_ids: Union[int, Iterable[int]],
     disable_notification: bool = None,

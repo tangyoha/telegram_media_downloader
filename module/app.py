@@ -411,10 +411,6 @@ class Application:
 
         self.forward_limit_call = LimitCall(max_limit_call_times=33)
 
-        self.caption_replace_dict: yaml.comments.CommentedMap = {}
-        self.default_forward_caption = None
-        self.caption_regex_replace_dict: yaml.comments.CommentedMap = {}
-        self.default_forward_additional_caption = None
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
@@ -562,31 +558,6 @@ class Application:
                 self.forward_limit_call.max_limit_call_times = forward_limit
             except ValueError:
                 pass
-
-        self.caption_replace_dict = get_config(
-            _config,
-            "caption_replace",
-            self.caption_replace_dict,
-            yaml.comments.CommentedMap,
-        )
-
-        self.default_forward_caption = get_config(
-            _config, "default_forward_caption", self.default_forward_caption, str
-        )
-
-        self.caption_regex_replace_dict = get_config(
-            _config,
-            "caption_replace_regex",
-            self.caption_regex_replace_dict,
-            yaml.comments.CommentedMap,
-        )
-
-        self.default_forward_additional_caption = get_config(
-            _config,
-            "default_forward_additional_caption",
-            self.default_forward_additional_caption,
-            str,
-        )
 
         if _config.get("chat"):
             chat = _config["chat"]
@@ -978,22 +949,27 @@ class Application:
             return None
 
         return str(self.caption_name_dict[chat_id][media_group_id])
-    
+
     def set_caption_entities(
         self, chat_id: Union[int, str], media_group_id: Optional[str], caption_entities
     ):
+        """
+        set caption entities map
+        """
         if not media_group_id:
             return
-        
+
         if chat_id in self.caption_entities_dict:
             self.caption_entities_dict[chat_id][media_group_id] = caption_entities
         else:
             self.caption_entities_dict[chat_id] = {media_group_id: caption_entities}
 
-    
     def get_caption_entities(
         self, chat_id: Union[int, str], media_group_id: Optional[str]
     ):
+        """
+        get caption entities map
+        """
         if (
             not media_group_id
             or chat_id not in self.caption_entities_dict
@@ -1002,7 +978,6 @@ class Application:
             return None
 
         return self.caption_entities_dict[chat_id][media_group_id]
-
 
     def set_download_id(
         self, node: TaskNode, message_id: int, download_status: DownloadStatus

@@ -754,7 +754,7 @@ async def get_forward_task_node(
     offset_id: int = 0,
     end_offset_id: int = 0,
     download_filter: str = None,
-    reply_comment: bool = False
+    reply_comment: bool = False,
 ):
     """Get task node"""
     limit: int = 0
@@ -836,7 +836,9 @@ async def get_forward_task_node(
     )
 
     if target_msg_id and reply_comment:
-        node.reply_to_message = await _bot.client.get_discussion_message(dst_chat_id, target_msg_id)
+        node.reply_to_message = await _bot.client.get_discussion_message(
+            dst_chat_id, target_msg_id
+        )
 
     _bot.add_task_node(node)
 
@@ -858,8 +860,13 @@ async def get_forward_task_node(
 
 
 # pylint: disable = R0914
-async def forward_message_impl(client: pyrogram.Client, message: pyrogram.types.Message, reply_comment: bool):
-    
+async def forward_message_impl(
+    client: pyrogram.Client, message: pyrogram.types.Message, reply_comment: bool
+):
+    """
+    Forward message
+    """
+
     async def report_error(client: pyrogram.Client, message: pyrogram.types.Message):
         """Report error"""
 
@@ -897,7 +904,7 @@ async def forward_message_impl(client: pyrogram.Client, message: pyrogram.types.
         offset_id,
         end_offset_id,
         download_filter,
-        reply_comment
+        reply_comment,
     )
 
     if not node:
@@ -946,6 +953,7 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
         None
     """
     return await forward_message_impl(client, message, False)
+
 
 async def forward_normal_content(
     client: pyrogram.Client, node: TaskNode, message: pyrogram.types.Message

@@ -235,7 +235,9 @@ async def _get_media_meta(
         if caption:
             caption = validate_title(caption)
             app.set_caption_name(chat_id, message.media_group_id, caption)
-            app.set_caption_entities(chat_id, message.media_group_id, message.caption_entities)
+            app.set_caption_entities(
+                chat_id, message.media_group_id, message.caption_entities
+            )
         else:
             caption = app.get_caption_name(chat_id, message.media_group_id)
 
@@ -570,7 +572,9 @@ async def download_chat_task(
         if caption:
             caption = validate_title(caption)
             app.set_caption_name(node.chat_id, message.media_group_id, caption)
-            app.set_caption_entities(node.chat_id, message.media_group_id, message.caption_entities)
+            app.set_caption_entities(
+                node.chat_id, message.media_group_id, message.caption_entities
+            )
         else:
             caption = app.get_caption_name(node.chat_id, message.media_group_id)
         set_meta_data(meta_data, message, caption)
