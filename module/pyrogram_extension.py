@@ -27,6 +27,7 @@ from pyrogram.mime_types import mime_types
 
 from module.app import (
     Application,
+    CloudDriveUploadStat,
     DownloadStatus,
     ForwardStatus,
     TaskNode,
@@ -85,7 +86,6 @@ def get_media_obj(
             width=message.video.width,
             height=message.video.height,
             duration=message.video.duration,
-            parse_mode=pyrogram.enums.ParseMode.HTML,
         )
 
     if media_type in [
@@ -257,7 +257,9 @@ async def upload_telegram_chat(
                 await proc_cache_forward(client, node, message, True)
             return
 
-        if download_status is DownloadStatus.SuccessDownload:
+        if download_status is DownloadStatus.SuccessDownload or (
+            download_status is DownloadStatus.SkipDownload and not message.media
+        ):
             try:
                 await upload_telegram_chat_message(
                     client,
@@ -316,14 +318,16 @@ async def upload_telegram_chat_message(
     return forward_status
 
 
+# pylint: disable=R0912
 async def _upload_signal_message(
     client: pyrogram.Client,
     upload_user: pyrogram.Client,
     app: Application,
     node: TaskNode,
-    upload_telegram_chat_id: Union[int, str],
+    upload_telegram_chat_id: Union[int, str, None],
     message: pyrogram.types.Message,
-    file_name: str,
+    file_name: Optional[str],
+    caption: Optional[str] = None,
 ):
     """
     Uploads a video or message to a Telegram chat.
@@ -348,15 +352,55 @@ async def _upload_signal_message(
         try:
             # TODO(tangyoha): add more log when upload video more than 2000MB failed
             # Send video to the destination chat
-            await upload_user.send_video(
-                chat_id=upload_telegram_chat_id,
-                video=file_name,
-                thumb=thumbnail_file,
-                width=message.video.width,
-                height=message.video.height,
-                duration=message.video.duration,
-                caption=message.caption or "",
-                parse_mode=pyrogram.enums.ParseMode.HTML,
+            if node.reply_to_message:
+                await node.reply_to_message.reply_video(
+                    file_name,
+                    caption=caption,
+                    message_thread_id=node.topic_id,
+                    thumb=thumbnail_file,
+                    width=message.video.width,
+                    height=message.video.height,
+                    duration=message.video.duration,
+                    parse_mode=pyrogram.enums.ParseMode.HTML,
+                )
+            else:
+                await upload_user.send_video(
+                    upload_telegram_chat_id,
+                    file_name,
+                    thumb=thumbnail_file,
+                    width=message.video.width,
+                    height=message.video.height,
+                    duration=message.video.duration,
+                    caption=caption,
+                    parse_mode=pyrogram.enums.ParseMode.HTML,
+                    progress=update_upload_stat,
+                    progress_args=(
+                        message.id,
+                        ui_file_name,
+                        time.time(),
+                        node,
+                        upload_user,
+                    ),
+                    message_thread_id=node.topic_id,
+                )
+        except Exception as e:
+            raise e
+        finally:
+            if thumbnail_file:
+                os.remove(str(thumbnail_file))
+
+    elif message.photo:
+        if node.reply_to_message:
+            await node.reply_to_message.reply_photo(
+                file_name,
+                caption=caption,
+                message_thread_id=node.topic_id,
+            )
+        else:
+            await upload_user.send_photo(
+                upload_telegram_chat_id,
+                file_name,
+                caption=caption,
                 progress=update_upload_stat,
                 progress_args=(
                     message.id,
@@ -365,47 +409,85 @@ async def _upload_signal_message(
                     node,
                     upload_user,
                 ),
+                message_thread_id=node.topic_id,
             )
-        except Exception as e:
-            raise e
-        finally:
-            if thumbnail_file:
-                os.remove(str(thumbnail_file))
-
-    elif message.photo:
-        await upload_user.send_photo(
-            upload_telegram_chat_id,
-            file_name,
-            caption=message.caption,
-            progress=update_upload_stat,
-            progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
-        )
     elif message.document:
-        await upload_user.send_document(
-            upload_telegram_chat_id,
-            file_name,
-            caption=message.caption,
-            progress=update_upload_stat,
-            progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
-        )
+        if node.reply_to_message:
+            await node.reply_to_message.reply_document(
+                file_name,
+                caption=caption,
+                message_thread_id=node.topic_id,
+            )
+        else:
+            await upload_user.send_document(
+                upload_telegram_chat_id,
+                file_name,
+                caption=caption,
+                progress=update_upload_stat,
+                progress_args=(
+                    message.id,
+                    ui_file_name,
+                    time.time(),
+                    node,
+                    upload_user,
+                ),
+                message_thread_id=node.topic_id,
+            )
     elif message.voice:
-        await upload_user.send_voice(
-            upload_telegram_chat_id,
-            file_name,
-            caption=message.caption,
-            progress=update_upload_stat,
-            progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
-        )
+        if node.reply_to_message:
+            await node.reply_to_message.reply_voice(
+                file_name,
+                caption=caption,
+                message_thread_id=node.topic_id,
+            )
+        else:
+            await upload_user.send_voice(
+                upload_telegram_chat_id,
+                file_name,
+                caption=caption,
+                progress=update_upload_stat,
+                progress_args=(
+                    message.id,
+                    ui_file_name,
+                    time.time(),
+                    node,
+                    upload_user,
+                ),
+                message_thread_id=node.topic_id,
+            )
     elif message.video_note:
-        await upload_user.send_video_note(
-            upload_telegram_chat_id,
-            file_name,
-            caption=message.caption,
-            progress=update_upload_stat,
-            progress_args=(message.id, ui_file_name, time.time(), node, upload_user),
-        )
+        if node.reply_to_message:
+            await node.reply_to_message.reply_video_note(
+                file_name,
+                caption=caption,
+                message_thread_id=node.topic_id,
+            )
+        else:
+            await upload_user.send_video_note(
+                upload_telegram_chat_id,
+                file_name,
+                caption=caption,
+                progress=update_upload_stat,
+                progress_args=(
+                    message.id,
+                    ui_file_name,
+                    time.time(),
+                    node,
+                    upload_user,
+                ),
+                message_thread_id=node.topic_id,
+            )
     elif message.text:
-        await upload_user.send_message(upload_telegram_chat_id, message.text)
+        if node.reply_to_message:
+            await node.reply_to_message.reply(
+                message.text, message_thread_id=node.topic_id
+            )
+        else:
+            await upload_user.send_message(
+                upload_telegram_chat_id,
+                message.text,
+                message_thread_id=node.topic_id,
+            )
 
 
 async def _upload_telegram_chat_message(
@@ -432,28 +514,77 @@ async def _upload_telegram_chat_message(
     """
     await app.forward_limit_call.wait(node)
 
+    caption = message.caption
+    caption_entities = message.caption_entities
+
+    # Convert caption and caption_entities to markdown format
+    if caption and caption_entities:
+        caption = pyrogram.parser.Parser.unparse(caption, caption_entities, True)
+
+    max_caption_length = 4096 if client.me and client.me.is_premium else 1024
+    # proc caption MEDIA_CAPTION_TOO_LONG
+    if caption and len(caption) > max_caption_length:
+        caption = caption[:max_caption_length]
+
     if not message.media_group_id:
-        if not file_name:
-            await forward_messages(
-                client,
-                node.upload_telegram_chat_id,  # type: ignore
-                node.chat_id,
-                message.id,
-                drop_author=True,
-            )
+        if not node.has_protected_content:
+            if node.reply_to_message:
+                if message.text:
+                    await node.reply_to_message.reply(
+                        message.text,
+                        message_thread_id=node.topic_id,
+                    )
+                elif message.photo:
+                    await node.reply_to_message.reply_photo(
+                        message.photo.file_id,
+                        caption=caption,
+                        message_thread_id=node.topic_id,
+                    )
+                elif message.video:
+                    await node.reply_to_message.reply_video(
+                        message.video.file_id,
+                        caption=caption,
+                        message_thread_id=node.topic_id,
+                    )
+                elif message.document:
+                    await node.reply_to_message.reply_document(
+                        message.document.file_id,
+                        caption=caption,
+                        message_thread_id=node.topic_id,
+                    )
+                elif message.audio:
+                    await node.reply_to_message.reply_audio(
+                        message.audio.file_id,
+                        caption=caption,
+                        message_thread_id=node.topic_id,
+                    )
+            else:
+                # For other types of media, fallback to forward_messages
+                await forward_messages(
+                    client,
+                    node.upload_telegram_chat_id,
+                    node.chat_id,
+                    message.id,
+                    drop_author=True,
+                    topic_id=node.topic_id,
+                    caption=caption,
+                )
         else:
             await _upload_signal_message(
                 client,
                 upload_user,
                 app,
                 node,
-                node.upload_telegram_chat_id,  # type: ignore
+                node.upload_telegram_chat_id,
                 message,
                 file_name,
+                caption,
             )
         return ForwardStatus.SuccessForward
 
-    return await forward_multi_media(client, upload_user, app, node, message, file_name)
+    return await forward_multi_media(
+        client, upload_user, app, node, message, caption, file_name
+    )
 
 
 # pylint: disable=R0912
@@ -463,12 +594,21 @@ async def forward_multi_media(
     app: Application,
     node: TaskNode,
     message: pyrogram.types.Message,
+    caption: str = None,
     file_name: str = None,
 ):
     """Forward multi media by cache"""
     caption = message.caption
+    caption_entities = message.caption_entities
     if not caption:
         caption = app.get_caption_name(node.chat_id, message.media_group_id)
+        caption_entities = app.get_caption_entities(
+            node.chat_id, message.media_group_id
+        )
+
+    # Convert caption and caption_entities to markdown format
+    if caption and caption_entities:
+        caption = pyrogram.parser.Parser.unparse(caption, caption_entities, True)
 
     max_caption_length = 4096 if client.me and client.me.is_premium else 1024
     # proc caption MEDIA_CAPTION_TOO_LONG
@@ -476,7 +616,7 @@ async def forward_multi_media(
         caption = caption[:max_caption_length]
 
     media_obj = get_media_obj(message, file_name, caption)
-    if not file_name:
+    if not node.has_protected_content:
         media = getattr(message, message.media.value)
         if not media:
             return ForwardStatus.SkipForward
@@ -575,8 +715,24 @@ async def proc_cache_forward(
             multi_media.append(node.media_group_ids[message.media_group_id][it])
 
     forward_status = ForwardStatus.SuccessForward
+
+    reply_to_message_id = None
+    message_thread_id = node.topic_id
+    business_connection_id = None
+    upload_telegram_chat_id = node.upload_telegram_chat_id
+    if node.reply_to_message:
+        if node.reply_to_message.chat.type != pyrogram.enums.ChatType.PRIVATE:
+            reply_to_message_id = node.reply_to_message.id
+        message_thread_id = node.reply_to_message.message_thread_id
+        business_connection_id = node.reply_to_message.business_connection_id
+        upload_telegram_chat_id = node.reply_to_message.chat.id
     if not await send_media_group_v2(
-        client, node.upload_telegram_chat_id, multi_media  # type: ignore
+        client,
+        upload_telegram_chat_id,  # type: ignore
+        multi_media,
+        message_thread_id=message_thread_id,
+        reply_to_message_id=reply_to_message_id,
+        business_connection_id=business_connection_id,
     ):
         forward_status = ForwardStatus.FailedForward
 
@@ -702,6 +858,21 @@ async def _report_bot_status(
                 f"└─ ✅ {_t('Success')}: {node.upload_success_count}\n"
             )
 
+        for idx, value in node.cloud_drive_upload_stat_dict.items():
+            if value.transferred == value.total:
+                continue
+
+            temp_file_name = truncate_filename(os.path.basename(value.file_name), 10)
+            upload_msg_detail_str += (
+                f" ├─ 🆔 {_t('Message ID')}: {idx}\n"
+                f" │   ├─ 📁 : {temp_file_name}\n"
+                f" │   ├─ 📏 : {value.total}\n"
+                f" │   ├─ ⏫ : {value.speed}\n"
+                f" │   └─ 📊 : ["
+                f'{create_progress_bar(int(value.percentage.split("%")[0]))}]'
+                f" ({value.percentage})%\n"
+            )
+
         download_result_str = ""
         download_result = get_download_result()
         if node.chat_id in download_result:
@@ -740,7 +911,7 @@ async def _report_bot_status(
                 f" ├─ 🆔 {_t('Message ID')}: {idx}\n"
                 f" │   ├─ 📁 : {temp_file_name}\n"
                 f" │   ├─ 📏 : {format_byte(value.total_size)}\n"
-                f" │   ├─ ⏫ : {format_byte(value.upload_size)}/s\n"
+                f" │   ├─ ⏫ : {format_byte(value.upload_speed)}/s\n"
                 f" │   └─ 📊 : [{create_progress_bar(progress)}]"
                 f" ({progress}%)\n"
             )
@@ -899,6 +1070,7 @@ def set_meta_data(
         message, "reply_to_message_id", 1
     )  # 1 for General
 
+    meta_data.message_thread_id = getattr(message, "message_thread_id", 1)
     # media
     for kind in meta_data.AVAILABLE_MEDIA:
         media_obj = getattr(message, kind, None)
@@ -923,9 +1095,45 @@ async def parse_link(client: pyrogram.Client, link_str: str):
     if link.comment_id:
         chat = await client.get_chat(link.group_id)
         if chat:
-            return chat.linked_chat.id, link.comment_id
+            return chat.linked_chat.id, link.comment_id, link.topic_id
 
-    return link.group_id, link.post_id
+    return link.group_id, link.post_id, link.topic_id
+
+
+async def update_cloud_upload_stat(
+    transferred: str,
+    total: str,
+    percentage: str,
+    speed: str,
+    eta: str,
+    node: TaskNode,
+    message_id: int,
+    file_name: str,
+):
+    """
+    Update the cloud upload statistics with the given information.
+
+    Args:
+        transferred (str): The amount of data transferred.
+        total (str): The total size of the file.
+        percentage (str): The percentage of the file uploaded.
+        speed (str): The upload speed.
+        eta (str): The estimated time of arrival for the upload to complete.
+        node (TaskNode): The task node associated with the upload.
+        message_id (int): The ID of the message.
+        file_name (str): The name of the file being uploaded.
+
+    Returns:
+        None
+    """
+    node.cloud_drive_upload_stat_dict[message_id] = CloudDriveUploadStat(
+        file_name=file_name,
+        transferred=transferred,
+        total=total,
+        percentage=percentage,
+        speed=speed,
+        eta=eta,
+    )
 
 
 async def update_upload_stat(
@@ -948,20 +1156,17 @@ async def update_upload_stat(
     if node.upload_stat_dict.get(message_id):
         upload_stat = node.upload_stat_dict[message_id]
 
-        upload_stat.each_second_total_upload += upload_size - upload_stat.upload_size
-
         if cur_time - upload_stat.last_stat_time >= 1.0:
             upload_stat.upload_speed = max(
                 int(
-                    upload_stat.each_second_total_upload
+                    (upload_size - upload_stat.upload_size)
                     / (cur_time - upload_stat.last_stat_time)
                 ),
                 0,
             )
             upload_stat.last_stat_time = cur_time
-            upload_stat.each_second_total_upload = 0
+            upload_stat.upload_size = upload_size
 
-        upload_stat.upload_size = upload_size
         node.upload_stat_dict[message_id] = upload_stat
     else:
         upload_stat = UploadProgressStat(
@@ -970,12 +1175,12 @@ async def update_upload_stat(
             upload_size=upload_size,
             start_time=start_time,
             last_stat_time=cur_time,
-            each_second_total_upload=upload_size,
             upload_speed=upload_size / (cur_time - start_time),
         )
         node.upload_stat_dict[message_id] = upload_stat
 
 
+# pylint: enable=W0201
 class HookSession(pyrogram.session.Session):
     """Hook Session"""
 
@@ -992,6 +1197,7 @@ class HookSession(pyrogram.session.Session):
         self.START_TIMEOUT = start_timeout
 
 
+# pylint: disable=all
 class HookClient(pyrogram.Client):
     """Hook Client"""
 
@@ -1072,15 +1278,19 @@ class HookClient(pyrogram.Client):
             return self
 
 
+# pylint: disable=R0914,R0913
 async def forward_messages(
     client: pyrogram.Client,
-    chat_id: Union[int, str],
+    chat_id: Union[int, str, None],
     from_chat_id: Union[int, str],
     message_ids: Union[int, Iterable[int]],
     disable_notification: bool = None,
     schedule_date: datetime = None,
     protect_content: bool = None,
     drop_author: bool = None,
+    topic_id: int = None,
+    caption: str = None,
+    caption_entities: List[pyrogram.types.MessageEntity] = None,
 ) -> Union["types.Message", List["types.Message"]]:
     """Forward messages of any kind."""
 
@@ -1097,6 +1307,8 @@ async def forward_messages(
             schedule_date=pyrogram.utils.datetime_to_timestamp(schedule_date),
             noforwards=protect_content,
             drop_author=drop_author,
+            top_msg_id=topic_id,
+            entities=caption_entities,
         )
     )
 
@@ -1118,5 +1330,10 @@ async def forward_messages(
                 # pylint: disable=W0212
                 await types.Message._parse(client, i.message, users, chats)
             )
+
+    if caption and not is_iterable and forwarded_messages:
+        await client.edit_message_caption(
+            chat_id, forwarded_messages[0].id, caption=caption
+        )
 
     return types.List(forwarded_messages) if is_iterable else forwarded_messages[0]

@@ -1,9 +1,9 @@
 #https://github.com/tangyoha/pyrogram/archive/refs/tags/v2.0.69.zip
-https://github.com/tangyoha/pyrogram/archive/refs/heads/patch.zip
+https://github.com/tangyoha/pyrogram/archive/refs/heads/beta.zip
 #https://github.com/tangyoha/pyrogram/archive/refs/heads/master_v2.0.69_1.zip
 PyYAML==5.3.1
 rich==12.5.1
-TgCrypto==1.2.5
+PyTgCrypto==1.2.6
 loguru==0.6.0
 # aligo==5.4.0
 Werkzeug==2.2.2

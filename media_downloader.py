@@ -24,6 +24,7 @@ from module.pyrogram_extension import (
     report_bot_download_status,
     set_max_concurrent_transmissions,
     set_meta_data,
+    update_cloud_upload_stat,
     upload_telegram_chat,
 )
 from module.web import init_web
@@ -31,7 +32,6 @@ from utils.format import truncate_filename, validate_title
 from utils.log import LogFilter
 from utils.meta import print_meta
 from utils.meta_data import MetaData
-from utils.updates import check_for_updates
 
 logging.basicConfig(
     level=logging.INFO,
@@ -234,6 +234,9 @@ async def _get_media_meta(
         if caption:
             caption = validate_title(caption)
             app.set_caption_name(chat_id, message.media_group_id, caption)
+            app.set_caption_entities(
+                chat_id, message.media_group_id, message.caption_entities
+            )
         else:
             caption = app.get_caption_name(chat_id, message.media_group_id)
 
@@ -326,7 +329,12 @@ async def download_task(
         not node.upload_telegram_chat_id
         and download_status is DownloadStatus.SuccessDownload
     ):
-        if await app.upload_file(file_name):
+        ui_file_name = file_name
+        if app.hide_file_name:
+            ui_file_name = f"****{os.path.splitext(file_name)[-1]}"
+        if await app.upload_file(
+            file_name, update_cloud_upload_stat, (node, message.id, ui_file_name)
+        ):
             node.upload_success_count += 1
 
     await report_bot_download_status(
@@ -563,6 +571,9 @@ async def download_chat_task(
         if caption:
             caption = validate_title(caption)
             app.set_caption_name(node.chat_id, message.media_group_id, caption)
+            app.set_caption_entities(
+                node.chat_id, message.media_group_id, message.caption_entities
+            )
         else:
             caption = app.get_caption_name(node.chat_id, message.media_group_id)
         set_meta_data(meta_data, message, caption)
@@ -574,14 +585,15 @@ async def download_chat_task(
             await add_download_task(message, node)
         else:
             node.download_status[message.id] = DownloadStatus.SkipDownload
-            await upload_telegram_chat(
-                client,
-                node.upload_user,
-                app,
-                node,
-                message,
-                DownloadStatus.SkipDownload,
-            )
+            if message.media_group_id:
+                await upload_telegram_chat(
+                    client,
+                    node.upload_user,
+                    app,
+                    node,
+                    message,
+                    DownloadStatus.SkipDownload,
+                )
 
     chat_download_config.need_check = True
     chat_download_config.total_task = node.total_task
@@ -676,7 +688,7 @@ def main():
         for task in tasks:
             task.cancel()
         logger.info(_t("Stopped!"))
-        check_for_updates(app.proxy)
+        # check_for_updates(app.proxy)
         logger.info(f"{_t('update config')}......")
         app.update_config()
         logger.success(

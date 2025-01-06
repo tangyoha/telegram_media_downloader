@@ -38,7 +38,6 @@ from module.pyrogram_extension import (
 )
 from utils.format import replace_date_time, validate_title
 from utils.meta_data import MetaData
-from utils.updates import get_latest_release
 
 # pylint: disable = C0301, R0902
 
@@ -304,6 +303,14 @@ class DownloadBot:
 
         self.reply_task = _bot.app.loop.create_task(_bot.update_reply_message())
 
+        self.bot.add_handler(
+            MessageHandler(
+                forward_to_comments,
+                filters=pyrogram.filters.command(["forward_to_comments"])
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+
 
 _bot = DownloadBot()
 
@@ -358,14 +365,17 @@ async def send_help_str(client: pyrogram.Client, chat_id):
             ]
         ]
     )
+    latest_release_str = ""
+    # try:
+    #     latest_release = get_latest_release(_bot.app.proxy)
 
-    latest_release = get_latest_release(_bot.app.proxy)
-
-    latest_release_str = (
-        f"{_t('New Version')}: [{latest_release['name']}]({latest_release['html_url']})\n"
-        if latest_release
-        else ""
-    )
+    #     latest_release_str = (
+    #         f"{_t('New Version')}: [{latest_release['name']}]({latest_release['html_url']})\an"
+    #         if latest_release
+    #         else ""
+    #     )
+    # except Exception:
+    #     latest_release_str = ""
 
     msg = (
         f"`\n🤖 {_t('Telegram Media Downloader')}\n"
@@ -374,10 +384,10 @@ async def send_help_str(client: pyrogram.Client, chat_id):
         f"{_t('Available commands:')}\n"
         f"/help - {_t('Show available commands')}\n"
         f"/get_info - {_t('Get group and user info from message link')}\n"
-        # f"/add_filter - {_t('Add download filter')}\n"
         f"/download - {_t('Download messages')}\n"
         f"/forward - {_t('Forward messages')}\n"
         f"/listen_forward - {_t('Listen for forwarded messages')}\n"
+        f"/forward_to_comments - {_t('Forward a specific media to a comment section')}\n"
         f"/set_language - {_t('Set language')}\n"
         f"/stop - {_t('Stop bot download or forward')}\n\n"
         f"{_t('**Note**: 1 means the start of the entire chat')},"
@@ -452,7 +462,7 @@ async def get_info(client: pyrogram.Client, message: pyrogram.types.Message):
         )
         return
 
-    chat_id, message_id = await parse_link(_bot.client, args[1])
+    chat_id, message_id, _ = await parse_link(_bot.client, args[1])
 
     entity = None
     if chat_id:
@@ -608,7 +618,7 @@ async def download_from_link(client: pyrogram.Client, message: pyrogram.types.Me
             message.from_user.id, msg, parse_mode=pyrogram.enums.ParseMode.HTML
         )
 
-    chat_id, message_id = await parse_link(_bot.client, text[0])
+    chat_id, message_id, _ = await parse_link(_bot.client, text[0])
 
     entity = None
     if chat_id:
@@ -686,7 +696,7 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
             )
             return
     try:
-        chat_id, _ = await parse_link(_bot.client, url)
+        chat_id, _, _ = await parse_link(_bot.client, url)
         if chat_id:
             entity = await _bot.client.get_chat(chat_id)
         if entity:
@@ -735,6 +745,7 @@ async def get_forward_task_node(
     offset_id: int = 0,
     end_offset_id: int = 0,
     download_filter: str = None,
+    reply_comment: bool = False,
 ):
     """Get task node"""
     limit: int = 0
@@ -750,13 +761,14 @@ async def get_forward_task_node(
 
         limit = end_offset_id - offset_id + 1
 
-    src_chat_id, _ = await parse_link(_bot.client, src_chat_link)
-    dst_chat_id, _ = await parse_link(_bot.client, dst_chat_link)
+    src_chat_id, _, _ = await parse_link(_bot.client, src_chat_link)
+    dst_chat_id, target_msg_id, topic_id = await parse_link(_bot.client, dst_chat_link)
 
     if not src_chat_id or not dst_chat_id:
+        logger.info(f"{src_chat_id} {dst_chat_id}")
         await client.send_message(
             message.from_user.id,
-            _t("Invalid chat link"),
+            _t("Invalid chat link") + f"{src_chat_id} {dst_chat_id}",
             reply_to_message_id=message.id,
         )
         return None
@@ -770,6 +782,7 @@ async def get_forward_task_node(
             f"{_t('Invalid chat link')} {e}",
             reply_to_message_id=message.id,
         )
+        logger.exception(f"get chat error: {e}")
         return None
 
     me = await client.get_me()
@@ -810,7 +823,14 @@ async def get_forward_task_node(
         bot=_bot.bot,
         task_id=_bot.gen_task_id(),
         task_type=task_type,
+        topic_id=topic_id,
     )
+
+    if target_msg_id and reply_comment:
+        node.reply_to_message = await _bot.client.get_discussion_message(
+            dst_chat_id, target_msg_id
+        )
+
     _bot.add_task_node(node)
 
     node.upload_user = _bot.client
@@ -831,18 +851,11 @@ async def get_forward_task_node(
 
 
 # pylint: disable = R0914
-
-
-async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Message):
+async def forward_message_impl(
+    client: pyrogram.Client, message: pyrogram.types.Message, reply_comment: bool
+):
     """
-    Forwards messages from one chat to another.
-
-    Parameters:
-        client (pyrogram.Client): The pyrogram client.
-        message (pyrogram.types.Message): The message containing the command.
-
-    Returns:
-        None
+    Forward message
     """
 
     async def report_error(client: pyrogram.Client, message: pyrogram.types.Message):
@@ -882,6 +895,7 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
         offset_id,
         end_offset_id,
         download_filter,
+        reply_comment,
     )
 
     if not node:
@@ -916,6 +930,20 @@ async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Mess
             node.stop_transmission()
     else:
         await forward_msg(node, offset_id)
+
+
+async def forward_messages(client: pyrogram.Client, message: pyrogram.types.Message):
+    """
+    Forwards messages from one chat to another.
+
+    Parameters:
+        client (pyrogram.Client): The pyrogram client.
+        message (pyrogram.types.Message): The message containing the command.
+
+    Returns:
+        None
+    """
+    return await forward_message_impl(client, message, False)
 
 
 async def forward_normal_content(
@@ -1125,3 +1153,16 @@ async def on_query_handler(
         queryHandler = QueryHandlerStr.get_str(it.value)
         if queryHandler in query.data:
             await stop_task(client, query, queryHandler, TaskType(it.value))
+
+
+async def forward_to_comments(client: pyrogram.Client, message: pyrogram.types.Message):
+    """
+    Forwards specified media to a designated comment section.
+
+    Usage: /forward_to_comments <source_chat_link> <destination_chat_link> <msg_start_id> <msg_end_id>
+
+    Parameters:
+        client (pyrogram.Client): The pyrogram client.
+        message (pyrogram.types.Message): The message containing the command.
+    """
+    return await forward_message_impl(client, message, True)

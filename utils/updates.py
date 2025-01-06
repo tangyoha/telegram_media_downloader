@@ -68,10 +68,13 @@ def check_for_updates(proxy_config: dict = None):
     """
     console = Console()
     latest_release = get_latest_release(proxy_config)
-    if latest_release:
-        update_message: str = (
-            f"## New version of Telegram-Media-Downloader is available - {latest_release['name']}\n"
-            f"You are using an outdated version v{__version__} please pull in the changes using `git pull` or download the latest release.\n\n"
-            f"Find more details about the latest release here - {latest_release['html_url']}"
-        )
-        console.print(Markdown(update_message))
+    try:
+        if latest_release:
+            update_message: str = (
+                f"## New version of Telegram-Media-Downloader is available - {latest_release['name']}\n"
+                f"You are using an outdated version v{__version__} please pull in the changes using `git pull` or download the latest release.\n\n"
+                f"Find more details about the latest release here - {latest_release['html_url']}"
+            )
+            console.print(Markdown(update_message))
+    except Exception as e:
+        logger.warning(f"{e}")

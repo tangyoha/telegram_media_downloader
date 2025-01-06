@@ -60,6 +60,7 @@ class MetaData:
         sender_id: int = None,
         sender_name: str = None,
         reply_to_message_id: int = None,
+        message_thread_id: int = None,
     ):
         self.message_date = message_date
         self.message_id = message_id
@@ -74,6 +75,7 @@ class MetaData:
         self.sender_id = sender_id
         self.sender_name = sender_name
         self.reply_to_message_id = reply_to_message_id
+        self.message_thread_id = message_thread_id
 
     def data(self) -> dict:
         """Meta map"""
@@ -95,4 +97,26 @@ class MetaData:
             "sender_id": self.sender_id,
             "sender_name": self.sender_name,
             "reply_to_message_id": self.reply_to_message_id,
+            "message_thread_id": self.message_thread_id,
+            "topic_id": self.message_thread_id,
+        }
+
+    def export(self) -> dict:
+        """Export meta data"""
+        return {
+            "message_date": self.message_date,
+            "message_id": self.message_id,
+            "message_caption": self.message_caption,
+            "media_file_size": self.media_file_size,
+            "media_width": self.media_width,
+            "media_height": self.media_height,
+            "media_file_name": self.media_file_name,
+            "media_duration": self.media_duration,
+            "media_type": self.media_type,
+            "file_extension": self.file_extension,
+            "sender_id": self.sender_id,
+            "sender_name": self.sender_name,
+            "reply_to_message_id": self.reply_to_message_id,
+            "message_thread_id": self.message_thread_id,
+            "topic_id": self.message_thread_id,
         }
