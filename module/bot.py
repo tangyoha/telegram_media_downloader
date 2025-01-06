@@ -371,7 +371,7 @@ async def send_help_str(client: pyrogram.Client, chat_id):
     #     latest_release = get_latest_release(_bot.app.proxy)
 
     #     latest_release_str = (
-    #         f"{_t('New Version')}: [{latest_release['name']}]({latest_release['html_url']})\n"
+    #         f"{_t('New Version')}: [{latest_release['name']}]({latest_release['html_url']})\an"
     #         if latest_release
     #         else ""
     #     )
