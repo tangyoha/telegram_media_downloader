@@ -366,7 +366,7 @@ async def send_help_str(client: pyrogram.Client, chat_id):
             ]
         ]
     )
-    latest_release_str=""
+    latest_release_str = ""
     # try:
     #     latest_release = get_latest_release(_bot.app.proxy)
 
@@ -1154,6 +1154,7 @@ async def on_query_handler(
         queryHandler = QueryHandlerStr.get_str(it.value)
         if queryHandler in query.data:
             await stop_task(client, query, queryHandler, TaskType(it.value))
+
 
 async def forward_to_comments(client: pyrogram.Client, message: pyrogram.types.Message):
     """
