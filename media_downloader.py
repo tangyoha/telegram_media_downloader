@@ -49,10 +49,10 @@ app = Application(CONFIG_NAME, DATA_FILE_NAME, APPLICATION_NAME)
 queue: asyncio.Queue = asyncio.Queue()
 RETRY_TIME_OUT = 3
 
-#logging.getLogger("pyrogram.session.session").addFilter(LogFilter())
-#logging.getLogger("pyrogram.client").addFilter(LogFilter())
+logging.getLogger("pyrogram.session.session").addFilter(LogFilter())
+logging.getLogger("pyrogram.client").addFilter(LogFilter())
 
-#logging.getLogger("pyrogram").setLevel(logging.WARNING)
+logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
 
 def _check_download_finish(media_size: int, download_path: str, ui_file_name: str):
