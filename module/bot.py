@@ -366,16 +366,17 @@ async def send_help_str(client: pyrogram.Client, chat_id):
             ]
         ]
     )
-    try:
-        latest_release = get_latest_release(_bot.app.proxy)
+    latest_release_str=""
+    # try:
+    #     latest_release = get_latest_release(_bot.app.proxy)
 
-        latest_release_str = (
-            f"{_t('New Version')}: [{latest_release['name']}]({latest_release['html_url']})\n"
-            if latest_release
-            else ""
-        )
-    except Exception:
-        latest_release_str = ""
+    #     latest_release_str = (
+    #         f"{_t('New Version')}: [{latest_release['name']}]({latest_release['html_url']})\n"
+    #         if latest_release
+    #         else ""
+    #     )
+    # except Exception:
+    #     latest_release_str = ""
 
     msg = (
         f"`\n🤖 {_t('Telegram Media Downloader')}\n"
