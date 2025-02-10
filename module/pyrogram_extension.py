@@ -337,7 +337,7 @@ async def _upload_signal_message(
         upload_telegram_chat_id (Union[int, str]): The ID of the chat to upload to.
         message (pyrogram.types.Message): The message to upload.
         file_name (str): The name of the file to upload.
-    """ 
+    """
     ui_file_name = file_name
     if file_name:
         ui_file_name = (
@@ -525,12 +525,12 @@ async def _upload_telegram_chat_message(
     # proc caption MEDIA_CAPTION_TOO_LONG
     if caption and len(caption) > max_caption_length:
         caption = caption[:max_caption_length]
-        
+
     if message.caption:
         app.set_caption_name(node.chat_id, message.media_group_id, message.caption)
         app.set_caption_entities(
-                node.chat_id, message.media_group_id, message.caption_entities
-            )
+            node.chat_id, message.media_group_id, message.caption_entities
+        )
 
     if not message.media_group_id:
         if not node.has_protected_content:
@@ -573,7 +573,7 @@ async def _upload_telegram_chat_message(
                     message.id,
                     drop_author=True,
                     topic_id=node.topic_id,
-                    #caption=caption if caption != message.caption else None,
+                    # caption=caption if caption != message.caption else None,
                 )
         else:
             await _upload_signal_message(
@@ -695,7 +695,7 @@ async def proc_cache_forward(
     node: TaskNode,
     message: pyrogram.types.Message,
     check_download_status: bool,
-    app: Application
+    app: Application,
 ):
     """Process other cache forward"""
     multi_media: List[pyrogram.raw.types.InputSingleMedia] = []
@@ -712,14 +712,16 @@ async def proc_cache_forward(
             upload_status = node.upload_status.get(key, UploadStatus.Uploading)
 
             # Skip if download is not needed or failed
-            if node.skip_msg_id(key) or download_status in {DownloadStatus.SkipDownload, DownloadStatus.FailedDownload}:
+            if node.skip_msg_id(key) or download_status in {
+                DownloadStatus.SkipDownload,
+                DownloadStatus.FailedDownload,
+            }:
                 continue
 
             # Return if any media is still downloading or uploading
             if (
-                (check_download_status and download_status == DownloadStatus.Downloading) or
-                upload_status == UploadStatus.Uploading
-            ):
+                check_download_status and download_status == DownloadStatus.Downloading
+            ) or upload_status == UploadStatus.Uploading:
                 return ForwardStatus.CacheForward
 
             # Collect the media items that are valid for forwarding
@@ -731,9 +733,13 @@ async def proc_cache_forward(
         # If we have multiple media, adjust the caption of the first item
         if len(multi_media) > 1 and not multi_media[0].message:
             caption = app.get_caption_name(node.chat_id, message.media_group_id)
-            caption_entities = app.get_caption_entities(node.chat_id, message.media_group_id)
+            caption_entities = app.get_caption_entities(
+                node.chat_id, message.media_group_id
+            )
 
-            multi_media[0].message, multi_media[0].entities = (await utils.parse_text_entities(client, caption, None, caption_entities)).values()
+            multi_media[0].message, multi_media[0].entities = (
+                await utils.parse_text_entities(client, caption, None, caption_entities)
+            ).values()
 
         node.media_group_ids.pop(message.media_group_id)
 

@@ -3,6 +3,7 @@
 import asyncio
 import os
 import time
+from asyncio import Lock
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,7 +12,6 @@ from typing import Callable, List, Optional, Union
 
 from loguru import logger
 from ruamel import yaml
-from asyncio import Lock
 
 from module.cloud_drive import CloudDrive, CloudDriveConfig
 from module.filter import Filter
@@ -824,13 +824,16 @@ class Application:
             unfinished_ids = set(value.ids_to_retry)
 
             for it in value.ids_to_retry:
-                if  value.node.download_status.get(
+                if value.node.download_status.get(
                     it, DownloadStatus.FailedDownload
                 ) in [DownloadStatus.SuccessDownload, DownloadStatus.SkipDownload]:
                     unfinished_ids.remove(it)
 
             for _idx, _value in value.node.download_status.items():
-                if DownloadStatus.SuccessDownload != _value and DownloadStatus.SkipDownload != _value:
+                if _value not in (
+                    DownloadStatus.SuccessDownload,
+                    DownloadStatus.SkipDownload,
+                ):
                     unfinished_ids.add(_idx)
 
             self.chat_download_config[key].ids_to_retry = list(unfinished_ids)
