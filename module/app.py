@@ -11,6 +11,7 @@ from typing import Callable, List, Optional, Union
 
 from loguru import logger
 from ruamel import yaml
+from asyncio import Lock
 
 from module.cloud_drive import CloudDrive, CloudDriveConfig
 from module.filter import Filter
@@ -167,6 +168,7 @@ class TaskNode:
         self.upload_success_count: int = 0
         self.is_stop_transmission = False
         self.media_group_ids: dict = {}
+        self.media_group_ids_lock: Lock = Lock()
         self.download_status: dict = {}
         self.upload_status: dict = {}
         self.upload_stat_dict: dict = {}

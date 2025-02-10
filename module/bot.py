@@ -965,7 +965,7 @@ async def forward_normal_content(
             forward_ret = ForwardStatus.SkipForward
             if message.media_group_id:
                 node.upload_status[message.id] = UploadStatus.SkipUpload
-                await proc_cache_forward(_bot.client, node, message, False)
+                await proc_cache_forward(_bot.client, node, message, False, _bot.app)
             await report_bot_forward_status(client, node, forward_ret)
             return
 
@@ -1025,7 +1025,7 @@ async def set_listen_forward_msg(
         return
 
     if node.chat_id in _bot.listen_forward_chat:
-        _bot.remove_task_node(_bot.listen_forward_chat[node.chat_id].task_id)
+        _bot.stop_task(_bot.listen_forward_chat[node.chat_id].task_id)
 
     node.is_running = True
     _bot.listen_forward_chat[node.chat_id] = node
@@ -1043,6 +1043,8 @@ async def listen_forward_msg(client: pyrogram.Client, message: pyrogram.types.Me
 
     if message.chat and message.chat.id in _bot.listen_forward_chat:
         node = _bot.listen_forward_chat[message.chat.id]
+        if node.is_stop_transmission:
+            return
 
         # TODO(tangyoha):fix run time change protected content
         if not node.has_protected_content:

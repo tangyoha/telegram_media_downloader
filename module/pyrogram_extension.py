@@ -13,7 +13,7 @@ from typing import Callable, Iterable, List, Optional, Union
 
 import pyrogram
 from loguru import logger
-from pyrogram import types
+from pyrogram import types, utils
 from pyrogram.client import Cache
 from pyrogram.file_id import (
     FILE_REFERENCE_FLAG,
@@ -254,7 +254,7 @@ async def upload_telegram_chat(
     if node.upload_telegram_chat_id:
         if download_status is DownloadStatus.SkipDownload and message.media:
             if message.media_group_id:
-                await proc_cache_forward(client, node, message, True)
+                await proc_cache_forward(client, node, message, True, app)
             return
 
         if download_status is DownloadStatus.SuccessDownload or (
@@ -337,7 +337,7 @@ async def _upload_signal_message(
         upload_telegram_chat_id (Union[int, str]): The ID of the chat to upload to.
         message (pyrogram.types.Message): The message to upload.
         file_name (str): The name of the file to upload.
-    """
+    """ 
     ui_file_name = file_name
     if file_name:
         ui_file_name = (
@@ -525,6 +525,12 @@ async def _upload_telegram_chat_message(
     # proc caption MEDIA_CAPTION_TOO_LONG
     if caption and len(caption) > max_caption_length:
         caption = caption[:max_caption_length]
+        
+    if message.caption:
+        app.set_caption_name(node.chat_id, message.media_group_id, message.caption)
+        app.set_caption_entities(
+                node.chat_id, message.media_group_id, message.caption_entities
+            )
 
     if not message.media_group_id:
         if not node.has_protected_content:
@@ -567,7 +573,7 @@ async def _upload_telegram_chat_message(
                     message.id,
                     drop_author=True,
                     topic_id=node.topic_id,
-                    caption=caption,
+                    #caption=caption if caption != message.caption else None,
                 )
         else:
             await _upload_signal_message(
@@ -622,20 +628,21 @@ async def forward_multi_media(
             return ForwardStatus.SkipForward
         media_obj.media = media.file_id if media else ""
 
-    if not node.media_group_ids.get(message.media_group_id):
-        node.media_group_ids[message.media_group_id] = {}
+    async with node.media_group_ids_lock:
+        if not node.media_group_ids.get(message.media_group_id):
+            node.media_group_ids[message.media_group_id] = {}
 
-    if not node.media_group_ids[message.media_group_id]:
-        media_group = await get_media_group_with_retry(
-            client, node.chat_id, message.id, 5
-        )
-        if not media_group:
-            logger.error("Get Media Group Error! message id: {}", message.id)
-            return ForwardStatus.FailedForward
+        if not node.media_group_ids[message.media_group_id]:
+            media_group = await get_media_group_with_retry(
+                client, node.chat_id, message.id, 5
+            )
+            if not media_group:
+                logger.error("Get Media Group Error! message id: {}", message.id)
+                return ForwardStatus.FailedForward
 
-        for it in media_group:
-            node.media_group_ids[message.media_group_id][it.id] = None
-            node.upload_status[message.id] = None
+            for it in media_group:
+                node.media_group_ids[message.media_group_id][it.id] = None
+                node.upload_status[message.id] = None
 
     if not node.media_group_ids[message.media_group_id][message.id]:
         node.upload_status[message.id] = UploadStatus.Uploading
@@ -676,10 +683,11 @@ async def forward_multi_media(
         if node.upload_status[message.id] == UploadStatus.FailedUpload:
             return ForwardStatus.FailedForward
 
-        node.media_group_ids[message.media_group_id][message.id] = _media
-        node.upload_status[message.id] = UploadStatus.SuccessUpload
+        async with node.media_group_ids_lock:
+            node.media_group_ids[message.media_group_id][message.id] = _media
+            node.upload_status[message.id] = UploadStatus.SuccessUpload
 
-    return await proc_cache_forward(client, node, message, bool(file_name))
+    return await proc_cache_forward(client, node, message, bool(file_name), app)
 
 
 async def proc_cache_forward(
@@ -687,32 +695,47 @@ async def proc_cache_forward(
     node: TaskNode,
     message: pyrogram.types.Message,
     check_download_status: bool,
+    app: Application
 ):
-    """proc other cache forward"""
-    if not node.media_group_ids:
-        return
-    for key in node.media_group_ids[message.media_group_id].keys():
-        download_status = node.download_status.get(key, DownloadStatus.Downloading)
-        if (
-            node.skip_msg_id(key)
-            or download_status is DownloadStatus.SkipDownload
-            or download_status is DownloadStatus.FailedDownload
-        ):
-            continue
-        if (
-            check_download_status and DownloadStatus.Downloading == download_status
-        ) or UploadStatus.Uploading == node.upload_status.get(
-            key, UploadStatus.Uploading
-        ):
-            return ForwardStatus.CacheForward
-
+    """Process other cache forward"""
     multi_media: List[pyrogram.raw.types.InputSingleMedia] = []
 
-    for it in node.media_group_ids[message.media_group_id]:
-        if node.media_group_ids[message.media_group_id][it]:
-            if multi_media:
-                node.media_group_ids[message.media_group_id][it].message = ""
-            multi_media.append(node.media_group_ids[message.media_group_id][it])
+    async with node.media_group_ids_lock:
+        # Check if the message's media group is valid
+        media_group = node.media_group_ids.get(message.media_group_id)
+        if not media_group:
+            return
+
+        # Check if all items are in a valid state for forwarding
+        for key, media_item in media_group.items():
+            download_status = node.download_status.get(key, DownloadStatus.Downloading)
+            upload_status = node.upload_status.get(key, UploadStatus.Uploading)
+
+            # Skip if download is not needed or failed
+            if node.skip_msg_id(key) or download_status in {DownloadStatus.SkipDownload, DownloadStatus.FailedDownload}:
+                continue
+
+            # Return if any media is still downloading or uploading
+            if (
+                (check_download_status and download_status == DownloadStatus.Downloading) or
+                upload_status == UploadStatus.Uploading
+            ):
+                return ForwardStatus.CacheForward
+
+            # Collect the media items that are valid for forwarding
+            if media_item:
+                if multi_media:
+                    media_item.message = ""
+                multi_media.append(media_item)
+
+        # If we have multiple media, adjust the caption of the first item
+        if len(multi_media) > 1 and not multi_media[0].message:
+            caption = app.get_caption_name(node.chat_id, message.media_group_id)
+            caption_entities = app.get_caption_entities(node.chat_id, message.media_group_id)
+
+            multi_media[0].message, multi_media[0].entities = (await utils.parse_text_entities(client, caption, None, caption_entities)).values()
+
+        node.media_group_ids.pop(message.media_group_id)
 
     forward_status = ForwardStatus.SuccessForward
 
@@ -738,7 +761,6 @@ async def proc_cache_forward(
 
     node.stat_forward(forward_status, len(multi_media))
 
-    node.media_group_ids.pop(message.media_group_id)
     return ForwardStatus.CacheForward
 
 
@@ -1169,13 +1191,14 @@ async def update_upload_stat(
 
         node.upload_stat_dict[message_id] = upload_stat
     else:
+        duration = cur_time - start_time
         upload_stat = UploadProgressStat(
             file_name=file_name,
             total_size=total_size,
             upload_size=upload_size,
             start_time=start_time,
             last_stat_time=cur_time,
-            upload_speed=upload_size / (cur_time - start_time),
+            upload_speed=upload_size / (duration if duration > 0 else 1),
         )
         node.upload_stat_dict[message_id] = upload_stat
 
@@ -1308,7 +1331,6 @@ async def forward_messages(
             noforwards=protect_content,
             drop_author=drop_author,
             top_msg_id=topic_id,
-            entities=caption_entities,
         )
     )
 
