@@ -3,7 +3,7 @@ import logging
 import os
 import re
 from datetime import datetime
-from typing import Callable, List, Union
+from typing import Callable, List, Optional, Union
 
 import pyrogram
 from pyrogram import raw, types, utils
@@ -372,40 +372,58 @@ async def cache_media(
     return raw.types.InputSingleMedia(
         media=media,
         random_id=client.rnd_id(),
-        **await utils.parse_text_entities(
-            client, media_obj.caption, media_obj.parse_mode, media_obj.caption_entities
+        **await client.parser.parse(
+            media_obj.caption
+            if media_obj.caption and media_obj.caption != "None"
+            else ""
         ),
     )
 
 
+# pylint: disable = R0913
 async def send_media_group_v2(
     client: pyrogram.Client,
     chat_id: Union[int, str],
     multi_media: List[raw.types.InputSingleMedia],
     disable_notification: bool = None,
     schedule_date: datetime = None,
-    protect_content: bool = None,
+    quote_text: str = None,
+    parse_mode: Optional["pyrogram.enums.ParseMode"] = None,
     message_thread_id: int = None,
     reply_to_message_id: int = None,
-    business_connection_id: int = None,
+    reply_to_chat_id: Union[int, str] = None,
+    reply_to_story_id: int = None,
+    quote_entities: List["types.MessageEntity"] = None,
+    quote_offset: int = None,
+    show_above_text: bool = None,
 ):
     """
     see pyrogram
     """
+    quote_text, quote_entities = (
+        await utils.parse_text_entities(client, quote_text, parse_mode, quote_entities)
+    ).values()
+
     r = await client.invoke(
         raw.functions.messages.SendMultiMedia(
             peer=await client.resolve_peer(chat_id),
             multi_media=multi_media,
             silent=disable_notification or None,
-            schedule_date=utils.datetime_to_timestamp(schedule_date),
-            noforwards=protect_content,
             reply_to=utils.get_reply_to(
-                message_thread_id=message_thread_id,
                 reply_to_message_id=reply_to_message_id,
+                message_thread_id=message_thread_id,
+                reply_to_peer=await client.resolve_peer(reply_to_chat_id)
+                if reply_to_chat_id
+                else None,
+                reply_to_story_id=reply_to_story_id,
+                quote_text=quote_text,
+                quote_entities=quote_entities,
+                quote_offset=quote_offset,
             ),
+            schedule_date=utils.datetime_to_timestamp(schedule_date),
+            invert_media=show_above_text,
         ),
         sleep_threshold=60,
-        business_connection_id=business_connection_id,
     )
 
     return await utils.parse_messages(

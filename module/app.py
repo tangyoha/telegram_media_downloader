@@ -410,7 +410,13 @@ class Application:
         self.date_format: str = "%Y_%m"
         self.drop_no_audio_video: bool = False
         self.enable_download_txt: bool = False
-
+        self.filter_advertisement_list: yaml.comments.CommentedSeq = (
+            yaml.comments.CommentedSeq([])
+        )
+        self.replace_advertisement_list: yaml.comments.CommentedSeq = (
+            yaml.comments.CommentedSeq([])
+        )
+        self.group_add_advertisement: dict = {}
         self.forward_limit_call = LimitCall(max_limit_call_times=33)
 
         self.loop = asyncio.new_event_loop()
@@ -546,6 +552,22 @@ class Application:
             _config, "enable_download_txt", self.enable_download_txt, bool
         )
 
+        self.filter_advertisement_list = get_config(
+            _config,
+            "filter_advertisement_list",
+            self.filter_advertisement_list,
+            yaml.comments.CommentedSeq,
+        )
+
+        self.replace_advertisement_list = get_config(
+            _config,
+            "replace_advertisement_list",
+            self.replace_advertisement_list,
+            yaml.comments.CommentedSeq,
+        )
+
+        if _config.get("group_add_advertisement"):
+            self.group_add_advertisement = _config["group_add_advertisement"]
         try:
             date = datetime(2023, 10, 31)
             date.strftime(self.date_format)
@@ -870,6 +892,9 @@ class Application:
         #    self.already_download_ids_set.add(it)
 
         # self.app_data["already_download_ids"] = list(self.already_download_ids_set)
+        self.config["filter_advertisement_list"] = self.filter_advertisement_list
+        self.config["replace_advertisement_list"] = self.replace_advertisement_list
+        self.config["group_add_advertisement"] = self.group_add_advertisement
 
         if immediate:
             with open(self.config_file, "w", encoding="utf-8") as yaml_file:
@@ -910,6 +935,19 @@ class Application:
         if not os.path.exists(self.session_file_path):
             os.makedirs(self.session_file_path)
         set_language(self.language)
+
+    def is_match_advertisement(self, caption) -> bool:
+        """is match advertisement
+
+        Parameters
+        ----------
+        caption: str
+        """
+        for ad in self.filter_advertisement_list:
+            if ad in caption:
+                return True
+
+        return False
 
     def set_caption_name(
         self, chat_id: Union[int, str], media_group_id: Optional[str], caption: str

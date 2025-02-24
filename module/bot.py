@@ -28,6 +28,7 @@ from module.get_chat_history_v2 import get_chat_history_v2
 from module.language import Language, _t
 from module.pyrogram_extension import (
     check_user_permission,
+    get_utf16_length,
     parse_link,
     proc_cache_forward,
     report_bot_forward_status,
@@ -61,6 +62,7 @@ class DownloadBot:
         self.task_node: dict = {}
         self.is_running = True
         self.allowed_user_ids: List[Union[int, str]] = []
+        self.monitor_task = None
 
         meta = MetaData(datetime(2022, 8, 5, 14, 35, 12), 0, "", 0, 0, 0, "", 0)
         self.filter.set_meta_data(meta)
@@ -148,7 +150,7 @@ class DownloadBot:
             proxy=app.proxy,
         )
 
-        # 命令列表
+        # Command list
         commands = [
             types.BotCommand("help", _t("Help")),
             types.BotCommand(
@@ -294,8 +296,6 @@ class DownloadBot:
             )
         )
 
-        self.client.add_handler(MessageHandler(listen_forward_msg))
-
         try:
             await send_help_str(self.bot, admin.id)
         except Exception:
@@ -334,6 +334,9 @@ async def stop_download_bot():
     _bot.stop_task("all")
     if _bot.bot:
         await _bot.bot.stop()
+    if _bot.monitor_task:
+        _bot.monitor_task.cancel()
+        _bot.monitor_task = None
 
 
 async def send_help_str(client: pyrogram.Client, chat_id):
@@ -390,6 +393,11 @@ async def send_help_str(client: pyrogram.Client, chat_id):
         f"/forward_to_comments - {_t('Forward a specific media to a comment section')}\n"
         f"/set_language - {_t('Set language')}\n"
         f"/stop - {_t('Stop bot download or forward')}\n\n"
+        # f"/add_replace_ad - {_t('Add replace advertisement filter')}\n"
+        # f"/remove_replace_ad - {_t('Remove replace advertisement filter')}\n"
+        # f"/add_filter_ad - {_t('Add filter advertisement filter')}\n"
+        # f"/remove_filter_ad - {_t('Remove filter advertisement filter')}\n\n"
+        # f"/set_add_ad - {_t('Set add advertisement')}\n\n"
         f"{_t('**Note**: 1 means the start of the entire chat')},"
         f"{_t('0 means the end of the entire chat')}\n"
         f"`[` `]` {_t('means optional, not required')}\n"
@@ -529,6 +537,267 @@ async def add_filter(client: pyrogram.Client, message: pyrogram.types.Message):
             message.from_user.id, f"{err}\n{_t('Check error, please add again!')}"
         )
     return
+
+
+async def add_filter_advertisement_filter(
+    client: pyrogram.Client, message: pyrogram.types.Message
+):
+    """
+    Set the download filter of the bot.
+
+    Parameters:
+        client (pyrogram.Client): The pyrogram client.
+        message (pyrogram.types.Message): The message containing the command.
+
+    Returns:
+        None
+    """
+
+    args = message.text.split(maxsplit=1)
+    if len(args) != 2:
+        await client.send_message(
+            message.from_user.id,
+            _t("Invalid command format. Please use /add_ad filter"),
+        )
+        return
+
+    filter_str = args[1]
+
+    _bot.app.filter_advertisement_list.append(filter_str)
+    await client.send_message(message.from_user.id, f"{_t('Add filter')} : {args[1]}")
+    _bot.app.update_config(True)
+
+
+async def remove_filter_advertisement_filter(
+    client: pyrogram.Client, message: pyrogram.types.Message
+):
+    """
+    Add or remove advertisement filter
+    """
+
+    args = message.text.split(maxsplit=1)
+    if len(args) != 2:
+        await client.send_message(
+            message.from_user.id,
+            _t("Invalid command format. Please use /remove_ad filter"),
+        )
+        return
+
+    filter_str = args[1]
+    if filter_str in _bot.app.filter_advertisement_list:
+        _bot.app.filter_advertisement_list.remove(filter_str)
+        await client.send_message(
+            message.from_user.id, f"{_t('Remove filter')} : {args[1]}"
+        )
+
+        _bot.app.update_config(True)
+    else:
+        await client.send_message(
+            message.from_user.id, f"{_t('Filter')} : {args[1]} {_t('not exist')}"
+        )
+
+
+async def set_add_advertisement(
+    client: pyrogram.Client, message: pyrogram.types.Message
+):
+    """
+    Add or remove advertisement filter
+    """
+
+    args = message.text.split(maxsplit=2)
+    if len(args) < 2:
+        await client.send_message(
+            message.from_user.id,
+            _t("Invalid command format. Please use /set_ad mesage_link advertisement"),
+        )
+        return
+
+    mesage_link = args[1]
+    advertisement_str = None if len(args) < 3 else args[2]
+
+    try:
+        chat_id, _, _ = await parse_link(_bot.client, mesage_link)
+        _bot.app.group_add_advertisement[chat_id] = advertisement_str
+        _bot.app.update_config(True)
+        await client.send_message(
+            message.from_user.id, f"{_t('Set advertisement')} : {advertisement_str}"
+        )
+    except Exception as e:
+        await client.send_message(
+            message.from_user.id, f"{_t('Parse link error')}: {e}"
+        )
+        return
+
+
+class MessageProcessor:
+    """Helper class for processing message captions and entities."""
+
+    def __init__(self, raw_message, filter_str):
+        self.raw_message = raw_message
+        self.raw_caption = raw_message.caption
+        self.filter_str = filter_str
+        self.raw_filter_str = pyrogram.parser.utils.add_surrogates(filter_str)
+        self.raw_caption_str = pyrogram.parser.utils.add_surrogates(raw_message.caption)
+        self.idx = self.raw_caption_str.find(self.raw_filter_str)
+        self.start_offset = self.idx
+        self.end_offset = self.idx + get_utf16_length(filter_str)
+        self.filtered_entities = []
+
+    # pylint: disable = R0916
+    def process_entities(self):
+        """Process and filter message entities."""
+        for entity in self.raw_message.caption_entities:
+            cur_start_offset = entity.offset
+            cur_end_offset = entity.offset + entity.length
+
+            # Check if entity should be included
+            if (
+                (
+                    cur_start_offset >= self.start_offset
+                    and cur_end_offset <= self.end_offset
+                )
+                or (
+                    cur_start_offset < self.start_offset
+                    and cur_end_offset > self.start_offset
+                )
+                or (
+                    cur_start_offset < self.end_offset
+                    and cur_end_offset > self.end_offset
+                )
+            ):
+                self.filtered_entities.append(entity)
+
+        self.filtered_entities.sort(key=lambda x: x.offset)
+
+    def get_total_span(self):
+        """Calculate the total span for text extraction."""
+        if self.filtered_entities:
+            first_entity = self.filtered_entities[0]
+            last_entity = self.filtered_entities[-1]
+            return (
+                min(self.start_offset, first_entity.offset),
+                max(self.end_offset, last_entity.offset + last_entity.length),
+            )
+        return (self.start_offset, self.end_offset)
+
+    def extract_text(self, total_span):
+        """Extract and process text with adjusted entity offsets."""
+        text = self.raw_caption[total_span[0] : total_span[1]]
+        for entity in self.filtered_entities:
+            entity.offset -= total_span[0]
+        return pyrogram.parser.Parser.unparse(text, self.filtered_entities, True)
+
+
+async def proc_replace_advertisement(mesage_link: str, filter_str: str):
+    """
+    Process and replace advertisement content in a message.
+
+    This function takes a message link and a filter string, retrieves the message,
+    and processes its caption by handling entities and filtering advertisement content.
+    It preserves the formatting and entities while replacing the specified filter text.
+
+    Args:
+        mesage_link (str): The link to the Telegram message
+        filter_str (str): The string to filter/replace in the message caption
+
+    Returns:
+        str: The processed caption with preserved formatting and entities
+
+    Raises:
+        Exception: If there are issues parsing the message link or accessing the message
+    """
+    chat_id, message_id, _ = await parse_link(_bot.client, mesage_link)
+    raw_message = await retry(_bot.client.get_messages, args=(chat_id, message_id))
+
+    processor = MessageProcessor(raw_message, filter_str)
+    processor.process_entities()
+    total_span = processor.get_total_span()
+    return processor.extract_text(total_span)
+
+
+async def add_replace_advertisement_filter(
+    client: pyrogram.Client, message: pyrogram.types.Message
+):
+    """
+    Set the download filter of the bot.
+
+    Parameters:
+        client (pyrogram.Client): The pyrogram client.
+        message (pyrogram.types.Message): The message containing the command.
+
+    Returns:
+        None
+    """
+
+    args = message.text.split(maxsplit=2)
+    if len(args) != 3:
+        await client.send_message(
+            message.from_user.id,
+            _t("Invalid command format. Please use /add_replace_ad your filter"),
+        )
+        return
+
+    mesage_link = args[1]
+    filter_str = args[2]
+
+    try:
+        filter_str = await proc_replace_advertisement(mesage_link, filter_str)
+        _bot.app.replace_advertisement_list.append(filter_str)
+        _bot.app.update_config(True)
+        await client.send_message(
+            message.from_user.id, f"{_t('Add filter')} : {filter_str}"
+        )
+    except Exception as e:
+        await client.send_message(
+            message.from_user.id, f"{_t('Add filter')} : {filter_str}\n{e}"
+        )
+        return
+
+
+async def remove_replace_advertisement_filter(
+    client: pyrogram.Client, message: pyrogram.types.Message
+):
+    """
+    Set the download filter of the bot.
+
+    Parameters:
+        client (pyrogram.Client): The pyrogram client.
+        message (pyrogram.types.Message): The message containing the command.
+
+    Returns:
+        None
+    """
+
+    args = message.text.split(maxsplit=2)
+    if len(args) != 3:
+        await client.send_message(
+            message.from_user.id,
+            _t(
+                "Invalid command format. Please use /remove_replace_ad mesage_link advertisement_filter"
+            ),
+        )
+        return
+
+    mesage_link = args[1]
+    filter_str = args[2]
+
+    try:
+        filter_str = await proc_replace_advertisement(mesage_link, filter_str)
+
+        if filter_str in _bot.app.replace_advertisement_list:
+            _bot.app.replace_advertisement_list.remove(filter_str)
+            await client.send_message(
+                message.from_user.id, f"{_t('Remove filter')} : {filter_str}"
+            )
+        else:
+            _bot.app.replace_advertisement_list.append(filter_str)
+            await client.send_message()
+        _bot.app.update_config(True)
+    except Exception as e:
+        await client.send_message(
+            message.from_user.id, f"{_t('Add filter')} : {filter_str}\n{e}"
+        )
+        return
 
 
 async def direct_download(
@@ -951,14 +1220,22 @@ async def forward_normal_content(
 ):
     """Forward normal content"""
     forward_ret = ForwardStatus.FailedForward
+    caption = message.caption
+    if caption:
+        caption = validate_title(caption)
+        _bot.app.set_caption_name(node.chat_id, message.media_group_id, caption)
+    else:
+        caption = _bot.app.get_caption_name(node.chat_id, message.media_group_id)
+
+    if caption and _bot.app.is_match_advertisement(caption):
+        forward_ret = ForwardStatus.SkipForward
+        if message.media_group_id:
+            # TODO
+            node.upload_status[message.id] = UploadStatus.SkipUpload
+        return
+
     if node.download_filter:
         meta_data = MetaData()
-        caption = message.caption
-        if caption:
-            caption = validate_title(caption)
-            _bot.app.set_caption_name(node.chat_id, message.media_group_id, caption)
-        else:
-            caption = _bot.app.get_caption_name(node.chat_id, message.media_group_id)
         set_meta_data(meta_data, message, caption)
         _bot.filter.set_meta_data(meta_data)
         if not _bot.filter.exec(node.download_filter):
@@ -984,18 +1261,74 @@ async def forward_msg(node: TaskNode, message_id: int):
     await _bot.download_chat_task(_bot.client, chat_download_config, node)
 
 
+async def check_new_messages(
+    client: pyrogram.Client, chat_id: int, node: TaskNode, last_message_id: int = 0
+):
+    """
+    Checks for new messages in the chat and forwards them.
+
+    Parameters:
+        client (pyrogram.Client): The pyrogram client
+        chat_id (int): The chat ID to monitor
+        node (TaskNode): The task node containing forwarding configuration
+        last_message_id (int): The ID of the last processed message
+    """
+    try:
+        # Only get the most recent message if last_message_id is 0
+        if last_message_id == 0:
+            async for message in get_chat_history_v2(  # type: ignore
+                client, chat_id, limit=1  # Get only the latest message
+            ):
+                last_message_id = message.id
+                return last_message_id
+
+        # Otherwise check for new messages after last_message_id
+        async for message in get_chat_history_v2(  # type: ignore
+            client, chat_id, limit=100, offset_id=last_message_id, reverse=True
+        ):
+            if message.id > last_message_id:
+                if not node.has_protected_content:
+                    await forward_normal_content(client, node, message)
+                    await report_bot_status(client, node, immediate_reply=True)
+                else:
+                    await _bot.add_download_task(message, node)
+                last_message_id = message.id
+    except Exception as e:
+        logger.exception(f"Error checking new messages in chat {chat_id}: {e}")
+
+    return last_message_id
+
+
+async def start_message_monitor():
+    """
+    Starts monitoring all chats that need to be forwarded.
+    Runs every 60 seconds to check for new messages.
+    """
+    last_message_ids = {}  # 存储每个聊天的最后处理的消息ID
+
+    while _bot.is_running:
+        try:
+            for chat_id, node in _bot.listen_forward_chat.items():
+                if not node.is_running:
+                    continue
+
+                last_id = last_message_ids.get(chat_id, 0)
+                new_last_id = await check_new_messages(
+                    _bot.client, chat_id, node, last_id
+                )
+                last_message_ids[chat_id] = new_last_id
+
+        except Exception as e:
+            logger.exception(f"Error in message monitor: {e}")
+
+        await asyncio.sleep(60)  # 每60秒检查一次
+
+
 async def set_listen_forward_msg(
     client: pyrogram.Client, message: pyrogram.types.Message
 ):
     """
     Set the chat to listen for forwarded messages.
-
-    Args:
-        client (pyrogram.Client): The pyrogram client.
-        message (pyrogram.types.Message): The message sent by the user.
-
-    Returns:
-        None
     """
     args = message.text.split(maxsplit=3)
 
@@ -1009,7 +1342,6 @@ async def set_listen_forward_msg(
 
     src_chat_link = args[1]
     dst_chat_link = args[2]
-
     download_filter = args[3] if len(args) > 3 else None
 
     node = await get_forward_task_node(
@@ -1025,36 +1357,13 @@ async def set_listen_forward_msg(
         return
 
     if node.chat_id in _bot.listen_forward_chat:
-        _bot.stop_task(_bot.listen_forward_chat[node.chat_id].task_id)
+        _bot.remove_task_node(_bot.listen_forward_chat[node.chat_id].task_id)
 
     node.is_running = True
     _bot.listen_forward_chat[node.chat_id] = node
 
-
-async def listen_forward_msg(client: pyrogram.Client, message: pyrogram.types.Message):
-    """
-    Forwards messages from a chat to another chat if the message does not contain protected content.
-    If the message contains protected content, it will be downloaded and forwarded to the other chat.
-
-    Parameters:
-        client (pyrogram.Client): The pyrogram client.
-        message (pyrogram.types.Message): The message to be forwarded.
-    """
-
-    if message.chat and message.chat.id in _bot.listen_forward_chat:
-        node = _bot.listen_forward_chat[message.chat.id]
-        if node.is_stop_transmission:
-            return
-
-        # TODO(tangyoha):fix run time change protected content
-        if not node.has_protected_content:
-            await forward_normal_content(client, node, message)
-            await report_bot_status(client, node, immediate_reply=True)
-        else:
-            await _bot.add_download_task(
-                message,
-                node,
-            )
+    if not hasattr(_bot, "monitor_task") or _bot.monitor_task is None:
+        _bot.monitor_task = _bot.app.loop.create_task(start_message_monitor())
 
 
 async def stop(client: pyrogram.Client, message: pyrogram.types.Message):

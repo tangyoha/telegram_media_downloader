@@ -656,6 +656,7 @@ def main():
         proxy=app.proxy,
         workdir=app.session_file_path,
         start_timeout=app.start_timeout,
+        no_updates=True,
     )
     try:
         app.pre_run()
