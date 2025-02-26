@@ -653,6 +653,28 @@ async def process_caption(
     return truncated_caption
 
 
+def convert_message_entity(client, entity: "pyrogram.raw.base.MessageEntity") -> Optional["pyrogram.types.MessageEntity"]:
+    # Special case for InputMessageEntityMentionName -> MessageEntityType.TEXT_MENTION
+    # This happens in case of UpdateShortSentMessage inside send_message() where entities are parsed from the input
+    if isinstance(entity, pyrogram.raw.types.InputMessageEntityMentionName):
+        entity_type = enums.MessageEntityType.TEXT_MENTION
+        user_id = entity.user_id.user_id
+    else:
+        entity_type = enums.MessageEntityType(entity.__class__)
+        user_id = getattr(entity, "user_id", None)
+
+    return pyrogram.types.MessageEntity(
+        type=entity_type,
+        offset=entity.offset,
+        length=entity.length,
+        url=getattr(entity, "url", None),
+        user=types.User(id=user_id),
+        language=getattr(entity, "language", None),
+        custom_emoji_id=getattr(entity, "document_id", None),
+        expandable=getattr(entity, "collapsed", None),
+        client=client
+    )
+
 def convert_entities(
     entities: List[pyrogram.raw.base.MessageEntity],
 ) -> List[pyrogram.types.MessageEntity]:
@@ -662,7 +684,7 @@ def convert_entities(
 
     try:
         return [
-            pyrogram.types.MessageEntity._parse(None, entity, {}) for entity in entities
+            convert_message_entity(None, entity) for entity in entities
         ]
     except Exception as e:
         logger.warning(f"Failed to convert entities: {e}")
