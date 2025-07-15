@@ -372,7 +372,7 @@ class Application:
         self.chat_download_config: dict = {}
 
         self.save_path = os.path.join(os.path.abspath("."), "downloads")
-        self.temp_save_path = os.path.join(os.path.abspath("."), "temp")
+        self.temp_save_path = os.path.join(os.path.abspath("."), "downloads/temp")
         self.api_id: str = ""
         self.api_hash: str = ""
         self.bot_token: str = ""
