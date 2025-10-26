@@ -1,5 +1,6 @@
 """Downloads media from telegram."""
 import asyncio
+import signal
 import logging
 import os
 import shutil
@@ -698,6 +699,11 @@ def main():
             f"{app.cloud_drive_config.total_upload_success_file_count}"
         )
 
+
+def handle_sigterm(signum, frame):
+    raise KeyboardInterrupt
+
+signal.signal(signal.SIGTERM, handle_sigterm)
 
 if __name__ == "__main__":
     if _check_config():
