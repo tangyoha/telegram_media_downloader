@@ -4,8 +4,12 @@ WORKDIR /app
 
 COPY requirements.txt /app/
 
-RUN apk add --no-cache --virtual .build-deps gcc musl-dev git \
-    && pip install --trusted-host pypi.python.org -r requirements.txt \
+RUN apk add --no-cache --virtual .build-deps \
+    gcc g++ musl-dev git \
+    cmake make pkgconfig \
+    linux-headers \
+    jpeg-dev zlib-dev \
+    && pip install --no-cache-dir --trusted-host pypi.python.org -r requirements.txt \
     && apk del .build-deps && rm -rf requirements.txt
 
 RUN apk add --no-cache rclone
