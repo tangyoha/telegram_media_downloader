@@ -3,7 +3,7 @@ pyrogram@git+https://github.com/TeamPGM/pyrogram@1.5.4
 #https://github.com/tangyoha/pyrogram/archive/refs/heads/master_v2.0.69_1.zip
 PyYAML==5.3.1
 rich==12.5.1
-PyTgCrypto==1.2.6
+PyTgCrypto>=1.2.6
 loguru==0.6.0
 # aligo==5.4.0
 Werkzeug==2.2.2
