@@ -404,22 +404,44 @@ async def send_media_group_v2(
         await utils.parse_text_entities(client, quote_text, parse_mode, quote_entities)
     ).values()
 
+    # Build reply_to parameter based on the provided parameters
+    reply_to = None
+    if reply_to_message_id or message_thread_id or reply_to_story_id or quote_text:
+        if reply_to_story_id:
+            # Reply to story
+            reply_to = raw.types.InputReplyToStory(
+                peer=await client.resolve_peer(reply_to_chat_id) if reply_to_chat_id else await client.resolve_peer(chat_id),
+                story_id=reply_to_story_id
+            )
+        elif reply_to_message_id:
+            # Reply to message with optional quote
+            if quote_text and quote_entities:
+                reply_to = raw.types.InputReplyToMessage(
+                    reply_to_msg_id=reply_to_message_id,
+                    top_msg_id=message_thread_id,
+                    reply_to_peer_id=await client.resolve_peer(reply_to_chat_id) if reply_to_chat_id else None,
+                    quote_text=quote_text,
+                    quote_entities=quote_entities,
+                    quote_offset=quote_offset
+                )
+            else:
+                reply_to = raw.types.InputReplyToMessage(
+                    reply_to_msg_id=reply_to_message_id,
+                    top_msg_id=message_thread_id,
+                    reply_to_peer_id=await client.resolve_peer(reply_to_chat_id) if reply_to_chat_id else None
+                )
+        elif message_thread_id:
+            # Reply to thread without specific message
+            reply_to = raw.types.InputReplyToMessage(
+                top_msg_id=message_thread_id
+            )
+
     r = await client.invoke(
         raw.functions.messages.SendMultiMedia(
             peer=await client.resolve_peer(chat_id),
             multi_media=multi_media,
             silent=disable_notification or None,
-            reply_to=utils.get_reply_to(
-                reply_to_message_id=reply_to_message_id,
-                message_thread_id=message_thread_id,
-                reply_to_peer=await client.resolve_peer(reply_to_chat_id)
-                if reply_to_chat_id
-                else None,
-                reply_to_story_id=reply_to_story_id,
-                quote_text=quote_text,
-                quote_entities=quote_entities,
-                quote_offset=quote_offset,
-            ),
+            reply_to=reply_to,
             schedule_date=utils.datetime_to_timestamp(schedule_date),
             invert_media=show_above_text,
         ),

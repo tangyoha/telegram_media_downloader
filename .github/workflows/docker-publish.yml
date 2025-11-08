@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - beta
     tags:
       - 'v*'
 
@@ -20,6 +21,17 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 2
+
+    - name: Check if beta version
+      id: check-beta
+      run: |
+        if [[ "${{ github.ref_name }}" == "beta" ]] || [[ "${{ github.ref_name }}" == *"beta"* ]]; then
+          echo "is_beta=true" >> $GITHUB_OUTPUT
+          echo "This is a beta build"
+        else
+          echo "is_beta=false" >> $GITHUB_OUTPUT
+          echo "This is a stable build"
+        fi
 
     - name: Check if compile-image exists on Docker Hub
       id: check-image
@@ -76,5 +88,5 @@ jobs:
         platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le
         target: runtime-image
         tags: |
-          ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:latest
+          ${{ steps.check-beta.outputs.is_beta == 'false' && format('{0}/telegram_media_downloader:latest', secrets.DOCKER_HUB_USERNAME) || '' }}
           ${{ secrets.DOCKER_HUB_USERNAME }}/telegram_media_downloader:${{ github.ref_name }}

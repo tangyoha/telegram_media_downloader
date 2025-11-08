@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - 'beta'
 
 jobs:
   build-tdl-binaries:
@@ -79,7 +81,24 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       VERSION: ${{ steps.get_version.outputs.VERSION }}
+      IS_BETA: ${{ steps.check_beta.outputs.IS_BETA }}
     steps:
+      - name: Get version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        shell: bash
+      - name: Check if beta version
+        id: check_beta
+        run: |
+          VERSION=${GITHUB_REF/refs\/tags\//}
+          if [[ "$VERSION" == *"beta"* ]] || [[ "$GITHUB_REF" == "refs/heads/beta" ]]; then
+            echo "IS_BETA=true" >> $GITHUB_OUTPUT
+            echo "This is a beta release"
+          else
+            echo "IS_BETA=false" >> $GITHUB_OUTPUT
+            echo "This is a stable release"
+          fi
+        shell: bash
       - name: Create release
         id: create_release
         uses: actions/create-release@v1
@@ -89,11 +108,8 @@ jobs:
           tag_name: ${{ github.ref }}
           release_name: ${{ github.ref }},${{ steps.release_date.outputs.release_date }}
           draft: false
-          prerelease: false
-      - name: Get version
-        id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
-        shell: bash
+          prerelease: ${{ steps.check_beta.outputs.IS_BETA == 'true' }}
+      
 
   upload_assets:
     name: Upload release assets
