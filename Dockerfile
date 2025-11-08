@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY requirements.txt /app/
 
-RUN apk add --no-cache --virtual .build-deps gcc musl-dev \
+RUN apk add --no-cache --virtual .build-deps gcc musl-dev git \
     && pip install --trusted-host pypi.python.org -r requirements.txt \
     && apk del .build-deps && rm -rf requirements.txt
 
