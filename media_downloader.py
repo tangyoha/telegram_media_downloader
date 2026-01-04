@@ -3,6 +3,7 @@ import asyncio
 import logging
 import os
 import shutil
+import signal
 import time
 from typing import List, Optional, Tuple, Union
 
@@ -646,8 +647,19 @@ async def stop_server(client: pyrogram.Client):
     await client.stop()
 
 
+def setup_exit_signal_handlers():
+    def signal_exit(signum, _):
+        logger.debug(f"Received signal: {signum}. Graceful Exit...")
+        raise KeyboardInterrupt()
+
+    signal.signal(signal.SIGINT, signal_exit)
+    signal.signal(signal.SIGTERM, signal_exit)
+
+
 def main():
     """Main function of the downloader."""
+    setup_exit_signal_handlers()
+
     tasks = []
     client = HookClient(
         "media_downloader",
