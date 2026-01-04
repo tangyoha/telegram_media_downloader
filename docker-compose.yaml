@@ -13,7 +13,8 @@ services:
     volumes:
       # Here is what you need to edit
       - "./downloads/:/app/downloads/"
-
+      # Not recommend,this will cause move files back to copy files
+      #- "./temp/:/app/downloads/temp"
       # Rclone
       - "$HOME/.config/rclone/:$HOME/.config/rclone/"
 
@@ -22,7 +23,7 @@ services:
       - "./data.yaml:/app/data.yaml"
       - "./log/:/app/log/"
       - "./sessions/:/app/sessions"
-      - "./temp/:/app/temp"
+
     #restart: "unless-stopped"
 # volumes:
 #   sessions:
