@@ -1,20 +1,23 @@
 """Pyrogram ext"""
 
 import asyncio
+import html
 import os
 import secrets
 import struct
 import time
+from copy import deepcopy
 from datetime import datetime
 from functools import wraps
 from io import BytesIO, StringIO
 from mimetypes import MimeTypes
-from typing import Callable, Iterable, List, Optional, Union
+from typing import Callable, Iterable, List, Optional, Tuple, Union
 
 import pyrogram
 from loguru import logger
-from pyrogram import types
+from pyrogram import enums, parser, types, utils
 from pyrogram.client import Cache
+from pyrogram.enums import MessageEntityType
 from pyrogram.file_id import (
     FILE_REFERENCE_FLAG,
     PHOTO_TYPES,
@@ -65,8 +68,24 @@ def _guess_extension(mime_type: str) -> Optional[str]:
     return _mimetypes.guess_extension(mime_type)
 
 
+def get_utf16_length(text: str) -> int:
+    """
+    Returns the length of UTF-16 units for the string text.
+
+    Notes:
+      - Using 'utf-16-le' encoding (without BOM), dividing the number of bytes by 2 gives the number of UTF-16 units in the string.
+      - This correctly counts both regular characters (1 unit) and emoji characters outside the BMP (2 units).
+    """
+    # After encoding to utf-16-le, every 2 bytes represent 1 UTF-16 unit
+    return len(text.encode("utf-16-le")) // 2
+
+
 def get_media_obj(
-    message: pyrogram.types.Message, media: str = None, caption: str = None
+    message: pyrogram.types.Message,
+    media: str = None,
+    caption: str = None,
+    caption_entities: List[pyrogram.types.MessageEntity] = None,
+    parse_mode: Optional[enums.ParseMode] = None,
 ) -> Union[
     types.InputMediaPhoto,
     types.InputMediaVideo,
@@ -77,28 +96,50 @@ def get_media_obj(
     """Get media object"""
     media_type = message.media
     if media_type == pyrogram.enums.MessageMediaType.PHOTO:
-        return types.InputMediaPhoto(media, caption=caption)
+        return types.InputMediaPhoto(
+            media,
+            caption=caption,
+            caption_entities=caption_entities,
+            parse_mode=parse_mode,
+        )
 
     if media_type == pyrogram.enums.MessageMediaType.VIDEO:
         return types.InputMediaVideo(
             media,
             caption=caption,
+            caption_entities=caption_entities,
             width=message.video.width,
             height=message.video.height,
             duration=message.video.duration,
+            parse_mode=parse_mode,
         )
 
     if media_type in [
         pyrogram.enums.MessageMediaType.AUDIO,
         pyrogram.enums.MessageMediaType.VOICE,
     ]:
-        return types.InputMediaAudio(media, caption=caption)
+        return types.InputMediaAudio(
+            media,
+            caption=caption,
+            caption_entities=caption_entities,
+            parse_mode=parse_mode,
+        )
 
     if media_type == pyrogram.enums.MessageMediaType.DOCUMENT:
-        return types.InputMediaDocument(media, caption=caption)
+        return types.InputMediaDocument(
+            media,
+            caption=caption,
+            caption_entities=caption_entities,
+            parse_mode=parse_mode,
+        )
 
     if media_type == pyrogram.enums.MessageMediaType.ANIMATION:
-        return types.InputMediaAnimation(media, caption=caption)
+        return types.InputMediaAnimation(
+            media,
+            caption=caption,
+            caption_entities=caption_entities,
+            parse_mode=parse_mode,
+        )
 
     return None
 
@@ -254,7 +295,7 @@ async def upload_telegram_chat(
     if node.upload_telegram_chat_id:
         if download_status is DownloadStatus.SkipDownload and message.media:
             if message.media_group_id:
-                await proc_cache_forward(client, node, message, True)
+                await proc_cache_forward(client, node, message, True, app)
             return
 
         if download_status is DownloadStatus.SuccessDownload or (
@@ -328,6 +369,7 @@ async def _upload_signal_message(
     message: pyrogram.types.Message,
     file_name: Optional[str],
     caption: Optional[str] = None,
+    text: Optional[str] = None,
 ):
     """
     Uploads a video or message to a Telegram chat.
@@ -480,14 +522,183 @@ async def _upload_signal_message(
     elif message.text:
         if node.reply_to_message:
             await node.reply_to_message.reply(
-                message.text, message_thread_id=node.topic_id
+                message.text if text is None else text, message_thread_id=node.topic_id
             )
         else:
             await upload_user.send_message(
                 upload_telegram_chat_id,
-                message.text,
+                message.text if text is None else text,
                 message_thread_id=node.topic_id,
             )
+
+
+def truncate_caption(
+    text: str,
+    entities: Optional[List[pyrogram.raw.base.MessageEntity]] = None,
+    limit: int = 1024,
+) -> Tuple[str, Optional[List[pyrogram.types.MessageEntity]]]:
+    """
+    Truncate caption to ensure it doesn't exceed Telegram limits
+
+    Args:
+        text: Original text
+        entities: List of text entities
+        limit: UTF-16 encoding unit limit (default 1024)
+
+    Returns:
+        Tuple[str, Optional[List[pyrogram.raw.types.MessageEntity]]]: Truncated text and corresponding entity list
+    """
+    if not text:
+        return text, entities
+
+    # Calculate UTF-16 length
+    utf16_length = get_utf16_length(text)
+
+    if utf16_length <= limit:
+        return text, entities
+
+    # If exceeds limit, need to truncate
+    # Use binary search to find suitable truncation position
+    left, right = 0, len(text)
+    while left < right:
+        mid = (left + right + 1) // 2
+        if get_utf16_length(text[:mid]) <= limit:
+            left = mid
+        else:
+            right = mid - 1
+
+    truncated_text = text[:left]
+
+    # If there are entities, need to adjust entity list
+    if entities:
+        truncated_entities = []
+        for entity in entities:
+            if entity.offset >= left:
+                continue
+            if entity.offset + entity.length <= left:
+                truncated_entities.append(entity)
+            else:
+                # For entities that cross the truncation point, adjust length
+                new_entity = deepcopy(entity)
+                new_entity.length = left - entity.offset
+                truncated_entities.append(new_entity)
+        return truncated_text, truncated_entities
+
+    return truncated_text, None
+
+
+async def process_caption(
+    client,
+    app,
+    upload_telegram_chat_id,
+    caption: str,
+    caption_entities: Optional[List[pyrogram.types.MessageEntity]],
+):
+    """
+    Process message caption: Use plain text without formatting for ad filtering and synchronously update caption_entities.
+    After removing matched ad text, remove or adjust corresponding MessageEntity objects.
+
+    Args:
+        client: Pyrogram client instance
+        app: Application object containing replace_advertisement_list property
+            caption: Original caption text
+            caption_entities: List of MessageEntity objects
+
+        Returns:
+        str: Cleaned caption
+    """
+    if not caption:
+        return None
+
+    update_caption = caption
+    if caption and caption_entities:
+        update_caption = pyrogram.parser.Parser.unparse(caption, caption_entities, True)
+
+    for ad_text in app.replace_advertisement_list:
+        update_caption = update_caption.replace(ad_text, "")
+
+    advertisement = app.group_add_advertisement.get(upload_telegram_chat_id, "")
+
+    ad_length = get_utf16_length(f"\n{advertisement}" if advertisement else "")
+
+    max_caption_length = 4096 if client.me and client.me.is_premium else 1024
+    available_length = max_caption_length - ad_length
+
+    try:
+        new_caption, new_entities = await convect_caption_entities(
+            client, update_caption
+        )
+    except Exception as e:
+        logger.exception(f"Error parsing caption: {e}")
+        new_caption = update_caption
+        new_entities = None
+
+    truncated_caption, truncated_entities = truncate_caption(
+        new_caption, new_entities, available_length
+    )
+
+    if advertisement:
+        truncated_caption += f"\n{advertisement}"
+
+    try:
+        if truncated_entities:
+            truncated_entities = convert_entities(truncated_entities)
+            return pyrogram.parser.Parser.unparse(
+                truncated_caption, truncated_entities, True
+            )
+    except Exception as e:
+        logger.exception(f"Error unparsing caption: {e}")
+        return truncated_caption
+
+    return truncated_caption
+
+
+def convert_message_entity(client, entity: "pyrogram.raw.base.MessageEntity") -> Optional["pyrogram.types.MessageEntity"]:
+    # Special case for InputMessageEntityMentionName -> MessageEntityType.TEXT_MENTION
+    # This happens in case of UpdateShortSentMessage inside send_message() where entities are parsed from the input
+    if isinstance(entity, pyrogram.raw.types.InputMessageEntityMentionName):
+        entity_type = enums.MessageEntityType.TEXT_MENTION
+        user_id = entity.user_id.user_id
+    else:
+        entity_type = enums.MessageEntityType(entity.__class__)
+        user_id = getattr(entity, "user_id", None)
+
+    return pyrogram.types.MessageEntity(
+        type=entity_type,
+        offset=entity.offset,
+        length=entity.length,
+        url=getattr(entity, "url", None),
+        user=types.User(id=user_id),
+        language=getattr(entity, "language", None),
+        custom_emoji_id=getattr(entity, "document_id", None),
+        expandable=getattr(entity, "collapsed", None),
+        client=client
+    )
+
+def convert_entities(
+    entities: List[pyrogram.raw.base.MessageEntity],
+) -> List[pyrogram.types.MessageEntity]:
+    """Convert raw message entities to types message entities"""
+    if not entities:
+        return []
+
+    try:
+        return [
+            convert_message_entity(None, entity) for entity in entities
+        ]
+    except Exception as e:
+        logger.warning(f"Failed to convert entities: {e}")
+        return []
+
+
+async def convect_caption_entities(client, text):
+    # Convert back to entities format
+    try:
+        return (await client.parser.parse(text, None)).values()
+    except Exception as e:
+        print(f"Error parsing markdown: {e}")
+        # If parsing fails, return cleaned text without entities
+        return text, None
 
 
 async def _upload_telegram_chat_message(
@@ -514,17 +725,26 @@ async def _upload_telegram_chat_message(
     """
     await app.forward_limit_call.wait(node)
 
-    caption = message.caption
-    caption_entities = message.caption_entities
+    caption = await process_caption(
+        client,
+        app,
+        node.upload_telegram_chat_id,
+        message.caption,
+        message.caption_entities,
+    )
 
-    # Convert caption and caption_entities to markdown format
-    if caption and caption_entities:
-        caption = pyrogram.parser.Parser.unparse(caption, caption_entities, True)
+    new_text = None
+    # proc only text
+    if not message.media and message.text:
+        new_text = await process_caption(
+            client, app, node.upload_telegram_chat_id, message.text, message.entities
+        )
 
-    max_caption_length = 4096 if client.me and client.me.is_premium else 1024
-    # proc caption MEDIA_CAPTION_TOO_LONG
-    if caption and len(caption) > max_caption_length:
-        caption = caption[:max_caption_length]
+    if message.caption and message.media_group_id:
+        app.set_caption_name(node.chat_id, message.media_group_id, message.caption)
+        app.set_caption_entities(
+            node.chat_id, message.media_group_id, message.caption_entities
+        )
 
     if not message.media_group_id:
         if not node.has_protected_content:
@@ -559,16 +779,18 @@ async def _upload_telegram_chat_message(
                         message_thread_id=node.topic_id,
                     )
             else:
-                # For other types of media, fallback to forward_messages
-                await forward_messages(
-                    client,
-                    node.upload_telegram_chat_id,
-                    node.chat_id,
-                    message.id,
-                    drop_author=True,
-                    topic_id=node.topic_id,
-                    caption=caption,
-                )
+                if new_text:
+                    await client.send_message(
+                        node.upload_telegram_chat_id,
+                        new_text,
+                        parse_mode=enums.ParseMode.HTML,
+                    )
+                else:
+                    await message.copy(
+                        node.upload_telegram_chat_id,
+                        caption=caption,
+                        parse_mode=enums.ParseMode.HTML,
+                    )
         else:
             await _upload_signal_message(
                 client,
@@ -579,6 +801,7 @@ async def _upload_telegram_chat_message(
                 message,
                 file_name,
                 caption,
+                new_text,
             )
         return ForwardStatus.SuccessForward
 
@@ -594,51 +817,42 @@ async def forward_multi_media(
     app: Application,
     node: TaskNode,
     message: pyrogram.types.Message,
-    caption: str = None,
-    file_name: str = None,
+    caption: Optional[str] = None,
+    file_name: Optional[str] = None,
 ):
     """Forward multi media by cache"""
-    caption = message.caption
-    caption_entities = message.caption_entities
-    if not caption:
-        caption = app.get_caption_name(node.chat_id, message.media_group_id)
-        caption_entities = app.get_caption_entities(
-            node.chat_id, message.media_group_id
-        )
-
-    # Convert caption and caption_entities to markdown format
-    if caption and caption_entities:
-        caption = pyrogram.parser.Parser.unparse(caption, caption_entities, True)
-
-    max_caption_length = 4096 if client.me and client.me.is_premium else 1024
-    # proc caption MEDIA_CAPTION_TOO_LONG
-    if caption and len(caption) > max_caption_length:
-        caption = caption[:max_caption_length]
-
-    media_obj = get_media_obj(message, file_name, caption)
+    media_obj = get_media_obj(
+        message, file_name, caption
+    )  # , parse_mode=enums.ParseMode.HTML)
     if not node.has_protected_content:
         media = getattr(message, message.media.value)
         if not media:
             return ForwardStatus.SkipForward
         media_obj.media = media.file_id if media else ""
 
-    if not node.media_group_ids.get(message.media_group_id):
-        node.media_group_ids[message.media_group_id] = {}
+    need_upload = False
+    async with node.media_group_ids_lock:
+        if not node.media_group_ids.get(message.media_group_id):
+            node.media_group_ids[message.media_group_id] = {}
 
-    if not node.media_group_ids[message.media_group_id]:
-        media_group = await get_media_group_with_retry(
-            client, node.chat_id, message.id, 5
-        )
-        if not media_group:
-            logger.error("Get Media Group Error! message id: {}", message.id)
-            return ForwardStatus.FailedForward
+        if not node.media_group_ids[message.media_group_id]:
+            media_group = await get_media_group_with_retry(
+                client, node.chat_id, message.id, 5
+            )
+            if not media_group:
+                logger.error("Get Media Group Error! message id: {}", message.id)
+                return ForwardStatus.FailedForward
 
-        for it in media_group:
-            node.media_group_ids[message.media_group_id][it.id] = None
-            node.upload_status[message.id] = None
+            for it in media_group:
+                node.media_group_ids[message.media_group_id][it.id] = None
+                node.upload_status[message.id] = None
 
-    if not node.media_group_ids[message.media_group_id][message.id]:
-        node.upload_status[message.id] = UploadStatus.Uploading
+        if not node.media_group_ids[message.media_group_id][message.id]:
+            node.upload_status[message.id] = UploadStatus.Uploading
+            need_upload = True
+
+    _media = None
+    if need_upload:
         try:
             ui_file_name = file_name
             if file_name:
@@ -668,18 +882,19 @@ async def forward_multi_media(
             )
         except Exception as e:
             logger.exception(f"{e}")
-            node.upload_status[message.id] = UploadStatus.FailedUpload
         finally:
             if file_name and message.video and media_obj.thumb:
                 os.remove(str(media_obj.thumb))
 
-        if node.upload_status[message.id] == UploadStatus.FailedUpload:
-            return ForwardStatus.FailedForward
+        async with node.media_group_ids_lock:
+            if not _media:
+                node.upload_status[message.id] = UploadStatus.FailedUpload
+                return ForwardStatus.FailedForward
 
-        node.media_group_ids[message.media_group_id][message.id] = _media
-        node.upload_status[message.id] = UploadStatus.SuccessUpload
+            node.media_group_ids[message.media_group_id][message.id] = _media
+            node.upload_status[message.id] = UploadStatus.SuccessUpload
 
-    return await proc_cache_forward(client, node, message, bool(file_name))
+    return await proc_cache_forward(client, node, message, bool(file_name), app)
 
 
 async def proc_cache_forward(
@@ -687,32 +902,57 @@ async def proc_cache_forward(
     node: TaskNode,
     message: pyrogram.types.Message,
     check_download_status: bool,
+    app: Application,
 ):
-    """proc other cache forward"""
-    if not node.media_group_ids:
-        return
-    for key in node.media_group_ids[message.media_group_id].keys():
-        download_status = node.download_status.get(key, DownloadStatus.Downloading)
-        if (
-            node.skip_msg_id(key)
-            or download_status is DownloadStatus.SkipDownload
-            or download_status is DownloadStatus.FailedDownload
-        ):
-            continue
-        if (
-            check_download_status and DownloadStatus.Downloading == download_status
-        ) or UploadStatus.Uploading == node.upload_status.get(
-            key, UploadStatus.Uploading
-        ):
-            return ForwardStatus.CacheForward
-
+    """Process other cache forward"""
     multi_media: List[pyrogram.raw.types.InputSingleMedia] = []
 
-    for it in node.media_group_ids[message.media_group_id]:
-        if node.media_group_ids[message.media_group_id][it]:
-            if multi_media:
-                node.media_group_ids[message.media_group_id][it].message = ""
-            multi_media.append(node.media_group_ids[message.media_group_id][it])
+    async with node.media_group_ids_lock:
+        # Check if the message's media group is valid
+        media_group = node.media_group_ids.get(message.media_group_id)
+        if not media_group:
+            return
+
+        # Check if all items are in a valid state for forwarding
+        for key, media_item in media_group.items():
+            download_status = node.download_status.get(key, DownloadStatus.Downloading)
+            upload_status = node.upload_status.get(key, UploadStatus.Uploading)
+
+            # Skip if download is not needed or failed
+            if node.skip_msg_id(key) or download_status in {
+                DownloadStatus.SkipDownload,
+                DownloadStatus.FailedDownload,
+            }:
+                continue
+
+            # Return if any media is still downloading or uploading
+            if (
+                (
+                    check_download_status
+                    and download_status == DownloadStatus.Downloading
+                )
+                or upload_status == UploadStatus.Uploading
+                or upload_status == UploadStatus.SkipUpload
+            ):
+                return ForwardStatus.CacheForward
+
+            # Collect the media items that are valid for forwarding
+            if media_item:
+                multi_media.append(media_item)
+
+        if len(multi_media) > 1:
+            caption_item = None
+            for item in multi_media:
+                if item.message:
+                    caption_item = item
+                    break
+            if caption_item:
+                for item in multi_media:
+                    if item is not caption_item:
+                        item.message = ""
+                        item.entities = None
+
+        node.media_group_ids.pop(message.media_group_id)
 
     forward_status = ForwardStatus.SuccessForward
 
@@ -732,13 +972,11 @@ async def proc_cache_forward(
         multi_media,
         message_thread_id=message_thread_id,
         reply_to_message_id=reply_to_message_id,
-        business_connection_id=business_connection_id,
     ):
         forward_status = ForwardStatus.FailedForward
 
     node.stat_forward(forward_status, len(multi_media))
 
-    node.media_group_ids.pop(message.media_group_id)
     return ForwardStatus.CacheForward
 
 
@@ -1169,13 +1407,14 @@ async def update_upload_stat(
 
         node.upload_stat_dict[message_id] = upload_stat
     else:
+        duration = cur_time - start_time
         upload_stat = UploadProgressStat(
             file_name=file_name,
             total_size=total_size,
             upload_size=upload_size,
             start_time=start_time,
             last_stat_time=cur_time,
-            upload_speed=upload_size / (cur_time - start_time),
+            upload_speed=upload_size / (duration if duration > 0 else 1),
         )
         node.upload_stat_dict[message_id] = upload_stat
 
@@ -1308,7 +1547,6 @@ async def forward_messages(
             noforwards=protect_content,
             drop_author=drop_author,
             top_msg_id=topic_id,
-            entities=caption_entities,
         )
     )
 
@@ -1333,7 +1571,10 @@ async def forward_messages(
 
     if caption and not is_iterable and forwarded_messages:
         await client.edit_message_caption(
-            chat_id, forwarded_messages[0].id, caption=caption
+            chat_id,
+            forwarded_messages[0].id,
+            caption=caption,
+            caption_entities=caption_entities,
         )
 
     return types.List(forwarded_messages) if is_iterable else forwarded_messages[0]
