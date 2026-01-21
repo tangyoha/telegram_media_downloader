@@ -21,6 +21,7 @@ from utils.meta_data import MetaData
 _yaml = yaml.YAML()
 # pylint: disable = R0902
 
+global_task_id = 0
 
 class DownloadStatus(Enum):
     """Download status"""
@@ -146,6 +147,9 @@ class TaskNode:
         self.start_offset_id = start_offset_id
         self.end_offset_id = end_offset_id
         self.bot = bot
+        if task_id != 0:
+            global global_task_id
+            global_task_id = task_id
         self.task_id = task_id
         self.task_type = task_type
         self.total_task = 0
@@ -384,7 +388,7 @@ class Application:
         self.config: dict = {}
         self.app_data: dict = {}
         self.file_path_prefix: List[str] = ["chat_title", "media_datetime"]
-        self.file_name_prefix: List[str] = ["message_id", "file_name"]
+        self.file_name_prefix: List[str] = ["message_id", "task_id", "file_name"]
         self.file_name_prefix_split: str = " - "
         self.log_file_path = os.path.join(os.path.abspath("."), "log")
         self.session_file_path = os.path.join(os.path.abspath("."), "sessions")
@@ -454,6 +458,8 @@ class Application:
             self.file_path_prefix = _config["file_path_prefix"]
         if _config.get("file_name_prefix"):
             self.file_name_prefix = _config["file_name_prefix"]
+        if _config.get("end_of_file_name"):
+            self.end_of_file_name = _config["end_of_file_name"]
 
         if _config.get("upload_drive"):
             upload_drive_config = _config["upload_drive"]
@@ -750,6 +756,10 @@ class Application:
                 if res != "":
                     res += self.file_name_prefix_split
                 res += f"{message_id}"
+            elif prefix == "task_id":
+                if res != "":
+                    res += self.file_name_prefix_split
+                res += f"{global_task_id}"
             elif prefix == "file_name" and file_name:
                 if res != "":
                     res += self.file_name_prefix_split
@@ -758,9 +768,17 @@ class Application:
                 if res != "":
                     res += self.file_name_prefix_split
                 res += f"{caption}"
+
+        # 如果所有字段都为空，默认使用 message_id 作为文件名
         if res == "":
             res = f"{message_id}"
 
+        # 从配置文件中获取文件名末尾附加部分（如果存在）
+        end_of_file_name = self.config.get("end_of_file_name")
+        if end_of_file_name:
+            res += end_of_file_name
+
+        # 验证并返回最终的文件名
         return validate_title(res)
 
     def need_skip_message(

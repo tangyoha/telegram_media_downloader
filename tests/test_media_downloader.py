@@ -56,7 +56,8 @@ MOCK_CONF = {
     "media_types": ["audio", "voice", "document", "photo", "video", "video_note"],
     "file_formats": {"audio": ["all"], "voice": ["all"], "video": ["all"]},
     "save_path": MOCK_DIR,
-    "file_name_prefix": ["message_id", "caption", "file_name"],
+    "file_name_prefix": ["task_id", "caption", "file_name"],
+    # "end_of_file_name": '-C',
 }
 
 event_str = "asyncio.AbstractEventLoop.run_forever"
