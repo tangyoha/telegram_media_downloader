@@ -13,6 +13,7 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from ruamel import yaml
 
 import utils
+from module.browse import browse_command, gc_browse_reqs_loop, handle_browse_callback
 from module.app import (
     Application,
     ChatDownloadConfig,
@@ -178,6 +179,10 @@ class DownloadBot:
             ),
             types.BotCommand("set_language", _t("Set language")),
             types.BotCommand("stop", _t("Stop bot download or forward")),
+            types.BotCommand(
+                "browse",
+                _t("Browse and select media from a chat by time window"),
+            ),
         ]
 
         self.app = app
@@ -311,6 +316,16 @@ class DownloadBot:
             )
         )
 
+        self.bot.add_handler(
+            MessageHandler(
+                browse_command,
+                filters=pyrogram.filters.command(["browse"])
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+
+        _bot.app.loop.create_task(gc_browse_reqs_loop())
+
 
 _bot = DownloadBot()
 
@@ -389,7 +404,8 @@ async def send_help_str(client: pyrogram.Client, chat_id):
         f"/listen_forward - {_t('Listen for forwarded messages')}\n"
         f"/forward_to_comments - {_t('Forward a specific media to a comment section')}\n"
         f"/set_language - {_t('Set language')}\n"
-        f"/stop - {_t('Stop bot download or forward')}\n\n"
+        f"/stop - {_t('Stop bot download or forward')}\n"
+        f"/browse - {_t('Browse and select media from a chat by time window')}\n\n"
         f"{_t('**Note**: 1 means the start of the entire chat')},"
         f"{_t('0 means the end of the entire chat')}\n"
         f"`[` `]` {_t('means optional, not required')}\n"
@@ -1148,6 +1164,10 @@ async def on_query_handler(
     Returns:
         None
     """
+
+    if query.data.startswith("tgdl|"):
+        await handle_browse_callback(client, query)
+        return
 
     for it in QueryHandler:
         queryHandler = QueryHandlerStr.get_str(it.value)
