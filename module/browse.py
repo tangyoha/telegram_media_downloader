@@ -50,6 +50,7 @@ class BrowseRequest:
     msg_map: Dict[int, object]  # msg_id → pyrogram Message
     control_msg_id: Optional[int] = None
     thumb_msg_ids: List[int] = field(default_factory=list)
+    batch_header_msg_id: Optional[int] = None
 
 
 def _get_bot():
@@ -350,10 +351,11 @@ async def browse_command(
         )
         _browse_reqs[(bot_chat_id, batch_req_id)] = req
 
-        await client.send_message(
+        batch_header_msg = await client.send_message(
             bot_chat_id,
             f"📦 Batch {bi}/{len(batches)}: {len(batch_ids)} items",
         )
+        req.batch_header_msg_id = batch_header_msg.id
 
         # Download thumbnails in parallel, oldest → newest
         thumb_dir = _ensure_thumb_dir()
@@ -414,6 +416,8 @@ async def browse_command(
 async def _cleanup_browse_req(bot_chat_id: int, req: "BrowseRequest") -> None:
     """Delete thumbnail and control-panel messages for a finished BrowseRequest."""
     ids_to_delete: List[int] = list(req.thumb_msg_ids)
+    if req.batch_header_msg_id:
+        ids_to_delete.append(req.batch_header_msg_id)
     if req.control_msg_id:
         ids_to_delete.append(req.control_msg_id)
     if not ids_to_delete:
