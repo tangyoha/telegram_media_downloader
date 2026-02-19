@@ -13,7 +13,6 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from ruamel import yaml
 
 import utils
-from module.browse import browse_command, gc_browse_reqs_loop, handle_browse_callback
 from module.app import (
     Application,
     ChatDownloadConfig,
@@ -24,6 +23,7 @@ from module.app import (
     TaskType,
     UploadStatus,
 )
+from module.browse import browse_command, gc_browse_reqs_loop, handle_browse_callback
 from module.filter import Filter
 from module.get_chat_history_v2 import get_chat_history_v2
 from module.language import Language, _t
@@ -850,7 +850,7 @@ async def get_forward_task_node(
     _bot.add_task_node(node)
 
     node.upload_user = _bot.client
-    if not dst_chat.type is pyrogram.enums.ChatType.BOT:
+    if dst_chat.type is not pyrogram.enums.ChatType.BOT:
         has_permission = await check_user_permission(_bot.client, me.id, dst_chat.id)
         if has_permission:
             node.upload_user = _bot.bot

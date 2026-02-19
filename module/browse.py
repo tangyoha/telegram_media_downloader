@@ -16,6 +16,7 @@ from loguru import logger
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 
 from module.app import TaskNode
+from module.language import _t
 
 try:
     from PIL import Image
@@ -159,9 +160,9 @@ def _build_control_keyboard(
     rows.append(
         [
             InlineKeyboardButton(
-                "📥 Download selected", callback_data=f"tgdl|{req_id}|0|done"
+                f"📥 {_t('Download selected')}", callback_data=f"tgdl|{req_id}|0|done"
             ),
-            InlineKeyboardButton("❌ Cancel", callback_data=f"tgdl|{req_id}|0|cancel"),
+            InlineKeyboardButton(f"❌ {_t('Cancel')}", callback_data=f"tgdl|{req_id}|0|cancel"),
         ]
     )
     return InlineKeyboardMarkup(rows)
@@ -261,9 +262,9 @@ async def browse_command(
     _bot = _get_bot()
 
     usage = (
-        "Usage: /browse @target N\n"
-        "Example: /browse @somechannel 10\n"
-        "Fetches photos/videos from the last N minutes (1–720)."
+        f"{_t('Usage')}: /browse @target N\n"
+        f"{_t('Example')}: /browse @somechannel 10\n"
+        f"{_t('Fetches photos/videos from the last N minutes')} (1–{max_history_minute})."
     )
 
     args = message.text.split(maxsplit=2)
@@ -283,7 +284,7 @@ async def browse_command(
     try:
         entity = await _bot.client.get_chat(target)
     except Exception as e:
-        await client.send_message(message.chat.id, f"Target not found: {target}\n{e}")
+        await client.send_message(message.chat.id, f"{_t('Target not found')}: {target}\n{e}")
         return
 
     # Fetch recent messages via user client (newest → oldest)
@@ -315,21 +316,21 @@ async def browse_command(
             if len(items) >= max_msg_return:
                 break
     except Exception as e:
-        await client.send_message(message.chat.id, f"Error fetching messages: {e}")
+        await client.send_message(message.chat.id, f"{_t('Error fetching messages')}: {e}")
         return
 
     if not items:
         await client.send_message(
             message.chat.id,
-            f"No photos/videos found in {target} in the past {minutes} minutes.",
+            f"{_t('No photos/videos found in')} {target} {_t('in the past')} {minutes} {_t('minutes')}.",
         )
         return
 
     bot_chat_id = message.chat.id
     limit_hit = len(items) >= max_msg_return
-    summary = f"Found {len(items)} media items ({target}, past {minutes} minutes)."
+    summary = f"{_t('Found')} {len(items)} {_t('media items')} ({target}, {_t('in the past')} {minutes} {_t('minutes')})."
     if limit_hit:
-        summary += f" ⚠️ Limit of {max_msg_return} items reached — older items in the window were not fetched."
+        summary += f" ⚠️ {_t('Limit of')} {max_msg_return} {_t('items reached — older items in the window were not fetched.')}"
     await client.send_message(bot_chat_id, summary)
 
     # Split into batches of 10, ordered oldest → newest (msg_id is monotonically increasing)
@@ -353,7 +354,7 @@ async def browse_command(
 
         batch_header_msg = await client.send_message(
             bot_chat_id,
-            f"📦 Batch {bi}/{len(batches)}: {len(batch_ids)} items",
+            f"📦 {_t('Batch')} {bi}/{len(batches)}: {len(batch_ids)} {_t('items')}",
         )
         req.batch_header_msg_id = batch_header_msg.id
 
@@ -394,7 +395,7 @@ async def browse_command(
         else:
             await client.send_message(
                 bot_chat_id,
-                "(No thumbnails available for this batch; you can still select items via the control panel.)",
+                _t("(No thumbnails available for this batch; you can still select items via the control panel.)"),
             )
 
         # Clean up temp thumb files
@@ -407,7 +408,7 @@ async def browse_command(
         # Send control panel
         control_msg = await client.send_message(
             bot_chat_id,
-            f"Control panel (Batch {bi}/{len(batches)}): tap items to select (✅ = selected), then press Download.",
+            f"{_t('Control panel')} ({_t('Batch')} {bi}/{len(batches)}): {_t('tap items to select (✅ = selected), then press Download.')}",
             reply_markup=_build_control_keyboard(batch_req_id, batch_items),
         )
         req.control_msg_id = control_msg.id
@@ -438,7 +439,7 @@ async def handle_browse_callback(
         _, req_id, msg_id_s, action = query.data.split("|")
         msg_id = int(msg_id_s)
     except Exception:
-        await query.answer("Bad callback data", show_alert=True)
+        await query.answer(_t("Bad callback data"), show_alert=True)
         return
 
     bot_chat_id = query.message.chat.id
@@ -447,22 +448,22 @@ async def handle_browse_callback(
 
     if not req:
         await query.answer(
-            "This selection has expired. Please send /browse again.", show_alert=True
+            _t("This selection has expired. Please send /browse again."), show_alert=True
         )
         return
 
     if time.time() - req.created_ts > 1800:
         _browse_reqs.pop(key, None)
-        await query.answer("Expired. Please send /browse again.", show_alert=True)
+        await query.answer(_t("Expired. Please send /browse again."), show_alert=True)
         return
 
     if action == "toggle":
         it = req.items.get(msg_id)
         if not it:
-            await query.answer("Item not found", show_alert=True)
+            await query.answer(_t("Item not found"), show_alert=True)
             return
         if it.downloaded:
-            await query.answer("Already downloaded.", show_alert=True)
+            await query.answer(_t("Already downloaded."), show_alert=True)
             return
         it.selected = not it.selected
         await query.answer("OK")
@@ -479,29 +480,29 @@ async def handle_browse_callback(
 
     if action == "cancel":
         _browse_reqs.pop(key, None)
-        await query.answer("Cancelled")
+        await query.answer(_t("Cancelled"))
         await _cleanup_browse_req(bot_chat_id, req)
-        await client.send_message(bot_chat_id, "Cancelled.")
+        await client.send_message(bot_chat_id, f"{_t('Cancelled')}.")
         return
 
     if action == "done":
         selected_ids = [mid for mid, it in req.items.items() if it.selected]
         if not selected_ids:
-            await query.answer("You haven't selected any items yet.", show_alert=True)
+            await query.answer(_t("You haven't selected any items yet."), show_alert=True)
             return
 
-        await query.answer("Starting download...")
+        await query.answer(_t("Starting download..."))
 
         status_msg = await client.send_message(
             bot_chat_id,
-            f"Downloading {len(selected_ids)} selected items...",
+            f"{_t('Downloading')} {len(selected_ids)} {_t('selected items')}...",
         )
 
         node = TaskNode(
             chat_id=req.source_chat_id,
             from_user_id=query.from_user.id,
             reply_message_id=status_msg.id,
-            replay_message=f"Downloading {len(selected_ids)} selected items",
+            replay_message=f"{_t('Downloading')} {len(selected_ids)} {_t('selected items')}",
             limit=len(selected_ids),
             bot=_bot.bot,
             task_id=_bot.gen_task_id(),
