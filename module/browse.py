@@ -79,7 +79,9 @@ def _get_sender_label(msg) -> str:
             return name
         return str(msg.from_user.id)
     if getattr(msg, "sender_chat", None):
-        return msg.sender_chat.username or msg.sender_chat.title or str(msg.sender_chat.id)
+        return (
+            msg.sender_chat.username or msg.sender_chat.title or str(msg.sender_chat.id)
+        )
     return "unknown"
 
 
@@ -151,9 +153,7 @@ def _build_control_keyboard(
             InlineKeyboardButton(
                 "📥 Download selected", callback_data=f"tgdl|{req_id}|0|done"
             ),
-            InlineKeyboardButton(
-                "❌ Cancel", callback_data=f"tgdl|{req_id}|0|cancel"
-            ),
+            InlineKeyboardButton("❌ Cancel", callback_data=f"tgdl|{req_id}|0|cancel"),
         ]
     )
     return InlineKeyboardMarkup(rows)
@@ -175,9 +175,7 @@ async def _photo_thumb_bytes(client: pyrogram.Client, msg) -> Optional[bytes]:
             return None
 
         thumb_dir = _ensure_thumb_dir()
-        tmp_path = os.path.join(
-            thumb_dir, f"browse_photo_{secrets.token_hex(8)}.jpg"
-        )
+        tmp_path = os.path.join(thumb_dir, f"browse_photo_{secrets.token_hex(8)}.jpg")
 
         # Prefer a thumbnail PhotoSize; fall back to full photo
         thumb_obj = None
@@ -223,9 +221,7 @@ async def _video_thumb_bytes(client: pyrogram.Client, msg) -> Optional[bytes]:
             return None
 
         thumb_dir = _ensure_thumb_dir()
-        tmp_path = os.path.join(
-            thumb_dir, f"browse_video_{secrets.token_hex(8)}.jpg"
-        )
+        tmp_path = os.path.join(thumb_dir, f"browse_video_{secrets.token_hex(8)}.jpg")
 
         downloaded = await client.download_media(thumbs[0], file_name=tmp_path)
 
@@ -246,7 +242,13 @@ async def _video_thumb_bytes(client: pyrogram.Client, msg) -> Optional[bytes]:
         return None
 
 
-async def browse_command(client: pyrogram.Client, message: pyrogram.types.Message):
+async def browse_command(
+    client: pyrogram.Client,
+    message: pyrogram.types.Message,
+    max_history_minute: int = 720,
+    chat_history_limit: int = 5000,
+    max_msg_return: int = 100,
+):
     """Handle /browse @target N — browse and select media from a chat."""
     _bot = _get_bot()
 
@@ -267,7 +269,7 @@ async def browse_command(client: pyrogram.Client, message: pyrogram.types.Messag
         return
 
     target, minutes = parsed
-    minutes = max(1, min(minutes, 720))
+    minutes = max(1, min(minutes, max_history_minute))
     since = datetime.now(timezone.utc) - timedelta(minutes=minutes)
 
     try:
@@ -280,12 +282,16 @@ async def browse_command(client: pyrogram.Client, message: pyrogram.types.Messag
     items: Dict[int, BrowseItem] = {}
     msg_map: Dict[int, object] = {}
     try:
-        async for msg in _bot.client.get_chat_history(entity.id, limit=200):
+        async for msg in _bot.client.get_chat_history(
+            entity.id, limit=chat_history_limit
+        ):
             if not msg.date:
                 continue
             msg_dt = msg.date
-            if msg_dt.tzinfo is None:
-                msg_dt = msg_dt.replace(tzinfo=timezone.utc)
+            # Pyrogram 2.1.22 returns datetime.fromtimestamp() — naive local time.
+            # astimezone() treats naive datetimes as local and converts to true UTC.
+            # Also handles any already-aware (non-UTC) datetime correctly.
+            msg_dt = msg_dt.astimezone(timezone.utc)
             if msg_dt < since:
                 break
             kind = _get_media_kind(msg)
@@ -298,7 +304,7 @@ async def browse_command(client: pyrogram.Client, message: pyrogram.types.Messag
                 sender=_get_sender_label(msg),
             )
             msg_map[msg.id] = msg
-            if len(items) >= 20:
+            if len(items) >= max_msg_return:
                 break
     except Exception as e:
         await client.send_message(message.chat.id, f"Error fetching messages: {e}")
@@ -312,10 +318,11 @@ async def browse_command(client: pyrogram.Client, message: pyrogram.types.Messag
         return
 
     bot_chat_id = message.chat.id
-    await client.send_message(
-        bot_chat_id,
-        f"Found {len(items)} media items ({target}, past {minutes} minutes).",
-    )
+    limit_hit = len(items) >= max_msg_return
+    summary = f"Found {len(items)} media items ({target}, past {minutes} minutes)."
+    if limit_hit:
+        summary += f" ⚠️ Limit of {max_msg_return} items reached — older items in the window were not fetched."
+    await client.send_message(bot_chat_id, summary)
 
     # Split into batches of 10, ordered oldest → newest (msg_id is monotonically increasing)
     sorted_ids = sorted(items.keys())
@@ -341,23 +348,25 @@ async def browse_command(client: pyrogram.Client, message: pyrogram.types.Messag
             f"📦 Batch {bi}/{len(batches)}: {len(batch_ids)} items",
         )
 
-        # Download thumbnails to temp files, oldest → newest
-        thumb_paths: List[str] = []
+        # Download thumbnails in parallel, oldest → newest
         thumb_dir = _ensure_thumb_dir()
+        sorted_batch_ids = sorted(batch_ids)
 
-        for mid in sorted(batch_ids):  # ascending msg_id = oldest first
+        async def _fetch_thumb(mid: int):
             msg_obj = batch_msg_map[mid]
             it = batch_items[mid]
-
-            thumb_data = None
             if it.kind == "photo":
-                thumb_data = await _photo_thumb_bytes(_bot.client, msg_obj)
-            elif it.kind in {"video", "video_note"}:
-                thumb_data = await _video_thumb_bytes(_bot.client, msg_obj)
+                return mid, await _photo_thumb_bytes(_bot.client, msg_obj)
+            if it.kind in {"video", "video_note"}:
+                return mid, await _video_thumb_bytes(_bot.client, msg_obj)
+            return mid, None
 
+        results = await asyncio.gather(*(_fetch_thumb(mid) for mid in sorted_batch_ids))
+
+        thumb_paths: List[str] = []
+        for mid, thumb_data in results:
             if not thumb_data:
                 continue
-
             tmp_path = os.path.join(
                 thumb_dir, f"send_thumb_{mid}_{secrets.token_hex(4)}.jpg"
             )
@@ -483,9 +492,7 @@ async def gc_browse_reqs_loop(interval_sec: int = 60, ttl_sec: int = 600):
     while True:
         now = time.time()
         expired = [
-            k
-            for k, req in list(_browse_reqs.items())
-            if now - req.created_ts > ttl_sec
+            k for k, req in list(_browse_reqs.items()) if now - req.created_ts > ttl_sec
         ]
         for k in expired:
             _browse_reqs.pop(k, None)
