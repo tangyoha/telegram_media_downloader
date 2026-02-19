@@ -1,25 +1,33 @@
-FROM python:3.11.9-alpine As compile-image
+FROM python:3.11.9-alpine AS build
 
 WORKDIR /app
 
+# Build deps for pip packages that need compilation
+RUN apk add --no-cache --virtual .build-deps gcc musl-dev
+
+# Install python deps
 COPY requirements.txt /app/
+RUN pip install --no-cache-dir \
+    --trusted-host pypi.org \
+    --trusted-host files.pythonhosted.org \
+    --trusted-host pypi.python.org \
+    -r requirements.txt
 
-RUN apk add --no-cache --virtual .build-deps gcc musl-dev \
-    && pip install --trusted-host pypi.python.org -r requirements.txt \
-    && apk del .build-deps && rm -rf requirements.txt
-
+# Install rclone (runtime binary)
 RUN apk add --no-cache rclone
 
-FROM python:3.11.9-alpine As runtime-image
+
+FROM python:3.11.9-alpine AS runtime
 
 WORKDIR /app
 
-COPY --from=tangyoha/telegram_media_downloader_compile:latest /usr/bin/rclone /app/rclone/rclone
+# Copy installed deps from build stage
+COPY --from=build /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 
-COPY --from=tangyoha/telegram_media_downloader_compile:latest /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+# Copy rclone to the path expected by the app (matches code default: ./rclone/rclone)
+COPY --from=build /usr/bin/rclone /app/rclone/rclone
 
-COPY config.yaml data.yaml setup.py media_downloader.py /app/
-COPY module /app/module
-COPY utils /app/utils
+# Copy app source code
+COPY . /app
 
 CMD ["python", "media_downloader.py"]
