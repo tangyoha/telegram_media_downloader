@@ -451,7 +451,7 @@ async def handle_browse_callback(
         )
         return
 
-    if time.time() - req.created_ts > 600:
+    if time.time() - req.created_ts > 1800:
         _browse_reqs.pop(key, None)
         await query.answer("Expired. Please send /browse again.", show_alert=True)
         return
@@ -529,7 +529,7 @@ async def handle_browse_callback(
                 logger.warning(f"browse: failed to update control keyboard after download: {e}")
 
 
-async def gc_browse_reqs_loop(interval_sec: int = 60, ttl_sec: int = 600):
+async def gc_browse_reqs_loop(interval_sec: int = 60, ttl_sec: int = 1800):
     """Background task: garbage-collect expired BrowseRequests."""
     while True:
         now = time.time()

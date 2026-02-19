@@ -284,7 +284,7 @@ Browse photos and videos from any accessible chat posted within the last N minut
 3. Tap item buttons (⬜ = unselected, ✅ = selected, 📥 = downloaded) to toggle selection.
 4. Press **Download** to queue selected items; press **Cancel** to dismiss the session.
 
-> Sessions expire after 10 minutes. Run `/browse` again to start a new one.
+> Sessions expire after 30 minutes. Run `/browse` again to start a new one.
 
 ## Proxy
 
