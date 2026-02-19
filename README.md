@@ -251,6 +251,41 @@ The complete directory of video download is: `save_path`/`chat_title`/`media_dat
 The order of the list is not fixed and can be randomly combined.
 If the configuration is empty, all files are saved under `save_path`.
 
+## Bot Commands
+
+> The following commands are available when running in bot mode (`bot_token` configured).
+
+### `/browse` — Browse and select media by time window
+
+Browse photos and videos from any accessible chat posted within the last N minutes, then select which ones to download.
+
+**Usage:**
+```
+/browse @target N
+/browse @target N min
+/browse @target N minutes
+```
+
+| Argument | Description |
+|----------|-------------|
+| `@target` | Channel/group username, `@handle`, numeric id, or `https://t.me/` link |
+| `N` | Time window in minutes (1 – 720) |
+
+**Example:**
+```
+/browse @somechannel 30
+/browse -1001234567890 60 min
+/browse https://t.me/mychannel 10
+```
+
+**Workflow:**
+1. The bot fetches up to 100 photos/videos from the target within the last N minutes.
+2. Thumbnails are sent in batches of 10 with a control panel below each batch.
+3. Tap item buttons (⬜ = unselected, ✅ = selected, 📥 = downloaded) to toggle selection.
+4. Press **Download** to queue selected items; press **Cancel** to dismiss the session.
+
+> Sessions expire after 10 minutes. Run `/browse` again to start a new one.
+
 ## Proxy
 
 `socks4, socks5, http` proxies are supported in this project currently. To use it, add the following to the bottom of your `config.yaml` file
