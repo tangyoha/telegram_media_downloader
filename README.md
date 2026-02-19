@@ -230,7 +230,7 @@ enable_download_txt: false
 - **hide_file_name** - Whether to hide the web interface file name, default `false`
 - **web_host** - Web host
 - **web_port** - Web port
-- **language** - Application language, the default is English (`EN`), optional `ZH`(Chinese),`RU`,`UA`
+- **language** - Application language, the default is English (`EN`), optional `ZH`(Simplified Chinese), `ZH_HANT`(Traditional Chinese), `RU`, `UA`
 - **web_login_secret** - Web page login password, if not configured, no login is required to access the web page
 - **log_level** - see `logging._nameToLevel`.
 - **forward_limit** - Limit the number of forwards per minute, the default is 33, please do not modify this parameter by default.
