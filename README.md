@@ -230,7 +230,7 @@ enable_download_txt: false
 - **hide_file_name** - Whether to hide the web interface file name, default `false`
 - **web_host** - Web host
 - **web_port** - Web port
-- **language** - Application language, the default is English (`EN`), optional `ZH`(Chinese),`RU`,`UA`
+- **language** - Application language, the default is English (`EN`), optional `ZH`(Simplified Chinese), `ZH_HANT`(Traditional Chinese), `RU`, `UA`
 - **web_login_secret** - Web page login password, if not configured, no login is required to access the web page
 - **log_level** - see `logging._nameToLevel`.
 - **forward_limit** - Limit the number of forwards per minute, the default is 33, please do not modify this parameter by default.
@@ -250,6 +250,41 @@ The specific location reference is as follows:
 The complete directory of video download is: `save_path`/`chat_title`/`media_datetime`/`media_type`.
 The order of the list is not fixed and can be randomly combined.
 If the configuration is empty, all files are saved under `save_path`.
+
+## Bot Commands
+
+> The following commands are available when running in bot mode (`bot_token` configured).
+
+### `/browse` — Browse and select media by time window
+
+Browse photos and videos from any accessible chat posted within the last N minutes, then select which ones to download.
+
+**Usage:**
+```
+/browse @target N
+/browse @target N min
+/browse @target N minutes
+```
+
+| Argument | Description |
+|----------|-------------|
+| `@target` | Channel/group username, `@handle`, numeric id, or `https://t.me/` link |
+| `N` | Time window in minutes (1 – 720) |
+
+**Example:**
+```
+/browse @somechannel 30
+/browse -1001234567890 60 min
+/browse https://t.me/mychannel 10
+```
+
+**Workflow:**
+1. The bot fetches up to 100 photos/videos from the target within the last N minutes.
+2. Thumbnails are sent in batches of 10 with a control panel below each batch.
+3. Tap item buttons (⬜ = unselected, ✅ = selected, 📥 = downloaded) to toggle selection.
+4. Press **Download** to queue selected items; press **Cancel** to dismiss the session.
+
+> Sessions expire after 30 minutes. Run `/browse` again to start a new one.
 
 ## Proxy
 
