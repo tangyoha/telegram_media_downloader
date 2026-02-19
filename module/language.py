@@ -119,7 +119,7 @@ translations = {
         "Невірний формат команди",
         "指令格式無效",
     ],
-    "Invalid command format. Please use /set_language en/ru/zh/ua": [
+    "Invalid command format. Please use /set_language en/ru/zh/ua/zh-Hant": [
         "无效的命令格式。请使用 /set_language en/ru/zh/ua/zh-Hant",
         "Неверный формат команды. Пожалуйста, используйте /set_language en/ru/zh/ua/zh-Hant",
         "Невірний формат команди. Будь ласка, використовуйте /set_language en/ru/zh/ua/zh-Hant",

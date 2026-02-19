@@ -444,11 +444,11 @@ async def set_language(client: pyrogram.Client, message: pyrogram.types.Message)
     if len(message.text.split()) != 2:
         await client.send_message(
             message.from_user.id,
-            _t("Invalid command format. Please use /set_language en/ru/zh/ua"),
+            _t("Invalid command format. Please use /set_language en/ru/zh/ua/zh-Hant"),
         )
         return
 
-    language = message.text.split()[1]
+    language = message.text.split()[1].replace("-", "_")
 
     try:
         language = Language[language.upper()]
@@ -459,7 +459,7 @@ async def set_language(client: pyrogram.Client, message: pyrogram.types.Message)
     except KeyError:
         await client.send_message(
             message.from_user.id,
-            _t("Invalid command format. Please use /set_language en/ru/zh/ua"),
+            _t("Invalid command format. Please use /set_language en/ru/zh/ua/zh-Hant"),
         )
 
 
