@@ -7,7 +7,7 @@ import re
 import secrets
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 
@@ -37,6 +37,7 @@ class BrowseItem:
     date_utc: datetime
     sender: str
     selected: bool = False
+    downloaded: bool = False
 
 
 @dataclass
@@ -48,6 +49,7 @@ class BrowseRequest:
     items: Dict[int, BrowseItem]
     msg_map: Dict[int, object]  # msg_id → pyrogram Message
     control_msg_id: Optional[int] = None
+    thumb_msg_ids: List[int] = field(default_factory=list)
 
 
 def _get_bot():
@@ -138,7 +140,12 @@ def _build_control_keyboard(
     row: List[InlineKeyboardButton] = []
     for mid in sorted_ids:
         it = items[mid]
-        label = f"✅#{mid}" if it.selected else f"⬜#{mid}"
+        if it.downloaded:
+            label = f"📥#{mid}"
+        elif it.selected:
+            label = f"✅#{mid}"
+        else:
+            label = f"⬜#{mid}"
         row.append(
             InlineKeyboardButton(label, callback_data=f"tgdl|{req_id}|{mid}|toggle")
         )
@@ -374,12 +381,14 @@ async def browse_command(
                 f.write(thumb_data)
             thumb_paths.append(tmp_path)
 
-        # Send thumbnails to user
+        # Send thumbnails to user and record message IDs for later cleanup
         if len(thumb_paths) == 1:
-            await client.send_photo(bot_chat_id, thumb_paths[0])
+            sent = await client.send_photo(bot_chat_id, thumb_paths[0])
+            req.thumb_msg_ids.append(sent.id)
         elif len(thumb_paths) >= 2:
             media_group = [InputMediaPhoto(p) for p in thumb_paths]
-            await client.send_media_group(bot_chat_id, media_group)
+            sent_msgs = await client.send_media_group(bot_chat_id, media_group)
+            req.thumb_msg_ids.extend(m.id for m in sent_msgs)
         else:
             await client.send_message(
                 bot_chat_id,
@@ -400,6 +409,19 @@ async def browse_command(
             reply_markup=_build_control_keyboard(batch_req_id, batch_items),
         )
         req.control_msg_id = control_msg.id
+
+
+async def _cleanup_browse_req(bot_chat_id: int, req: "BrowseRequest") -> None:
+    """Delete thumbnail and control-panel messages for a finished BrowseRequest."""
+    ids_to_delete: List[int] = list(req.thumb_msg_ids)
+    if req.control_msg_id:
+        ids_to_delete.append(req.control_msg_id)
+    if not ids_to_delete:
+        return
+    try:
+        await _get_bot().bot.delete_messages(bot_chat_id, ids_to_delete)
+    except Exception as e:
+        logger.warning(f"browse: failed to delete messages on cleanup: {e}")
 
 
 async def handle_browse_callback(
@@ -435,6 +457,9 @@ async def handle_browse_callback(
         if not it:
             await query.answer("Item not found", show_alert=True)
             return
+        if it.downloaded:
+            await query.answer("Already downloaded.", show_alert=True)
+            return
         it.selected = not it.selected
         await query.answer("OK")
         if req.control_msg_id:
@@ -451,6 +476,7 @@ async def handle_browse_callback(
     if action == "cancel":
         _browse_reqs.pop(key, None)
         await query.answer("Cancelled")
+        await _cleanup_browse_req(bot_chat_id, req)
         await client.send_message(bot_chat_id, "Cancelled.")
         return
 
@@ -482,9 +508,21 @@ async def handle_browse_callback(
 
         for mid in selected_ids:
             await _bot.add_download_task(req.msg_map[mid], node)
+            req.items[mid].selected = False
+            req.items[mid].downloaded = True
 
         node.is_running = True
-        _browse_reqs.pop(key, None)
+
+        # Update keyboard to reflect downloaded state; keep session alive for further picks
+        if req.control_msg_id:
+            try:
+                await client.edit_message_reply_markup(
+                    bot_chat_id,
+                    req.control_msg_id,
+                    reply_markup=_build_control_keyboard(req_id, req.items),
+                )
+            except Exception as e:
+                logger.warning(f"browse: failed to update control keyboard after download: {e}")
 
 
 async def gc_browse_reqs_loop(interval_sec: int = 60, ttl_sec: int = 600):
@@ -495,5 +533,8 @@ async def gc_browse_reqs_loop(interval_sec: int = 60, ttl_sec: int = 600):
             k for k, req in list(_browse_reqs.items()) if now - req.created_ts > ttl_sec
         ]
         for k in expired:
-            _browse_reqs.pop(k, None)
+            req = _browse_reqs.pop(k, None)
+            if req:
+                bot_chat_id = k[0]
+                await _cleanup_browse_req(bot_chat_id, req)
         await asyncio.sleep(interval_sec)
