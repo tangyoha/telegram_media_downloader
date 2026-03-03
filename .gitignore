@@ -9,6 +9,7 @@
 .mypy_cache/
 .coverage
 settings.json
+settings.local.json
 
 # Distribution / packaging
 .Python
@@ -70,3 +71,4 @@ config.yaml
 data.yaml
 *.scss
 *.css.map
+d

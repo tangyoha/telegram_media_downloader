@@ -923,7 +923,7 @@ async def _report_bot_status(
             f"`\n"
             f"🆔 task id: {node.task_id}\n"
             f"📥 {_t('Downloading')}: {format_byte(node.total_download_byte)}\n"
-            f"├─ 📁 {_t('Total')}: {node.total_download_task}\n"
+            f"├─ 📁 {_t('Total')}: {node.total_task}\n"
             f"├─ ✅ {_t('Success')}: {node.success_download_task}\n"
             f"├─ ❌ {_t('Failed')}: {node.failed_download_task}\n"
             f"└─ ⏩ {_t('Skipped')}: {node.skip_download_task}\n"
