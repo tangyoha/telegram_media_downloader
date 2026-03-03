@@ -1,4 +1,5 @@
 """Downloads media from telegram."""
+
 import asyncio
 import logging
 import os
@@ -137,7 +138,7 @@ def _can_download(_type: str, file_formats: dict, file_format: Optional[str]) ->
     """
     if _type in ["audio", "document", "video"]:
         allowed_formats: list = file_formats[_type]
-        if not file_format in allowed_formats and allowed_formats[0] != "all":
+        if file_format not in allowed_formats and allowed_formats[0] != "all":
             return False
     return True
 

@@ -501,7 +501,7 @@ class Application:
             "max_concurrent_transmissions", self.max_concurrent_transmissions
         )
 
-        language = _config.get("language", "EN")
+        language = _config.get("language", "EN").replace("-", "_")
 
         try:
             self.language = Language[language.upper()]

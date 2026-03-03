@@ -13,3 +13,4 @@ ruamel.yaml==0.17.21
 flask-login==0.6.2
 pycryptodome==3.18.0
 requests==2.32.3
+Pillow>=9.0.0

@@ -226,7 +226,7 @@ enable_download_txt: false
 - **hide_file_name** - 是否隐藏web界面文件名称，默认`false`
 - **web_host** - web界面地址
 - **web_port** - web界面端口
-- **language** - 应用语言，默认为英文(`EN`),可选`ZH`（中文）,`RU`,`UA`
+- **language** - 应用语言，默认为英文(`EN`),可选`ZH`（简体中文）,`ZH_HANT`（繁體中文）,`RU`,`UA`
 - **web_login_secret** - 网页登录密码，如果不配置则访问网页不需要登录
 - **log_level** - 默认日志等级，请参阅 `logging._nameToLevel`
 - **forward_limit** - 限制每分钟转发次数，默认为33，默认请不要修改该参数

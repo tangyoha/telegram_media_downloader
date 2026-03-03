@@ -23,6 +23,7 @@ from module.app import (
     TaskType,
     UploadStatus,
 )
+from module.browse import browse_command, gc_browse_reqs_loop, handle_browse_callback
 from module.filter import Filter
 from module.get_chat_history_v2 import get_chat_history_v2
 from module.language import Language, _t
@@ -178,6 +179,10 @@ class DownloadBot:
             ),
             types.BotCommand("set_language", _t("Set language")),
             types.BotCommand("stop", _t("Stop bot download or forward")),
+            types.BotCommand(
+                "browse",
+                _t("Browse and select media from a chat by time window"),
+            ),
         ]
 
         self.app = app
@@ -311,6 +316,16 @@ class DownloadBot:
             )
         )
 
+        self.bot.add_handler(
+            MessageHandler(
+                browse_command,
+                filters=pyrogram.filters.command(["browse"])
+                & pyrogram.filters.user(self.allowed_user_ids),
+            )
+        )
+
+        _bot.app.loop.create_task(gc_browse_reqs_loop())
+
 
 _bot = DownloadBot()
 
@@ -389,7 +404,8 @@ async def send_help_str(client: pyrogram.Client, chat_id):
         f"/listen_forward - {_t('Listen for forwarded messages')}\n"
         f"/forward_to_comments - {_t('Forward a specific media to a comment section')}\n"
         f"/set_language - {_t('Set language')}\n"
-        f"/stop - {_t('Stop bot download or forward')}\n\n"
+        f"/stop - {_t('Stop bot download or forward')}\n"
+        f"/browse - {_t('Browse and select media from a chat by time window')}\n\n"
         f"{_t('**Note**: 1 means the start of the entire chat')},"
         f"{_t('0 means the end of the entire chat')}\n"
         f"`[` `]` {_t('means optional, not required')}\n"
@@ -428,11 +444,11 @@ async def set_language(client: pyrogram.Client, message: pyrogram.types.Message)
     if len(message.text.split()) != 2:
         await client.send_message(
             message.from_user.id,
-            _t("Invalid command format. Please use /set_language en/ru/zh/ua"),
+            _t("Invalid command format. Please use /set_language en/ru/zh/ua/zh-Hant"),
         )
         return
 
-    language = message.text.split()[1]
+    language = message.text.split()[1].replace("-", "_")
 
     try:
         language = Language[language.upper()]
@@ -443,7 +459,7 @@ async def set_language(client: pyrogram.Client, message: pyrogram.types.Message)
     except KeyError:
         await client.send_message(
             message.from_user.id,
-            _t("Invalid command format. Please use /set_language en/ru/zh/ua"),
+            _t("Invalid command format. Please use /set_language en/ru/zh/ua/zh-Hant"),
         )
 
 
@@ -834,7 +850,7 @@ async def get_forward_task_node(
     _bot.add_task_node(node)
 
     node.upload_user = _bot.client
-    if not dst_chat.type is pyrogram.enums.ChatType.BOT:
+    if dst_chat.type is not pyrogram.enums.ChatType.BOT:
         has_permission = await check_user_permission(_bot.client, me.id, dst_chat.id)
         if has_permission:
             node.upload_user = _bot.bot
@@ -1148,6 +1164,10 @@ async def on_query_handler(
     Returns:
         None
     """
+
+    if query.data.startswith("tgdl|"):
+        await handle_browse_callback(client, query)
+        return
 
     for it in QueryHandler:
         queryHandler = QueryHandlerStr.get_str(it.value)
