@@ -134,6 +134,8 @@ class TaskNode:
         task_type: TaskType = TaskType.Download,
         task_id: int = 0,
         topic_id: int = 0,
+        topic_title: str = None,
+        config_key=None,
     ):
         self.chat_id = chat_id
         self.from_user_id = from_user_id
@@ -171,6 +173,8 @@ class TaskNode:
         self.upload_status: dict = {}
         self.upload_stat_dict: dict = {}
         self.topic_id = topic_id
+        self.topic_title = topic_title
+        self.config_key = config_key
         self.reply_to_message = None
         self.cloud_drive_upload_stat_dict: dict = {}
 
@@ -306,6 +310,8 @@ class ChatDownloadConfig:
         self.need_check: bool = False
         self.upload_telegram_chat_id: Union[int, str] = None
         self.node: TaskNode = TaskNode(0)
+        self.chat_id: Union[int, str] = None
+        self.topic_title: Optional[str] = None
 
 
 def get_config(config, key, default=None, val_type=str, verbose=True):
@@ -561,20 +567,23 @@ class Application:
 
         if _config.get("chat"):
             chat = _config["chat"]
+            _key_counter: dict = {}
             for item in chat:
                 if "chat_id" in item:
-                    self.chat_download_config[item["chat_id"]] = ChatDownloadConfig()
-                    self.chat_download_config[
-                        item["chat_id"]
-                    ].last_read_message_id = item.get("last_read_message_id", 0)
-                    self.chat_download_config[
-                        item["chat_id"]
-                    ].download_filter = item.get("download_filter", "")
-                    self.chat_download_config[
-                        item["chat_id"]
-                    ].upload_telegram_chat_id = item.get(
-                        "upload_telegram_chat_id", None
-                    )
+                    base_id = item["chat_id"]
+                    if base_id in _key_counter:
+                        _key_counter[base_id] += 1
+                        config_key = f"{base_id}#{_key_counter[base_id]}"
+                    else:
+                        _key_counter[base_id] = 0
+                        config_key = base_id
+                    cfg = ChatDownloadConfig()
+                    cfg.chat_id = base_id
+                    cfg.last_read_message_id = item.get("last_read_message_id", 0)
+                    cfg.download_filter = item.get("download_filter", "")
+                    cfg.upload_telegram_chat_id = item.get("upload_telegram_chat_id", None)
+                    cfg.topic_title = item.get("topic_title", None)
+                    self.chat_download_config[config_key] = cfg
         elif _config.get("chat_id"):
             # Compatible with lower versions
             self._chat_id = _config["chat_id"]
@@ -691,7 +700,7 @@ class Application:
         return ret
 
     def get_file_save_path(
-        self, media_type: str, chat_title: str, media_datetime: str
+        self, media_type: str, chat_title: str, media_datetime: str, topic_title: str = None
     ) -> str:
         """Get file save path prefix.
 
@@ -716,6 +725,8 @@ class Application:
         for prefix in self.file_path_prefix:
             if prefix == "chat_title":
                 res = os.path.join(res, chat_title)
+                if topic_title:
+                    res = os.path.join(res, topic_title)
             elif prefix == "media_datetime":
                 res = os.path.join(res, media_datetime)
             elif prefix == "media_type":
@@ -841,7 +852,7 @@ class Application:
                     value.last_read_message_id + 1
                 )
 
-            self.app_data["chat"][idx]["chat_id"] = key
+            self.app_data["chat"][idx]["chat_id"] = getattr(value, 'chat_id', None) or key
             self.app_data["chat"][idx]["ids_to_retry"] = value.ids_to_retry
             idx += 1
 
@@ -986,11 +997,12 @@ class Application:
         if download_status is DownloadStatus.SuccessDownload:
             self.total_download_task += 1
 
-        if node.chat_id not in self.chat_download_config:
+        _config_key = getattr(node, 'config_key', None) or node.chat_id
+        if _config_key not in self.chat_download_config:
             return
 
-        self.chat_download_config[node.chat_id].finish_task += 1
+        self.chat_download_config[_config_key].finish_task += 1
 
-        self.chat_download_config[node.chat_id].last_read_message_id = max(
-            self.chat_download_config[node.chat_id].last_read_message_id, message_id
+        self.chat_download_config[_config_key].last_read_message_id = max(
+            self.chat_download_config[_config_key].last_read_message_id, message_id
         )

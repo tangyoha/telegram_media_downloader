@@ -167,6 +167,7 @@ async def _get_media_meta(
     message: pyrogram.types.Message,
     media_obj: Union[Audio, Document, Photo, Video, VideoNote, Voice],
     _type: str,
+    topic_title: str = None,
 ) -> Tuple[str, str, Optional[str]]:
     """Extract file name and file id from media object.
 
@@ -202,7 +203,7 @@ async def _get_media_meta(
     if _type in ["voice", "video_note"]:
         # pylint: disable = C0209
         file_format = media_obj.mime_type.split("/")[-1]  # type: ignore
-        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
+        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name, topic_title)
         file_name = "{} - {}_{}.{}".format(
             message.id,
             _type,
@@ -247,7 +248,7 @@ async def _get_media_meta(
             app.get_file_name(message.id, file_name, caption) + file_name_suffix
         )
 
-        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
+        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name, topic_title)
 
         temp_file_name = os.path.join(app.temp_save_path, dirname, gen_file_name)
 
@@ -269,7 +270,7 @@ async def add_download_task(
 
 
 async def save_msg_to_file(
-    app, chat_id: Union[int, str], message: pyrogram.types.Message
+    app, chat_id: Union[int, str], message: pyrogram.types.Message, topic_title: str = None
 ):
     """Write message text into file"""
     dirname = validate_title(
@@ -277,7 +278,7 @@ async def save_msg_to_file(
     )
     datetime_dir_name = message.date.strftime(app.date_format) if message.date else "0"
 
-    file_save_path = app.get_file_save_path("msg", dirname, datetime_dir_name)
+    file_save_path = app.get_file_save_path("msg", dirname, datetime_dir_name, topic_title)
     file_name = os.path.join(
         app.temp_save_path,
         file_save_path,
@@ -305,7 +306,7 @@ async def download_task(
     )
 
     if app.enable_download_txt and message.text and not message.media:
-        download_status, file_name = await save_msg_to_file(app, node.chat_id, message)
+        download_status, file_name = await save_msg_to_file(app, node.chat_id, message, getattr(node, 'topic_title', None))
 
     if not node.bot:
         app.set_download_id(node, message.id, download_status)
@@ -402,7 +403,7 @@ async def download_media(
             if _media is None:
                 continue
             file_name, temp_file_name, file_format = await _get_media_meta(
-                node.chat_id, message, _media, _type
+                node.chat_id, message, _media, _type, getattr(node, 'topic_title', None)
             )
             media_size = getattr(_media, "file_size", 0)
 
@@ -555,6 +556,35 @@ async def download_chat_task(
 
     chat_download_config.node = node
 
+    # Auto-fetch topic name from Telegram forum topics if not manually set
+    if not node.topic_title and chat_download_config.download_filter:
+        import re as _re
+        _m = _re.search(r'message_thread_id\s*==\s*(\d+)', chat_download_config.download_filter)
+        if _m:
+            _thread_id = int(_m.group(1))
+            try:
+                from pyrogram.raw import functions as _raw_functions
+                _peer = await client.resolve_peer(node.chat_id)
+                _result = await client.invoke(
+                    _raw_functions.channels.GetForumTopics(
+                        channel=_peer,
+                        offset_date=0,
+                        offset_id=0,
+                        offset_topic=0,
+                        limit=100,
+                    )
+                )
+                for _topic in _result.topics:
+                    if _topic.id == _thread_id:
+                        node.topic_title = validate_title(_topic.title)
+                        chat_download_config.topic_title = node.topic_title
+                        logger.info(f"Topic auto-detected: '{node.topic_title}' (thread_id={_thread_id})")
+                        break
+            except Exception as _e:
+                logger.debug(f"Could not auto-fetch topic name (thread_id={_thread_id}): {_e}")
+                node.topic_title = str(_thread_id)
+                chat_download_config.topic_title = node.topic_title
+
     if chat_download_config.ids_to_retry:
         logger.info(f"{_t('Downloading files failed during last run')}...")
         skipped_messages: list = await client.get_messages(  # type: ignore
@@ -603,7 +633,12 @@ async def download_chat_task(
 async def download_all_chat(client: pyrogram.Client):
     """Download All chat"""
     for key, value in app.chat_download_config.items():
-        value.node = TaskNode(chat_id=key)
+        real_chat_id = getattr(value, 'chat_id', None) or key
+        value.node = TaskNode(
+            chat_id=real_chat_id,
+            config_key=key,
+            topic_title=getattr(value, 'topic_title', None),
+        )
         try:
             await download_chat_task(client, value, value.node)
         except Exception as e:
