@@ -285,7 +285,7 @@ Help us keep Telegram Media Downloader open and inclusive. Please read and follo
 
 [PayPal](https://paypal.me/tangyoha?country.x=C2&locale.x=zh_XC)
 
-<p>
-<img alt="Code style: black" style="width:30%" src="./screenshot/alipay.JPG">
-<img alt="Code style: black" style="width:30%" src="./screenshot/wechat.JPG">
-</p>
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=tangyoha/telegram_media_downloader&type=Date)](https://star-history.com/#tangyoha/telegram_media_downloader&Date)
