@@ -343,6 +343,8 @@ async def download_task(
         download_status,
         file_size,
     )
+    # Save config after each download task
+    app.update_config()
 
 
 # pylint: disable = R0915,R0914
