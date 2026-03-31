@@ -1037,3 +1037,123 @@ class Application:
         self.chat_download_config[node.chat_id].last_read_message_id = max(
             self.chat_download_config[node.chat_id].last_read_message_id, message_id
         )
+
+    def get_config_for_web(self) -> dict:
+        """Return a sanitized config dict for the Web UI (excludes sensitive fields)."""
+        file_formats = {}
+        for media_type, formats in self.file_formats.items():
+            file_formats[media_type] = list(formats)
+
+        upload_drive = {
+            "enable_upload_file": self.cloud_drive_config.enable_upload_file,
+            "upload_adapter": self.cloud_drive_config.upload_adapter,
+            "rclone_path": self.cloud_drive_config.rclone_path,
+            "remote_dir": self.cloud_drive_config.remote_dir,
+            "before_upload_file_zip": self.cloud_drive_config.before_upload_file_zip,
+            "after_upload_file_delete": self.cloud_drive_config.after_upload_file_delete,
+        }
+
+        chat_list = []
+        for chat_id, cfg in self.chat_download_config.items():
+            chat_list.append({
+                "chat_id": str(chat_id),
+                "last_read_message_id": cfg.last_read_message_id,
+                "download_filter": cfg.download_filter or "",
+                "upload_telegram_chat_id": (
+                    str(cfg.upload_telegram_chat_id)
+                    if cfg.upload_telegram_chat_id is not None
+                    else ""
+                ),
+            })
+
+        return {
+            "save_path": self.save_path,
+            "temp_save_path": self.temp_save_path,
+            "api_id": self.api_id,
+            "api_hash": "",  # Never expose api_hash to web UI
+            "bot_token": self.bot_token,
+            "media_types": list(self.media_types),
+            "file_formats": file_formats,
+            "file_path_prefix": list(self.file_path_prefix),
+            "file_name_prefix": list(self.file_name_prefix),
+            "file_name_prefix_split": self.file_name_prefix_split,
+            "date_format": self.date_format,
+            "max_download_task": self.max_download_task,
+            "language": self.language.name,
+            "upload_drive": upload_drive,
+            "chat": chat_list,
+        }
+
+    def set_config_from_web(self, cfg: dict) -> dict:
+        """Apply config updates from the Web UI and persist to YAML."""
+        if "save_path" in cfg:
+            self.save_path = cfg["save_path"]
+        if "temp_save_path" in cfg:
+            self.temp_save_path = cfg["temp_save_path"]
+        if "api_id" in cfg:
+            self.api_id = str(cfg["api_id"])
+        if "api_hash" in cfg and cfg["api_hash"]:
+            self.api_hash = cfg["api_hash"]
+        if "bot_token" in cfg:
+            self.bot_token = cfg["bot_token"]
+        if "media_types" in cfg:
+            self.media_types = cfg["media_types"]
+        if "file_formats" in cfg:
+            self.file_formats = cfg["file_formats"]
+        if "file_path_prefix" in cfg:
+            self.file_path_prefix = cfg["file_path_prefix"]
+        if "file_name_prefix" in cfg:
+            self.file_name_prefix = cfg["file_name_prefix"]
+        if "file_name_prefix_split" in cfg:
+            self.file_name_prefix_split = cfg["file_name_prefix_split"]
+        if "date_format" in cfg:
+            self.date_format = cfg["date_format"]
+        if "max_download_task" in cfg:
+            self.max_download_task = cfg["max_download_task"]
+            self.max_concurrent_transmissions = self.max_download_task * 5
+        if "language" in cfg:
+            try:
+                self.language = Language[cfg["language"].upper()]
+            except KeyError:
+                pass
+
+        if "upload_drive" in cfg:
+            ud = cfg["upload_drive"]
+            if "enable_upload_file" in ud:
+                self.cloud_drive_config.enable_upload_file = ud["enable_upload_file"]
+            if "upload_adapter" in ud:
+                self.cloud_drive_config.upload_adapter = ud["upload_adapter"]
+            if "rclone_path" in ud:
+                self.cloud_drive_config.rclone_path = ud["rclone_path"]
+            if "remote_dir" in ud:
+                self.cloud_drive_config.remote_dir = ud["remote_dir"]
+            if "before_upload_file_zip" in ud:
+                self.cloud_drive_config.before_upload_file_zip = ud["before_upload_file_zip"]
+            if "after_upload_file_delete" in ud:
+                self.cloud_drive_config.after_upload_file_delete = ud["after_upload_file_delete"]
+
+        self.config["save_path"] = self.save_path
+        self.config["api_id"] = self.api_id
+        self.config["api_hash"] = self.api_hash
+        self.config["bot_token"] = self.bot_token
+        self.config["media_types"] = self.media_types
+        self.config["file_formats"] = self.file_formats
+        self.config["file_path_prefix"] = self.file_path_prefix
+        self.config["file_name_prefix"] = self.file_name_prefix
+        self.config["file_name_prefix_split"] = self.file_name_prefix_split
+        self.config["date_format"] = self.date_format
+        self.config["max_download_task"] = self.max_download_task
+        self.config["language"] = self.language.name
+
+        upload_drive_config = {
+            "enable_upload_file": self.cloud_drive_config.enable_upload_file,
+            "upload_adapter": self.cloud_drive_config.upload_adapter,
+            "rclone_path": self.cloud_drive_config.rclone_path,
+            "remote_dir": self.cloud_drive_config.remote_dir,
+            "before_upload_file_zip": self.cloud_drive_config.before_upload_file_zip,
+            "after_upload_file_delete": self.cloud_drive_config.after_upload_file_delete,
+        }
+        self.config["upload_drive"] = upload_drive_config
+
+        self.update_config(immediate=True)
+        return {"code": 1, "msg": "Config saved successfully"}

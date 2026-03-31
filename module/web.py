@@ -1,5 +1,6 @@
 """web ui for media download"""
 
+import json
 import logging
 import os
 import threading
@@ -8,7 +9,7 @@ from flask import Flask, jsonify, render_template, request
 from flask_login import LoginManager, UserMixin, login_required, login_user
 
 import utils
-from module.app import Application
+from module.app import Application, ChatDownloadConfig
 from module.download_stat import (
     DownloadState,
     get_download_result,
@@ -30,6 +31,9 @@ _login_manager.login_view = "login"
 _login_manager.init_app(_flask_app)
 web_login_users: dict = {}
 deAesCrypt = AesBase64("1234123412ABCDEF", "ABCDEF1234123412")
+
+# Global Application instance (set by init_web)
+_app_instance: Application = None
 
 
 class User(UserMixin):
@@ -81,7 +85,9 @@ def init_web(app: Application):
     Returns:
         None.
     """
+    global _app_instance
     global web_login_users
+    _app_instance = app
     if app.web_login_secret:
         web_login_users = {"root": app.web_login_secret}
     else:
@@ -220,3 +226,166 @@ def get_download_list():
 
     result += "]"
     return result
+
+
+@_flask_app.route("/get_config")
+@login_required
+def get_config():
+    """Return current config (sanitized) for the web UI."""
+    if _app_instance is None:
+        return jsonify({"code": 0, "msg": "App not initialized"})
+    return jsonify({"code": 1, "data": _app_instance.get_config_for_web()})
+
+
+@_flask_app.route("/set_config", methods=["POST"])
+@login_required
+def set_config():
+    """Update config from web UI form data."""
+    if _app_instance is None:
+        return jsonify({"code": 0, "msg": "App not initialized"})
+
+    # Support both JSON and form-encoded data
+    if request.is_json:
+        cfg = request.get_json()
+    else:
+        cfg = {}
+        for key, value in request.form.items():
+            try:
+                cfg[key] = json.loads(value)
+            except (ValueError, TypeError):
+                cfg[key] = value
+
+    result = _app_instance.set_config_from_web(cfg)
+    return jsonify(result)
+
+
+@_flask_app.route("/get_chat_list")
+@login_required
+def get_chat_list():
+    """Return chat list for chat management table."""
+    if _app_instance is None:
+        return jsonify({"code": 0, "msg": "App not initialized"})
+    config = _app_instance.get_config_for_web()
+    return jsonify({"code": 1, "data": config.get("chat", [])})
+
+
+@_flask_app.route("/add_chat", methods=["POST"])
+@login_required
+def add_chat():
+    """Add a new chat_id to config."""
+    if _app_instance is None:
+        return jsonify({"code": 0, "msg": "App not initialized"})
+
+    chat_id = None
+    if request.is_json:
+        data = request.get_json()
+        chat_id = data.get("chat_id")
+    else:
+        chat_id = request.form.get("chat_id")
+
+    if not chat_id:
+        return jsonify({"code": 0, "msg": "chat_id is required"})
+
+    # Ensure chat_download_config entry exists
+    if chat_id not in _app_instance.chat_download_config:
+        _app_instance.chat_download_config[chat_id] = ChatDownloadConfig()
+
+    # Add to config['chat'] list if not present
+    chat_list = _app_instance.config.get("chat", [])
+    existing_ids = {c.get("chat_id") for c in chat_list}
+    if str(chat_id) not in existing_ids and chat_id not in existing_ids:
+        chat_list.append({"chat_id": str(chat_id), "last_read_message_id": 0})
+        _app_instance.config["chat"] = chat_list
+        _app_instance.update_config(immediate=True)
+
+    return jsonify({"code": 1, "msg": f"Chat {chat_id} added"})
+
+
+@_flask_app.route("/remove_chat", methods=["POST"])
+@login_required
+def remove_chat():
+    """Remove a chat_id from config."""
+    if _app_instance is None:
+        return jsonify({"code": 0, "msg": "App not initialized"})
+
+    chat_id = None
+    if request.is_json:
+        data = request.get_json()
+        chat_id = data.get("chat_id")
+    else:
+        chat_id = request.form.get("chat_id")
+
+    if not chat_id:
+        return jsonify({"code": 0, "msg": "chat_id is required"})
+
+    # Remove from chat_download_config
+    if chat_id in _app_instance.chat_download_config:
+        del _app_instance.chat_download_config[chat_id]
+
+    # Remove from config['chat'] list
+    chat_list = _app_instance.config.get("chat", [])
+    _app_instance.config["chat"] = [
+        c for c in chat_list if str(c.get("chat_id")) != str(chat_id)
+    ]
+    _app_instance.update_config(immediate=True)
+
+    return jsonify({"code": 1, "msg": f"Chat {chat_id} removed"})
+
+
+@_flask_app.route("/test_save_path", methods=["POST"])
+@login_required
+def test_save_path():
+    """Test if a save path is valid/writable."""
+    path = None
+    if request.is_json:
+        data = request.get_json()
+        path = data.get("save_path")
+    else:
+        path = request.form.get("save_path")
+
+    if not path:
+        return jsonify({"code": 0, "msg": "save_path is required"})
+
+    try:
+        os.makedirs(path, exist_ok=True)
+        test_file = os.path.join(path, ".write_test")
+        with open(test_file, "w", encoding="utf-8") as f:
+            f.write("test")
+        os.remove(test_file)
+        return jsonify({"code": 1, "msg": "Path is valid and writable"})
+    except Exception as e:
+        return jsonify({"code": 0, "msg": f"Path error: {str(e)}"})
+
+
+@_flask_app.route("/select_folder", methods=["GET"])
+@login_required
+def select_folder():
+    """Return subfolders of a given path for the folder browser."""
+    path = request.args.get("path", "")
+
+    # Default to root/driver list on Windows, home on Unix
+    if not path:
+        if os.name == "nt":
+            # Windows: list drives
+            drives = []
+            for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+                drive = f"{letter}:\\"
+                if os.path.isdir(drive):
+                    drives.append({"name": drive, "path": drive})
+            return jsonify({"code": 1, "data": drives})
+        path = os.path.expanduser("~")
+
+    if not os.path.isdir(path):
+        return jsonify({"code": 0, "msg": "Not a valid directory"})
+
+    try:
+        items = []
+        for name in sorted(os.listdir(path)):
+            full = os.path.join(path, name)
+            if os.path.isdir(full) and not name.startswith("."):
+                items.append({"name": name, "path": full})
+        return jsonify({"code": 1, "data": items})
+    except PermissionError:
+        return jsonify({"code": 0, "msg": "Permission denied"})
+    except Exception as e:
+        return jsonify({"code": 0, "msg": str(e)})

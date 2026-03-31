@@ -3,8 +3,16 @@ import asyncio
 import logging
 import os
 import shutil
+import sys
 import time
 from typing import List, Optional, Tuple, Union
+
+# Python 3.14+ compatibility: set event loop before pyrogram import
+if sys.version_info >= (3, 14):
+    try:
+        asyncio.get_event_loop()
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
 
 import pyrogram
 from loguru import logger

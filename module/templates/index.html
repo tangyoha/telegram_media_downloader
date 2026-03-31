@@ -20,7 +20,7 @@
       <ul class="layui-tab-title">
         <li class="layui-this">Downloading</li>
         <li>Downloaded</li>
-        <!-- <li>Config</li> -->
+        <li>Settings</li>
       </ul>
       <div class="stop-btn" id="download_state" data-value="{{ download_state }}" onclick="download_state_change(this)"> {{ download_state }} </div>
     </div>
@@ -31,11 +31,205 @@
       <div class="layui-tab-item">
         <table class="layui-hide" id="already_download_list" lay-filter="already_download_list"></table>
       </div>
-      <!-- <div class="layui-tab-item">
-        <form class="layui-form" action="">
-        under development
-      </form>
-      </div> -->
+      <!-- Settings Tab -->
+      <div class="layui-tab-item" id="settings_tab">
+        <div class="layui-form" style="padding: 12px;">
+          <!-- Basic Settings -->
+          <fieldset class="layui-elem-field layui-field-title"><legend>Basic Settings</legend></fieldset>
+          <div class="layui-row layui-col-space12">
+            <div class="layui-col-md6">
+              <label class="layui-form-label">Save Path</label>
+              <div class="layui-input-block">
+                <div class="layui-input-inline" style="width: calc(100% - 90px);">
+                  <input type="text" name="save_path" id="cfg_save_path" placeholder="Download save path" autocomplete="off" class="layui-input">
+                </div>
+                                <button type="button" class="layui-btn layui-btn-normal layui-btn-sm" id="btn_test_path">Test</button>
+              </div>
+              <div id="path_test_result" style="font-size:12px; margin-top:4px;"></div>
+            </div>
+            <div class="layui-col-md3">
+              <label class="layui-form-label">Date Format</label>
+              <div class="layui-input-block">
+                <input type="text" name="date_format" id="cfg_date_format" placeholder="%Y_%m" autocomplete="off" class="layui-input">
+              </div>
+            </div>
+            <div class="layui-col-md3">
+              <label class="layui-form-label">Max Tasks</label>
+              <div class="layui-input-block">
+                <input type="number" name="max_download_task" id="cfg_max_download_task" min="1" max="50" value="5" autocomplete="off" class="layui-input">
+              </div>
+            </div>
+          </div>
+
+          <!-- Media Types -->
+          <fieldset class="layui-elem-field layui-field-title" style="margin-top:20px;"><legend>Media Types</legend></fieldset>
+          <div class="layui-form-item">
+            <div class="layui-input-block" id="cfg_media_types">
+              <input type="checkbox" name="media_types" title="Audio" value="audio">
+              <input type="checkbox" name="media_types" title="Photo" value="photo">
+              <input type="checkbox" name="media_types" title="Video" value="video">
+              <input type="checkbox" name="media_types" title="Document" value="document">
+              <input type="checkbox" name="media_types" title="Voice" value="voice">
+              <input type="checkbox" name="media_types" title="Video Note" value="video_note">
+              <input type="checkbox" name="media_types" title="Animation" value="animation">
+            </div>
+          </div>
+
+          <!-- File Formats -->
+          <fieldset class="layui-elem-field layui-field-title" style="margin-top:20px;"><legend>File Formats</legend></fieldset>
+          <div class="layui-row layui-col-space8" id="cfg_file_formats">
+            <div class="layui-col-md3"><label class="layui-form-label">Audio</label>
+              <div class="layui-input-block"><select name="file_formats[audio]" id="ff_audio" multiple="multiple" lay-search=""><option value="all">all</option></select></div>
+            </div>
+            <div class="layui-col-md3"><label class="layui-form-label">Video</label>
+              <div class="layui-input-block"><select name="file_formats[video]" id="ff_video" multiple="multiple" lay-search=""><option value="all">all</option></select></div>
+            </div>
+            <div class="layui-col-md3"><label class="layui-form-label">Document</label>
+              <div class="layui-input-block"><select name="file_formats[document]" id="ff_document" multiple="multiple" lay-search=""><option value="all">all</option></select></div>
+            </div>
+            <div class="layui-col-md3"><label class="layui-form-label">Voice</label>
+              <div class="layui-input-block"><select name="file_formats[voice]" id="ff_voice" multiple="multiple" lay-search=""><option value="all">all</option></select></div>
+            </div>
+            <div class="layui-col-md3"><label class="layui-form-label">Photo</label>
+              <div class="layui-input-block"><select name="file_formats[photo]" id="ff_photo" multiple="multiple" lay-search=""><option value="all">all</option></select></div>
+            </div>
+            <div class="layui-col-md3"><label class="layui-form-label">Video Note</label>
+              <div class="layui-input-block"><select name="file_formats[video_note]" id="ff_video_note" multiple="multiple" lay-search=""><option value="all">all</option></select></div>
+            </div>
+            <div class="layui-col-md3"><label class="layui-form-label">Animation</label>
+              <div class="layui-input-block"><select name="file_formats[animation]" id="ff_animation" multiple="multiple" lay-search=""><option value="all">all</option></select></div>
+            </div>
+          </div>
+
+          <!-- File Naming -->
+          <fieldset class="layui-elem-field layui-field-title" style="margin-top:20px;"><legend>File Naming</legend></fieldset>
+          <div class="layui-row layui-col-space12">
+            <div class="layui-col-md4">
+              <label class="layui-form-label">Path Prefix</label>
+              <div class="layui-input-block" id="cfg_file_path_prefix">
+                <input type="checkbox" name="file_path_prefix" value="chat_title" title="chat_title">
+                <input type="checkbox" name="file_path_prefix" value="media_datetime" title="media_datetime">
+                <input type="checkbox" name="file_path_prefix" value="media_type" title="media_type">
+              </div>
+            </div>
+            <div class="layui-col-md4">
+              <label class="layui-form-label">Name Prefix</label>
+              <div class="layui-input-block" id="cfg_file_name_prefix">
+                <input type="checkbox" name="file_name_prefix" value="message_id" title="message_id">
+                <input type="checkbox" name="file_name_prefix" value="file_name" title="file_name">
+                <input type="checkbox" name="file_name_prefix" value="caption" title="caption">
+              </div>
+            </div>
+            <div class="layui-col-md4">
+              <label class="layui-form-label">Name Split</label>
+              <div class="layui-input-block">
+                <input type="text" name="file_name_prefix_split" id="cfg_file_name_prefix_split" value=" - " autocomplete="off" class="layui-input">
+              </div>
+            </div>
+          </div>
+
+          <!-- Cloud Upload -->
+          <fieldset class="layui-elem-field layui-field-title" style="margin-top:20px;"><legend>Cloud Upload</legend></fieldset>
+          <div class="layui-row layui-col-space12">
+            <div class="layui-col-md4">
+              <label class="layui-form-label">Enable Upload</label>
+              <div class="layui-input-block">
+                <input type="checkbox" name="upload_enable" id="cfg_upload_enable" lay-skin="switch" lay-text="ON|OFF">
+              </div>
+            </div>
+            <div class="layui-col-md4">
+              <label class="layui-form-label">Adapter</label>
+              <div class="layui-input-block">
+                <select name="upload_adapter" id="cfg_upload_adapter" lay-search="">
+                  <option value="">None</option>
+                  <option value="rclone">rclone</option>
+                  <option value="aligo">aligo</option>
+                </select>
+              </div>
+            </div>
+            <div class="layui-col-md4">
+              <label class="layui-form-label">rclone Path</label>
+              <div class="layui-input-block">
+                <input type="text" name="rclone_path" id="cfg_rclone_path" placeholder="D:\rclone\rclone.exe" autocomplete="off" class="layui-input">
+              </div>
+            </div>
+            <div class="layui-col-md4">
+              <label class="layui-form-label">Remote Dir</label>
+              <div class="layui-input-block">
+                <input type="text" name="remote_dir" id="cfg_remote_dir" placeholder="drive:/telegram" autocomplete="off" class="layui-input">
+              </div>
+            </div>
+            <div class="layui-col-md2">
+              <label class="layui-form-label">Zip Before</label>
+              <div class="layui-input-block">
+                <input type="checkbox" name="before_upload_file_zip" id="cfg_before_zip" lay-skin="switch" lay-text="ON|OFF">
+              </div>
+            </div>
+            <div class="layui-col-md2">
+              <label class="layui-form-label">Delete After</label>
+              <div class="layui-input-block">
+                <input type="checkbox" name="after_upload_file_delete" id="cfg_after_delete" lay-skin="switch" lay-text="ON|OFF">
+              </div>
+            </div>
+          </div>
+
+          <!-- Telegram Settings -->
+          <fieldset class="layui-elem-field layui-field-title" style="margin-top:20px;"><legend>Telegram Settings</legend></fieldset>
+          <div class="layui-row layui-col-space12">
+            <div class="layui-col-md4">
+              <label class="layui-form-label">API ID</label>
+              <div class="layui-input-block">
+                <input type="text" name="api_id" id="cfg_api_id" placeholder="your_api_id" autocomplete="off" class="layui-input">
+              </div>
+            </div>
+            <div class="layui-col-md4">
+              <label class="layui-form-label">API Hash</label>
+              <div class="layui-input-block">
+                <input type="password" name="api_hash" id="cfg_api_hash" placeholder="Fill to update" autocomplete="off" class="layui-input">
+              </div>
+            </div>
+            <div class="layui-col-md4">
+              <label class="layui-form-label">Bot Token</label>
+              <div class="layui-input-block">
+                <input type="password" name="bot_token" id="cfg_bot_token" placeholder="12345:ABCDEF..." autocomplete="off" class="layui-input">
+              </div>
+            </div>
+            <div class="layui-col-md4">
+              <label class="layui-form-label">Language</label>
+              <div class="layui-input-block">
+                <select name="language" id="cfg_language">
+                  <option value="EN">English</option>
+                  <option value="ZH">中文</option>
+                  <option value="RU">Русский</option>
+                  <option value="UA">Українська</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat List -->
+          <fieldset class="layui-elem-field layui-field-title" style="margin-top:20px;"><legend>Chat List</legend></fieldset>
+          <div class="layui-form-item">
+            <div class="layui-row layui-col-space8">
+              <div class="layui-col-md4">
+                <input type="text" name="new_chat_id" id="new_chat_id" placeholder="Enter chat_id to add" autocomplete="off" class="layui-input">
+              </div>
+              <div class="layui-col-md2">
+                <button type="button" class="layui-btn layui-btn-normal" id="btn_add_chat">Add Chat</button>
+              </div>
+            </div>
+          </div>
+          <table class="layui-hide" id="chat_list_table" lay-filter="chat_list_table"></table>
+
+          <!-- Save Button -->
+          <div class="layui-form-item" style="margin-top:24px;">
+            <div class="layui-input-block">
+              <button type="button" class="layui-btn layui-btn-lg layui-btn-normal" id="btn_save_config">Save Settings</button>
+              <span id="cfg_save_msg" style="margin-left:16px;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -304,7 +498,265 @@
           update_already_download_list_int = self.setInterval(update_already_download_list, 1000);
         }
 
+        // Load config when Settings tab is shown
+        if (data.index == 2 && !window._configLoaded) {
+          window._configLoaded = true;
+          loadConfig();
+          renderChatTable();
+        }
       });
+
+      // ─── Settings Tab Logic ───────────────────────────────────────────
+      var folderBrowserLayer = null;
+      var folderSelectedCallback = null;
+
+      // File format options per media type
+      var fileFormatOptions = {
+        audio: ['all', 'mp3', 'flac', 'wav', 'm4a', 'ogg', 'aac'],
+        video: ['all', 'mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm'],
+        document: ['all', 'pdf', 'epub', 'doc', 'docx', 'txt', 'zip', 'rar', '7z'],
+        voice: ['all', 'ogg', 'mp3', 'wav'],
+        photo: ['all', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'],
+        video_note: ['all', 'mp4', 'mkv'],
+        animation: ['all', 'mp4', 'gif', 'webp']
+      };
+
+      function populateFileFormatSelects() {
+        layui.form.render('select');
+      }
+
+      function loadConfig() {
+        $.ajax({
+          url: "get_config",
+          type: "get",
+          dataType: "json",
+          success: function (res) {
+            if (res.code != 1) { layer.msg("Failed to load config"); return; }
+            var d = res.data;
+            layui.$("#cfg_save_path").val(d.save_path || '');
+            layui.$("#cfg_date_format").val(d.date_format || '%Y_%m');
+            layui.$("#cfg_max_download_task").val(d.max_download_task || 5);
+            layui.$("#cfg_file_name_prefix_split").val(d.file_name_prefix_split || ' - ');
+            layui.$("#cfg_api_id").val(d.api_id || '');
+            layui.$("#cfg_api_hash").val('');
+            layui.$("#cfg_bot_token").val(d.bot_token || '');
+            layui.$("#cfg_rclone_path").val((d.upload_drive || {}).rclone_path || '');
+            layui.$("#cfg_remote_dir").val((d.upload_drive || {}).remote_dir || '');
+
+            // language
+            layui.$("#cfg_language").val(d.language || 'EN');
+
+            // switches
+            var ud = d.upload_drive || {};
+            layui.$("#cfg_upload_enable")[0].checked = !!ud.enable_upload_file;
+            layui.$("#cfg_before_zip")[0].checked = !!ud.before_upload_file_zip;
+            layui.$("#cfg_after_delete")[0].checked = !!ud.after_upload_file_delete;
+            layui.$("#cfg_upload_adapter").val(ud.upload_adapter || '');
+
+            // media types checkboxes
+            var mediaTypes = d.media_types || [];
+            layui.$("input[name='media_types']").each(function() {
+              this.checked = mediaTypes.indexOf(this.value) !== -1;
+            });
+
+            // file path prefix checkboxes
+            var fpPrefix = d.file_path_prefix || [];
+            layui.$("input[name='file_path_prefix']").each(function() {
+              this.checked = fpPrefix.indexOf(this.value) !== -1;
+            });
+
+            // file name prefix checkboxes
+            var fnPrefix = d.file_name_prefix || [];
+            layui.$("input[name='file_name_prefix']").each(function() {
+              this.checked = fnPrefix.indexOf(this.value) !== -1;
+            });
+
+            // file formats - populate selects then set values
+            populateFileFormatSelects();
+            var ff = d.file_formats || {};
+            for (var mt in fileFormatOptions) {
+              (function(mediaType) {
+                var sel = layui.$("#ff_" + mediaType);
+                sel.html('');
+                fileFormatOptions[mediaType].forEach(function(opt) {
+                  sel.append('<option value="' + opt + '">' + opt + '</option>');
+                });
+                var current = ff[mediaType] || ['all'];
+                sel.val(current);
+              })(mt);
+            }
+
+            layui.form.render('checkbox');
+            layui.form.render('select');
+            layui.form.render('switch');
+          }
+        });
+      }
+
+      function buildConfigPayload() {
+        var mediaTypes = [];
+        layui.$("input[name='media_types']:checked").each(function() { mediaTypes.push(this.value); });
+
+        var filePathPrefix = [];
+        layui.$("input[name='file_path_prefix']:checked").each(function() { filePathPrefix.push(this.value); });
+
+        var fileNamePrefix = [];
+        layui.$("input[name='file_name_prefix']:checked").each(function() { fileNamePrefix.push(this.value); });
+
+        var fileFormats = {};
+        for (var mt in fileFormatOptions) {
+          var vals = layui.$("#ff_" + mt).val() || [];
+          fileFormats[mt] = vals;
+        }
+
+        return {
+          save_path: layui.$("#cfg_save_path").val(),
+          date_format: layui.$("#cfg_date_format").val(),
+          max_download_task: parseInt(layui.$("#cfg_max_download_task").val()) || 5,
+          file_name_prefix_split: layui.$("#cfg_file_name_prefix_split").val(),
+          api_id: layui.$("#cfg_api_id").val(),
+          api_hash: layui.$("#cfg_api_hash").val(),
+          bot_token: layui.$("#cfg_bot_token").val(),
+          language: layui.$("#cfg_language").val(),
+          media_types: mediaTypes,
+          file_path_prefix: filePathPrefix,
+          file_name_prefix: fileNamePrefix,
+          file_formats: fileFormats,
+          upload_drive: {
+            enable_upload_file: layui.$("#cfg_upload_enable")[0].checked,
+            upload_adapter: layui.$("#cfg_upload_adapter").val(),
+            rclone_path: layui.$("#cfg_rclone_path").val(),
+            remote_dir: layui.$("#cfg_remote_dir").val(),
+            before_upload_file_zip: layui.$("#cfg_before_zip")[0].checked,
+            after_upload_file_delete: layui.$("#cfg_after_delete")[0].checked
+          }
+        };
+      }
+
+      layui.$("#btn_save_config").on("click", function() {
+        var payload = buildConfigPayload();
+        $.ajax({
+          url: "set_config",
+          type: "post",
+          contentType: "application/json",
+          data: JSON.stringify(payload),
+          dataType: "json",
+          success: function(res) {
+            if (res.code == 1) {
+              layui.$("#cfg_save_msg").css("color", "#5FB878").text("Saved successfully!");
+              setTimeout(function() { layui.$("#cfg_save_msg").text(''); }, 3000);
+            } else {
+              layui.$("#cfg_save_msg").css("color", "#FF5722").text(res.msg || "Save failed");
+            }
+          },
+          error: function() {
+            layui.$("#cfg_save_msg").css("color", "#FF5722").text("Network error");
+          }
+        });
+      });
+
+      // Test save path
+      layui.$("#btn_test_path").on("click", function() {
+        var path = layui.$("#cfg_save_path").val();
+        if (!path) { layui.$("#path_test_result").css("color","#FF5722").text("Path is empty"); return; }
+        layui.$("#path_test_result").css("color","#999").text("Testing...");
+        $.ajax({
+          url: "test_save_path",
+          type: "post",
+          contentType: "application/json",
+          data: JSON.stringify({save_path: path}),
+          dataType: "json",
+          success: function(res) {
+            if (res.code == 1) {
+              layui.$("#path_test_result").css("color","#5FB878").text("OK: " + res.msg);
+            } else {
+              layui.$("#path_test_result").css("color","#FF5722").text("Error: " + res.msg);
+            }
+          }
+        });
+      });
+
+      // Chat list table
+      function renderChatTable() {
+        layui.table.render({
+          elem: '#chat_list_table',
+          url: 'get_chat_list',
+          method: 'get',
+          dataType: 'json',
+          page: false,
+          height: 220,
+          cols: [[
+            { field: 'chat_id', title: 'Chat ID', width: 200 },
+            { field: 'last_read_message_id', title: 'Last Read ID', width: 130 },
+            { field: 'download_filter', title: 'Download Filter', minWidth: 150 },
+            {
+              field: 'action',
+              title: 'Action',
+              width: 80,
+              templet: function(d) {
+                return '<button type="button" class="layui-btn layui-btn-danger layui-btn-xs btn_remove_chat" data-chat-id="' + d.chat_id + '">Remove</button>';
+              }
+            }
+          ]],
+          parseData: function(res) {
+            return { data: res.data || [] };
+          },
+          done: function() {
+            layui.$(".btn_remove_chat").on("click", function() {
+              var chatId = layui.$(this).data("chat-id");
+              layer.confirm('Remove chat ' + chatId + '?', function(idx) {
+                $.ajax({
+                  url: "remove_chat",
+                  type: "post",
+                  contentType: "application/json",
+                  data: JSON.stringify({chat_id: chatId}),
+                  dataType: "json",
+                  success: function(res) {
+                    if (res.code == 1) {
+                      layui.table.reload('chat_list_table');
+                      layer.close(idx);
+                    } else {
+                      layer.msg(res.msg || "Failed");
+                    }
+                  }
+                });
+              });
+            });
+          }
+        });
+      }
+
+      layui.$("#btn_add_chat").on("click", function() {
+        var chatId = layui.$("#new_chat_id").val().trim();
+        if (!chatId) { layer.msg("Please enter a chat_id"); return; }
+        $.ajax({
+          url: "add_chat",
+          type: "post",
+          contentType: "application/json",
+          data: JSON.stringify({chat_id: chatId}),
+          dataType: "json",
+          success: function(res) {
+            if (res.code == 1) {
+              layui.$("#new_chat_id").val('');
+              layui.table.reload('chat_list_table');
+              layer.msg("Chat added");
+            } else {
+              layer.msg(res.msg || "Failed to add chat");
+            }
+          }
+        });
+      });
+
+      // Populate file format selects on load
+      for (var mt in fileFormatOptions) {
+        (function(mediaType) {
+          var sel = layui.$("#ff_" + mediaType);
+          fileFormatOptions[mediaType].forEach(function(opt) {
+            sel.append('<option value="' + opt + '">' + opt + '</option>');
+          });
+        })(mt);
+      }
+      layui.form.render('select');
 
     });
   </script>
